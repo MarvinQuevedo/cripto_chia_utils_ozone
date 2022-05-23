@@ -139,7 +139,6 @@ class UncurriedNFT {
         // TODO Set/Remove following fields after NFT1 implemented
 
         owner_did: Program.fromBytes([]),
-
         transfer_program_hash: Program.fromBytes([]),
         transfer_program_curry_params: Program.fromBytes([]),
         royalty_address: Program.fromBytes([]),

@@ -65,8 +65,10 @@ Fq12 finalExponentiation(Fq12 element, {EC? ec}) {
     var ans = element.pow((ec.q.pow(4) - ec.q.pow(2) + BigInt.one) ~/ ec.n);
     ans = ans.qiPower(2) * ans as Fq12;
     ans = ans.qiPower(6) / ans as Fq12;
+    // ignore: unnecessary_cast
     return ans as Fq12;
   } else {
+    // ignore: unnecessary_cast
     return element.pow((ec.q.pow(ec.k.toInt()) - BigInt.one) ~/ ec.n) as Fq12;
   }
 }

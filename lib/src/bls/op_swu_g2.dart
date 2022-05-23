@@ -194,6 +194,7 @@ JacobianPoint osswu2Help(Fq2 t) {
     var y0 = sqrtCandidate * root as Fq2;
     if (y0.pow(BigInt.two) * gx0_den == gx0_num) {
       if (sgn0(y0) != sgn0(t)) {
+        // ignore: unnecessary_cast
         y0 = -y0 as Fq2;
       }
       assert(sgn0(y0) == sgn0(t));
@@ -211,6 +212,7 @@ JacobianPoint osswu2Help(Fq2 t) {
     var y1 = eta * sqrtCandidate as Fq2;
     if (y1.pow(BigInt.two) * gx1_den == gx1_num) {
       if (sgn0(y1) != sgn0(t)) {
+        // ignore: unnecessary_cast
         y1 = -y1 as Fq2;
       }
       assert(sgn0(y1) == sgn0(t));
