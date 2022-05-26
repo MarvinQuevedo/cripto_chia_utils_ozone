@@ -9,28 +9,12 @@ import 'package:test/expect.dart';
 import 'package:test/scaffolding.dart';
 
 void main() {
-<<<<<<< HEAD
-  final configurationProvider = ConfigurationProvider()
-    ..setConfig(NetworkFactory.configId,
-        {'yaml_file_path': 'lib/src/networks/chia/testnet10/config.yaml'});
-
-  final context = Context(configurationProvider);
-  final blockchainNetworkLoader = ChiaBlockchainNetworkLoader();
-  context.registerFactory(
-      NetworkFactory(blockchainNetworkLoader.loadfromLocalFileSystem));
-  final walletService = StandardWalletService(context);
-
-  final destinationPuzzlehash = const Address(
-          'txch1pdar6hnj8c9sgm74r72u40ed8cnpduzan5vr86qkvpftg0v52jksxp6hy3')
-      .toPuzzlehash();
-=======
   ChiaNetworkContextWrapper().registerNetworkContext(Network.mainnet);
   final walletService = StandardWalletService();
 
   final destinationPuzzlehash =
       const Address('txch1pdar6hnj8c9sgm74r72u40ed8cnpduzan5vr86qkvpftg0v52jksxp6hy3')
           .toPuzzlehash();
->>>>>>> 1474e20f97e6a1c214c0cc811329c64472215400
 
   const testMnemonic = [
     'elder',
@@ -62,20 +46,13 @@ void main() {
   final keychainSecret = KeychainCoreSecret.fromMnemonic(testMnemonic);
 
   final walletsSetList = <WalletSet>[
-<<<<<<< HEAD
-    for (var i = 0; i < 20; i++)
-      WalletSet.fromPrivateKey(masterKeyPair.masterPrivateKey, i),
-=======
     for (var i = 0; i < 20; i++) WalletSet.fromPrivateKey(keychainSecret.masterPrivateKey, i),
->>>>>>> 1474e20f97e6a1c214c0cc811329c64472215400
   ];
 
   final walletKeychain = WalletKeychain(walletsSetList);
 
-  final coinPuzzlehash =
-      walletKeychain.unhardenedMap.values.toList()[0].puzzlehash;
-  final changePuzzlehash =
-      walletKeychain.unhardenedMap.values.toList()[1].puzzlehash;
+  final coinPuzzlehash = walletKeychain.unhardenedMap.values.toList()[0].puzzlehash;
+  final changePuzzlehash = walletKeychain.unhardenedMap.values.toList()[1].puzzlehash;
 
   final parentInfo0 = Bytes([
     227,
@@ -230,14 +207,7 @@ void main() {
 
   test('Should create valid spendbundle with multiple payments', () {
     final spendBundle = walletService.createSpendBundle(
-<<<<<<< HEAD
-      payments: [
-        Payment(548000, destinationPuzzlehash),
-        Payment(2000, destinationPuzzlehash)
-      ],
-=======
       payments: [Payment(548000, destinationPuzzlehash), Payment(2000, destinationPuzzlehash)],
->>>>>>> 1474e20f97e6a1c214c0cc811329c64472215400
       coinsInput: coins,
       changePuzzlehash: changePuzzlehash,
       keychain: walletKeychain,
@@ -284,8 +254,7 @@ void main() {
     );
   });
 
-  test('Should create valid spendbundle with total amount less than coin value',
-      () {
+  test('Should create valid spendbundle with total amount less than coin value', () {
     final spendBundle = walletService.createSpendBundle(
       payments: [Payment(3000, destinationPuzzlehash)],
       coinsInput: coins,
@@ -309,11 +278,8 @@ void main() {
     );
   });
 
-  test(
-      'Should create valid spendbundle without change puzzlehash when there is no change',
-      () {
-    final totalCoinsValue =
-        coins.fold(0, (int previousValue, coin) => previousValue + coin.amount);
+  test('Should create valid spendbundle without change puzzlehash when there is no change', () {
+    final totalCoinsValue = coins.fold(0, (int previousValue, coin) => previousValue + coin.amount);
     final spendBundle = walletService.createSpendBundle(
       payments: [Payment(totalCoinsValue, destinationPuzzlehash)],
       coinsInput: coins,
@@ -323,13 +289,7 @@ void main() {
     walletService.validateSpendBundle(spendBundle);
   });
 
-<<<<<<< HEAD
-  test(
-      'Should throw exception when change puzzlehash is not given and there is change',
-      () {
-=======
   test('Should throw exception when change puzzlehash is not given and there is change', () {
->>>>>>> 1474e20f97e6a1c214c0cc811329c64472215400
     expect(
       () {
         walletService.createSpendBundle(

@@ -81,12 +81,8 @@ PrivateKey masterSkToSingletonOwnerSk(
   PrivateKey masterSk,
   int poolWalletIndex,
 ) {
-  return derivePath(masterSk, [
-    blsSpecNumber, 
-    chiaBlockchanNumber, 
-    singletonPathNumber, 
-    poolWalletIndex
-  ]);
+  return derivePath(
+      masterSk, [blsSpecNumber, chiaBlockchanNumber, singletonPathNumber, poolWalletIndex]);
 }
 
 // This key is used for the farmer to authenticate
@@ -115,8 +111,7 @@ Program getPuzzleFromPk(JacobianPoint publicKey) {
     ]),
   );
 
-  final curried =
-      p2DelegatedPuzzleOrHiddenPuzzleProgram.curry([syntheticPubKey.program]);
+  final curried = p2DelegatedPuzzleOrHiddenPuzzleProgram.curry([syntheticPubKey.program]);
 
   return curried;
 }
@@ -126,13 +121,7 @@ final groupOrder = BigInt.parse(
 );
 
 BigInt calculateSyntheticOffset(JacobianPoint publicKey) {
-<<<<<<< HEAD
-  final blob = sha256
-      .convert(publicKey.toBytes() + defaultHiddenPuzzleProgram.hash())
-      .bytes;
-=======
   final blob = sha256.convert(publicKey.toBytes() + defaultHiddenPuzzleProgram.hash()).bytes;
->>>>>>> 1474e20f97e6a1c214c0cc811329c64472215400
 
   final offset = bytesToBigInt(blob, Endian.big, signed: true);
 
@@ -161,21 +150,18 @@ PrivateKey rootWalletSkToWalletSk(PrivateKey master, int index) {
 }
 
 PrivateKey masterSkToRootWalletSk(PrivateKey master) {
-  final root =
-      derivePath(PrivateKey.fromBytes(master.toBytes()), [12381, 8444, 2]);
+  final root = derivePath(PrivateKey.fromBytes(master.toBytes()), [12381, 8444, 2]);
   //final r1 = DeriveKeys.masterSkToRootWalletSk(master);
   return PrivateKey.fromBytes(root.toBytes());
 }
 
 PrivateKey rootWalletSkToWalletSkUnhardened(PrivateKey master, int index) {
-  final root =
-      derivePathUnhardened(PrivateKey.fromBytes(master.toBytes()), [index]);
+  final root = derivePathUnhardened(PrivateKey.fromBytes(master.toBytes()), [index]);
   return PrivateKey.fromBytes(root.toBytes());
 }
 
 PrivateKey masterSkToRootWalletSkUnhardened(PrivateKey master) {
-  final root = derivePathUnhardened(
-      PrivateKey.fromBytes(master.toBytes()), [12381, 8444, 2]);
+  final root = derivePathUnhardened(PrivateKey.fromBytes(master.toBytes()), [12381, 8444, 2]);
   //final r1 = DeriveKeys.masterSkToRootWalletSk(master);
   return PrivateKey.fromBytes(root.toBytes());
 }

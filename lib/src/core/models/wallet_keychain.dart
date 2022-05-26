@@ -2,6 +2,7 @@
 
 import 'package:chia_utils/chia_crypto_utils.dart';
 import 'package:chia_utils/src/utils/serialization.dart';
+import 'package:bip39/bip39.dart' as bip39;
 
 class WalletKeychain with ToBytesMixin {
   Map<Puzzlehash, WalletVector> hardenedMap = <Puzzlehash, WalletVector>{};
@@ -28,8 +29,7 @@ class WalletKeychain with ToBytesMixin {
     hardenedMap = newHardenedMap;
     unhardenedMap = newUnhardenedMap;
   }
-  WalletKeychain._internal(
-      {required this.hardenedMap, required this.unhardenedMap});
+  WalletKeychain._internal({required this.hardenedMap, required this.unhardenedMap});
 
   WalletKeychain.fromMaps(this.hardenedMap, this.unhardenedMap);
 
@@ -103,8 +103,7 @@ class WalletKeychain with ToBytesMixin {
 
   List<Puzzlehash> getOuterPuzzleHashesForAssetId(Puzzlehash assetId) {
     if (!unhardenedMap.values.first.assetIdtoOuterPuzzlehash.containsKey(assetId)) {
-      throw ArgumentError(
-          'Puzzlehashes for given Asset Id are not in keychain');
+      throw ArgumentError('Puzzlehashes for given Asset Id are not in keychain');
     }
     return unhardenedMap.values.map((v) => v.assetIdtoOuterPuzzlehash[assetId]!).toList();
   }
@@ -124,30 +123,25 @@ class WalletKeychain with ToBytesMixin {
      */
     final hardenedEntriesToAdd = <Puzzlehash, WalletVector>{};
     for (final walletVector in hardenedMap.values) {
-      final outerPuzzleHash =
-          WalletKeychain.makeOuterPuzzleHash(walletVector.puzzlehash, assetId);
+      final outerPuzzleHash = WalletKeychain.makeOuterPuzzleHash(walletVector.puzzlehash, assetId);
       //walletVector.assetIdtoOuterPuzzlehash[assetId] = outerPuzzleHash;
       hardenedEntriesToAdd[outerPuzzleHash] = walletVector;
     }
     hardenedMap.addAll(hardenedEntriesToAdd);
   }
 
-  static Puzzlehash makeOuterPuzzleHash(
-      Puzzlehash innerPuzzleHash, Puzzlehash assetId) {
+  static Puzzlehash makeOuterPuzzleHash(Puzzlehash innerPuzzleHash, Puzzlehash assetId) {
     final solution = Program.list([
       Program.fromBytes(catProgram.hash()),
-      Program.fromBytes(assetId.uint8List),
-      Program.fromBytes(innerPuzzleHash.uint8List)
+      Program.fromBytes(assetId.byteList),
+      Program.fromBytes(innerPuzzleHash.byteList)
     ]);
     final result = curryAndTreehashProgram.run(solution);
     return Puzzlehash(result.program.atom);
   }
-<<<<<<< HEAD
 
   static List<String> generateMnemonic({int strength = 256}) {
-    return bip39
-        .generateMnemonic(strength: strength)
-        .split(mnemonicWordSeperator);
+    return bip39.generateMnemonic(strength: strength).split(" ");
   }
 
   factory WalletKeychain.fromMap(Map<String, dynamic> json) {
@@ -177,12 +171,8 @@ class WalletKeychain with ToBytesMixin {
   }
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{};
-    map['hardenedMap'] =
-        hardenedMap.map((k, v) => MapEntry(k.toHex(), v.toMap()));
-    map['unhardenedMap'] =
-        unhardenedMap.map((k, v) => MapEntry(k.toHex(), v.toMap()));
+    map['hardenedMap'] = hardenedMap.map((k, v) => MapEntry(k.toHex(), v.toMap()));
+    map['unhardenedMap'] = unhardenedMap.map((k, v) => MapEntry(k.toHex(), v.toMap()));
     return map;
   }
-=======
->>>>>>> 1474e20f97e6a1c214c0cc811329c64472215400
 }
