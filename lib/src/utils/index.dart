@@ -3,7 +3,6 @@
 import 'dart:typed_data';
 
 import 'package:chia_utils/chia_crypto_utils.dart';
-import 'package:chia_utils/src/core/puzzles/calculate_synthetic_public_key/calculate_synthetic_public_key.clvm.hex.dart';
 import 'package:chia_utils/src/standard/puzzles/default_hidden_puzzle/default_hidden_puzzle.clvm.hex.dart';
 import 'package:chia_utils/src/standard/puzzles/p2_delegated_puzzle_or_hidden_puzzle/p2_delegated_puzzle_or_hidden_puzzle.clvm.hex.dart';
 import 'package:crypto/crypto.dart';
@@ -83,9 +82,9 @@ PrivateKey masterSkToSingletonOwnerSk(
   int poolWalletIndex,
 ) {
   return derivePath(masterSk, [
-    blsSpecNumber,
-    chiaBlockchanNumber,
-    singletonPathNumber,
+    blsSpecNumber, 
+    chiaBlockchanNumber, 
+    singletonPathNumber, 
     poolWalletIndex
   ]);
 }
@@ -127,9 +126,13 @@ final groupOrder = BigInt.parse(
 );
 
 BigInt calculateSyntheticOffset(JacobianPoint publicKey) {
+<<<<<<< HEAD
   final blob = sha256
       .convert(publicKey.toBytes() + defaultHiddenPuzzleProgram.hash())
       .bytes;
+=======
+  final blob = sha256.convert(publicKey.toBytes() + defaultHiddenPuzzleProgram.hash()).bytes;
+>>>>>>> 1474e20f97e6a1c214c0cc811329c64472215400
 
   final offset = bytesToBigInt(blob, Endian.big, signed: true);
 
@@ -144,8 +147,7 @@ PrivateKey calculateSyntheticPrivateKey(PrivateKey privateKey) {
 
   final syntheticOffset = calculateSyntheticOffset(publicKey);
 
-  final syntheticSecretExponent =
-      (secretExponent + syntheticOffset) % groupOrder;
+  final syntheticSecretExponent = (secretExponent + syntheticOffset) % groupOrder;
 
   final blob = bigIntToBytes(syntheticSecretExponent, 32, Endian.big);
   final syntheticPrivateKey = PrivateKey.fromBytes(blob);

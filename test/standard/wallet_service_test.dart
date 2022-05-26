@@ -9,6 +9,7 @@ import 'package:test/expect.dart';
 import 'package:test/scaffolding.dart';
 
 void main() {
+<<<<<<< HEAD
   final configurationProvider = ConfigurationProvider()
     ..setConfig(NetworkFactory.configId,
         {'yaml_file_path': 'lib/src/networks/chia/testnet10/config.yaml'});
@@ -22,6 +23,14 @@ void main() {
   final destinationPuzzlehash = const Address(
           'txch1pdar6hnj8c9sgm74r72u40ed8cnpduzan5vr86qkvpftg0v52jksxp6hy3')
       .toPuzzlehash();
+=======
+  ChiaNetworkContextWrapper().registerNetworkContext(Network.mainnet);
+  final walletService = StandardWalletService();
+
+  final destinationPuzzlehash =
+      const Address('txch1pdar6hnj8c9sgm74r72u40ed8cnpduzan5vr86qkvpftg0v52jksxp6hy3')
+          .toPuzzlehash();
+>>>>>>> 1474e20f97e6a1c214c0cc811329c64472215400
 
   const testMnemonic = [
     'elder',
@@ -50,11 +59,15 @@ void main() {
     'mesh',
   ];
 
-  final masterKeyPair = MasterKeyPair.fromMnemonic(testMnemonic);
+  final keychainSecret = KeychainCoreSecret.fromMnemonic(testMnemonic);
 
   final walletsSetList = <WalletSet>[
+<<<<<<< HEAD
     for (var i = 0; i < 20; i++)
       WalletSet.fromPrivateKey(masterKeyPair.masterPrivateKey, i),
+=======
+    for (var i = 0; i < 20; i++) WalletSet.fromPrivateKey(keychainSecret.masterPrivateKey, i),
+>>>>>>> 1474e20f97e6a1c214c0cc811329c64472215400
   ];
 
   final walletKeychain = WalletKeychain(walletsSetList);
@@ -217,10 +230,14 @@ void main() {
 
   test('Should create valid spendbundle with multiple payments', () {
     final spendBundle = walletService.createSpendBundle(
+<<<<<<< HEAD
       payments: [
         Payment(548000, destinationPuzzlehash),
         Payment(2000, destinationPuzzlehash)
       ],
+=======
+      payments: [Payment(548000, destinationPuzzlehash), Payment(2000, destinationPuzzlehash)],
+>>>>>>> 1474e20f97e6a1c214c0cc811329c64472215400
       coinsInput: coins,
       changePuzzlehash: changePuzzlehash,
       keychain: walletKeychain,
@@ -306,9 +323,13 @@ void main() {
     walletService.validateSpendBundle(spendBundle);
   });
 
+<<<<<<< HEAD
   test(
       'Should throw exception when change puzzlehash is not given and there is change',
       () {
+=======
+  test('Should throw exception when change puzzlehash is not given and there is change', () {
+>>>>>>> 1474e20f97e6a1c214c0cc811329c64472215400
     expect(
       () {
         walletService.createSpendBundle(

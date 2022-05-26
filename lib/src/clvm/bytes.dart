@@ -1,8 +1,11 @@
 // ignore_for_file: avoid_equals_and_hash_code_on_mutable_classes, prefer_constructors_over_static_methods, lines_longer_than_80_chars
 
+import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:chia_utils/chia_crypto_utils.dart';
+import 'package:chia_utils/src/clvm/exceptions/unexpected_end_of_bytes_exception.dart';
 import 'package:crypto/crypto.dart';
 import 'package:hex/hex.dart';
 
@@ -17,10 +20,17 @@ class Puzzlehash extends Bytes {
     return Puzzlehash(Bytes.fromHex(phHex));
   }
 
+  factory Puzzlehash.fromStream(Iterator<int> iterator) {
+    return Puzzlehash(iterator.extractBytesAndAdvance(bytesLength));
+  }
+
+  Puzzlehash.zeros() : super(List.filled(bytesLength, 0));
+
   static const bytesLength = 32;
+  static const hexLength = 64;
 }
 
-class Bytes implements List<int> {
+class Bytes extends Comparable<Bytes> implements List<int> {
   final Uint8List _byteList;
   Bytes(List<int> bytesList) : _byteList = Uint8List.fromList(bytesList);
 
@@ -28,9 +38,17 @@ class Bytes implements List<int> {
 
   String toHex() => const HexEncoder().convert(_byteList);
 
-  Uint8List get uint8List => _byteList;
-
   static Bytes get empty => Bytes([]);
+
+  Uint8List get byteList => _byteList;
+
+  factory Bytes.fromStream(Iterator<int> iterator) {
+    final lengthBytes = iterator.extractBytesAndAdvance(4);
+    final length = bytesToInt(lengthBytes, Endian.big);
+    return iterator.extractBytesAndAdvance(length);
+  }
+
+  Bytes.encodeFromString(String text) : _byteList = Uint8List.fromList(utf8.encode(text));
 
   factory Bytes.fromHex(String hex) {
     if (hex.startsWith(bytesPrefix)) {
@@ -42,10 +60,34 @@ class Bytes implements List<int> {
   }
 
   @override
-  bool operator ==(Object other) =>
-      other is Bytes &&
-      other.runtimeType == runtimeType &&
-      other.toHex() == toHex();
+  bool operator ==(Object other) => other is Bytes && other.toHex() == toHex();
+
+  bool operator >(Bytes other) {
+    final minLength = min(other.length, length);
+    if (minLength == 0) {
+      return other.length == minLength;
+    }
+
+    for (var i = 0; i < min(other.length, length); i++) {
+      if (!(this[i] == other[i])) {
+        return this[i] > other[i];
+      }
+    }
+    return false;
+  }
+
+  @override
+  int compareTo(Bytes other) {
+    if (this > other) {
+      return 1;
+    }
+    // this warning is wrong
+    // ignore: invariant_booleans
+    if (other > this) {
+      return -1;
+    }
+    return 0;
+  }
 
   @override
   int get hashCode => toHex().hashCode;
@@ -289,8 +331,7 @@ class Bytes implements List<int> {
   }
 
   @override
-  void setRange(int start, int end, Iterable<int> iterable,
-      [int skipCount = 0]) {
+  void setRange(int start, int end, Iterable<int> iterable, [int skipCount = 0]) {
     _byteList.setRange(start, end, iterable);
   }
 
@@ -355,5 +396,19 @@ class Bytes implements List<int> {
   @override
   Iterable<T> whereType<T>() {
     throw UnimplementedError();
+  }
+}
+
+// TODO(nvjoshi): find a better home for this
+extension ExtractBytesFromIterator on Iterator<int> {
+  Bytes extractBytesAndAdvance(int nBytes) {
+    final extractedBytes = <int>[];
+    for (var i = 0; i < nBytes; i++) {
+      if (!moveNext()) {
+        throw UnexpectedEndOfBytesException();
+      }
+      extractedBytes.add(current);
+    }
+    return Bytes(extractedBytes);
   }
 }
