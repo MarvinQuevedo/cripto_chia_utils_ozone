@@ -23,8 +23,8 @@ class ChiaNetworkContextWrapper extends NetworkContext {
 }
 
 enum Network {
-  mainnet,
   testnet10,
+  mainnet,
   testnet0,
 }
 
