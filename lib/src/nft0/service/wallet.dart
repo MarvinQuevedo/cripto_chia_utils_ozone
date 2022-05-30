@@ -1,8 +1,6 @@
-import 'package:chia_utils/src/nft0/puzzles/singleton_launcher/singleton_launcher.clvm.hex.dart';
-import 'package:chia_utils/src/nft0/puzzles/singleton_top_layer_v1_1/singleton_top_layer_v1_1.clvm.hex.dart';
-
 import '../../../chia_crypto_utils.dart';
 import '../../core/service/base_wallet.dart';
+import '../../singleton/index.dart';
 
 class Nft0WalletService extends BaseWalletService {
   Program createFullpuzzle(Program innerpuz, Bytes genesisId) {
