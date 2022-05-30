@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
-import 'package:chia_utils/src/bls/failed_op.dart';
-import 'package:chia_utils/src/bls/field/field.dart';
-import 'package:chia_utils/src/clvm/bytes.dart';
-import 'package:chia_utils/src/clvm/bytes_utils.dart';
-import 'package:chia_utils/src/utils/to_bytes_mixin.dart';
+import 'package:chia_crypto_utils/src/bls/failed_op.dart';
+import 'package:chia_crypto_utils/src/bls/field/field.dart';
+import 'package:chia_crypto_utils/src/clvm/bytes.dart';
+import 'package:chia_crypto_utils/src/clvm/bytes_utils.dart';
+import 'package:chia_crypto_utils/src/utils/to_bytes_mixin.dart';
 import 'package:quiver/core.dart';
 
 class Fq extends Field {
@@ -97,7 +97,8 @@ class Fq extends Field {
   }
 
   @override
-  bool equal(dynamic other) => other is Fq && value == other.value && Q == other.Q;
+  bool equal(dynamic other) =>
+      other is Fq && value == other.value && Q == other.Q;
 
   @override
   String toString() {

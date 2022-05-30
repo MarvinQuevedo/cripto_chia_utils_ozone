@@ -1,4 +1,4 @@
-import 'package:chia_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 class PlotNft with ToBytesMixin {
   PlotNft(this.singletonCoin, this.extraData, this.launcherId);
@@ -6,10 +6,16 @@ class PlotNft with ToBytesMixin {
   final PlotNftExtraData extraData;
   final Bytes launcherId;
 
-  factory PlotNft.fromCoinSpend(CoinSpend singletonCoinSpend, Bytes launcherId) {
-    final extraData = PlotNftWalletService.coinSpendToExtraData(singletonCoinSpend);
+  factory PlotNft.fromCoinSpend(
+    CoinSpend singletonCoinSpend,
+    Bytes launcherId,
+  ) {
+    final extraData =
+        PlotNftWalletService.coinSpendToExtraData(singletonCoinSpend);
     if (extraData == null) {
-      throw ArgumentError('Provided coin spend is not a valid plot nft coin spend');
+      throw ArgumentError(
+        'Provided coin spend is not a valid plot nft coin spend',
+      );
     }
     final singletonCoin = singletonCoinSpend.additions.singleWhere(
       (cs) => cs.amount == 1,

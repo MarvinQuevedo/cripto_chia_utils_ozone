@@ -1,11 +1,11 @@
 // ignore_for_file: lines_longer_than_80_chars
 
-import 'package:chia_utils/chia_crypto_utils.dart';
-import 'package:chia_utils/src/cat/exceptions/invalid_cat_exception.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/cat/exceptions/invalid_cat_exception.dart';
 import 'package:meta/meta.dart';
 
 @immutable
-class CatCoin extends CoinPrototype with ToBytesMixin{
+class CatCoin extends CoinPrototype with ToBytesMixin {
   final CoinSpend parentCoinSpend;
   final Puzzlehash assetId;
   final Program lineageProof;
@@ -18,7 +18,8 @@ class CatCoin extends CoinPrototype with ToBytesMixin{
                 parentCoinSpend.puzzleReveal.uncurry().arguments[1].atom,
               )
             : throw InvalidCatException(),
-        lineageProof = parentCoinSpend.puzzleReveal.uncurry().arguments.length > 2
+        lineageProof = parentCoinSpend.puzzleReveal.uncurry().arguments.length >
+                2
             ? Program.list([
                 Program.fromBytes(
                   parentCoinSpend.coin.parentCoinInfo,
@@ -36,7 +37,8 @@ class CatCoin extends CoinPrototype with ToBytesMixin{
           amount: coin.amount,
         ) {
     final uncurriedParentPuzzleReveal = parentCoinSpend.puzzleReveal.uncurry();
-    if (uncurriedParentPuzzleReveal.program.toSource() != catProgram.toSource()) {
+    if (uncurriedParentPuzzleReveal.program.toSource() !=
+        catProgram.toSource()) {
       throw InvalidCatException();
     }
   }
@@ -56,7 +58,11 @@ class CatCoin extends CoinPrototype with ToBytesMixin{
     return CatCoin(parentCoinSpend: parentCoinSpend, coin: coinPrototype);
   }
 
-  CoinPrototype toCoinPrototype() => CoinPrototype(parentCoinInfo: parentCoinInfo, puzzlehash: puzzlehash, amount: amount);
+  CoinPrototype toCoinPrototype() => CoinPrototype(
+        parentCoinInfo: parentCoinInfo,
+        puzzlehash: puzzlehash,
+        amount: amount,
+      );
 
   @override
   Bytes toBytes() {
@@ -88,5 +94,6 @@ class CatCoin extends CoinPrototype with ToBytesMixin{
         );
 
   @override
-  String toString() => 'CatCoin(id: $id, parentCoinInfo: $parentCoinInfo, puzzlehash: $puzzlehash, amount: $amount, assetId: $assetId)';
+  String toString() =>
+      'CatCoin(id: $id, parentCoinInfo: $parentCoinInfo, puzzlehash: $puzzlehash, amount: $amount, assetId: $assetId)';
 }

@@ -1,8 +1,8 @@
 // ignore_for_file: lines_longer_than_80_chars, avoid_equals_and_hash_code_on_mutable_classes
 
-import 'package:chia_utils/chia_crypto_utils.dart';
-import 'package:chia_utils/src/utils/serialization.dart';
 import 'package:bip39/bip39.dart' as bip39;
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/utils/serialization.dart';
 
 class WalletKeychain with ToBytesMixin {
   Map<Puzzlehash, WalletVector> hardenedMap = <Puzzlehash, WalletVector>{};
@@ -33,7 +33,10 @@ class WalletKeychain with ToBytesMixin {
 
   WalletKeychain.fromMaps(this.hardenedMap, this.unhardenedMap);
 
-  factory WalletKeychain.fromCoreSecret(KeychainCoreSecret coreSecret, int nDerivations) {
+  factory WalletKeychain.fromCoreSecret(
+    KeychainCoreSecret coreSecret,
+    int nDerivations,
+  ) {
     final walletsSetList = <WalletSet>[];
     for (var i = 0; i < nDerivations; i++) {
       final set = WalletSet.fromPrivateKey(coreSecret.masterPrivateKey, i);
@@ -83,7 +86,9 @@ class WalletKeychain with ToBytesMixin {
       final valueRight = valueLeft + valueLength;
 
       final puzzlehash = Puzzlehash(bytes.sublist(keyLeft, keyRight));
-      final walletVector = UnhardenedWalletVector.fromBytes(bytes.sublist(valueLeft, valueRight));
+      final walletVector = UnhardenedWalletVector.fromBytes(
+        bytes.sublist(valueLeft, valueRight),
+      );
 
       unhardenedMap[puzzlehash] = walletVector;
 
@@ -103,7 +108,9 @@ class WalletKeychain with ToBytesMixin {
 
   List<Puzzlehash> getOuterPuzzleHashesForAssetId(Puzzlehash assetId) {
     if (!unhardenedMap.values.first.assetIdtoOuterPuzzlehash.containsKey(assetId)) {
-      throw ArgumentError('Puzzlehashes for given Asset Id are not in keychain');
+      throw ArgumentError(
+        'Puzzlehashes for given Asset Id are not in keychain',
+      );
     }
     return unhardenedMap.values.map((v) => v.assetIdtoOuterPuzzlehash[assetId]!).toList();
   }

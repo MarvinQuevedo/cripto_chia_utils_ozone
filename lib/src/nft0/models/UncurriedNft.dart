@@ -1,8 +1,7 @@
-import 'package:chia_utils/chia_crypto_utils.dart';
-import 'package:chia_utils/src/nft0/puzzles/nft_state_layer/nft_state_layer.clvm.hex.dart';
-import 'package:chia_utils/src/nft0/puzzles/singleton_top_layer_v1_1/singleton_top_layer_v1_1.clvm.hex.dart';
-
+import '../../../chia_crypto_utils.dart';
 import '../../clvm/keywords.dart';
+import '../../singleton/index.dart';
+import '../puzzles/nft_state_layer/nft_state_layer.clvm.hex.dart';
 
 /// A simple solution for uncurry NFT puzzle.
 
@@ -86,8 +85,7 @@ class UncurriedNFT {
     final mod = uncurried.program;
     final curried_args = uncurried.arguments;
     if (mod.toSource() != singletonTopLayerProgram.toSource()) {
-      throw ArgumentError(
-          "Cannot uncurry NFT puzzle, failed on singleton top layer: Mod ${mod}");
+      throw ArgumentError("Cannot uncurry NFT puzzle, failed on singleton top layer: Mod ${mod}");
     }
     try {
       singletonStruct = curried_args[0];
@@ -96,8 +94,7 @@ class UncurriedNFT {
       singletonLauncherId = singletonStruct.rest().first();
       launcherPuzzhash = singletonStruct.rest().rest();
     } catch (e) {
-      throw ArgumentError(
-          "Cannot uncurry singleton top layer: Args ${curried_args}");
+      throw ArgumentError("Cannot uncurry singleton top layer: Args ${curried_args}");
     }
 
     //TODO [curried_args] maybe would be has the method [rest], but not found, is posible the solution if corect
@@ -106,8 +103,7 @@ class UncurriedNFT {
     final nftMod = uncurriedNft.program;
     final nftArgs = uncurriedNft.arguments;
     if (nftMod.toSource() != nftStateLayerProgram.toSource()) {
-      throw ArgumentError(
-          "Cannot uncurry NFT puzzle, failed on NFT state layer: Mod ${mod}");
+      throw ArgumentError("Cannot uncurry NFT puzzle, failed on NFT state layer: Mod ${mod}");
     }
     try {
       final nftModHash = nftArgs[0];
@@ -181,8 +177,7 @@ class UncurriedNFT {
       ownerDid: ownerDid ?? this.ownerDid,
       metadataUpdaterHash: metadataUpdaterHash ?? this.metadataUpdaterHash,
       transferProgramHash: transferProgramHash ?? this.transferProgramHash,
-      transferProgramCurryParams:
-          transferProgramCurryParams ?? this.transferProgramCurryParams,
+      transferProgramCurryParams: transferProgramCurryParams ?? this.transferProgramCurryParams,
       royaltyAddress: royaltyAddress ?? this.royaltyAddress,
       tradePricePercentage: tradePricePercentage ?? this.tradePricePercentage,
       settlementModHash: settlementModHash ?? this.settlementModHash,

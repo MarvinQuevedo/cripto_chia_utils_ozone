@@ -1,13 +1,14 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:chia_utils/chia_crypto_utils.dart';
-import 'package:chia_utils/src/bls/hkdf.dart';
-import 'package:chia_utils/src/bls/util.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/bls/hkdf.dart';
+import 'package:chia_crypto_utils/src/bls/util.dart';
 
 PrivateKey keyGen(List<int> seed) {
   const L = 48;
-  final okm = extractExpand(L, seed + [0], utf8.encode('BLS-SIG-KEYGEN-SALT-'), [0, L]);
+  final okm =
+      extractExpand(L, seed + [0], utf8.encode('BLS-SIG-KEYGEN-SALT-'), [0, L]);
   return PrivateKey(bytesToBigInt(okm, Endian.big) % defaultEc.n);
 }
 
@@ -36,7 +37,8 @@ PrivateKey deriveChildSk(PrivateKey parentSk, int index) {
 }
 
 PrivateKey deriveChildSkUnhardened(PrivateKey parentSk, int index) {
-  final h = hash256(parentSk.getG1().toBytes() + intToBytes(index, 4, Endian.big));
+  final h =
+      hash256(parentSk.getG1().toBytes() + intToBytes(index, 4, Endian.big));
   return PrivateKey.aggregate([PrivateKey.fromBytes(h), parentSk]);
 }
 

@@ -2,7 +2,7 @@
 
 import 'dart:math';
 
-import 'package:chia_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 class SpendableCat {
   CatCoin coin;
@@ -33,15 +33,16 @@ class SpendableCat {
     // calculate deltas
     for (final spendableCat in spendableCats) {
       final conditionPrograms = spendableCat.innerPuzzle
-        .run(spendableCat.innerSolution)
-        .program
-        .toList();
+          .run(spendableCat.innerSolution)
+          .program
+          .toList();
 
       var total = spendableCat.extraDelta * -1;
       for (final createCoinConditionProgram
           in conditionPrograms.where(CreateCoinCondition.isThisCondition)) {
         if (!createCoinConditionProgram.toSource().contains('-113')) {
-          final createCoinCondition = CreateCoinCondition.fromProgram(createCoinConditionProgram);
+          final createCoinCondition =
+              CreateCoinCondition.fromProgram(createCoinConditionProgram);
           total += createCoinCondition.amount;
         }
       }
@@ -69,5 +70,6 @@ class SpendableCat {
   }
 
   @override
-  String toString() => 'SpendableCat(coin: $coin, innerPuzzle: $innerPuzzle, innerSolution: $innerSolution)';
+  String toString() =>
+      'SpendableCat(coin: $coin, innerPuzzle: $innerPuzzle, innerSolution: $innerSolution)';
 }

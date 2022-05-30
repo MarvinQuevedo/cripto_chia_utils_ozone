@@ -1,6 +1,6 @@
 // ignore_for_file: lines_longer_than_80_chars
 
-import 'package:chia_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 class RunTailCondition implements Condition {
   static int conditionCode = 51;
@@ -27,7 +27,7 @@ class RunTailCondition implements Condition {
     if (conditionParts.length != 5) {
       return false;
     }
-    if (conditionParts[0].toInt() != conditionCode || 
+    if (conditionParts[0].toInt() != conditionCode ||
         conditionParts[2].toInt() != magicCatNumber) {
       return false;
     }
@@ -35,5 +35,6 @@ class RunTailCondition implements Condition {
   }
 
   @override
-  String toString() => 'RunTailCondition(code: $conditionCode, tail: $tail, tailSolution: $tailSolution)';
+  String toString() =>
+      'RunTailCondition(code: $conditionCode, tail: $tail, tailSolution: $tailSolution)';
 }
