@@ -1,5 +1,4 @@
-import 'package:chia_utils/chia_crypto_utils.dart';
-
+import '../../../chia_crypto_utils.dart';
 import 'lineage_proof.dart';
 
 class NftCoin {
