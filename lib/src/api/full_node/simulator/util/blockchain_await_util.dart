@@ -2,11 +2,13 @@
 
 import 'dart:async';
 
-import 'package:chia_utils/src/api/full_node/full_node.dart';
-
+import 'package:chia_crypto_utils/src/api/full_node/full_node.dart';
 
 class BlockchainAwaitUtil {
-  BlockchainAwaitUtil(this.fullNode, {this.timeoutMilliseconds = defaultTimeout});
+  BlockchainAwaitUtil(
+    this.fullNode, {
+    this.timeoutMilliseconds = defaultTimeout,
+  });
 
   static const int defaultTimeout = 10000;
 
@@ -19,7 +21,10 @@ class BlockchainAwaitUtil {
     // ignore: avoid_dynamic_calls
     await callback();
 
-    final timer = Timer(Duration(milliseconds: timeoutMilliseconds), () => throw TimeoutException('Took too long to update state'),);
+    final timer = Timer(
+      Duration(milliseconds: timeoutMilliseconds),
+      () => throw TimeoutException('Took too long to update state'),
+    );
 
     var currentHeight = startHeight;
     while (currentHeight == startHeight) {

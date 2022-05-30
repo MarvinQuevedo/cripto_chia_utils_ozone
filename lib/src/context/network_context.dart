@@ -1,6 +1,6 @@
 // ignore_for_file: lines_longer_than_80_chars
 
-import 'package:chia_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:get_it/get_it.dart';
 
 class NetworkContext {
@@ -13,7 +13,8 @@ class NetworkContext {
   }
 
   void setLoader(BlockchainNetworkLoaderFunction loader) {
-    BlockchainNetwork blockchainNetworkFactory() => loader(getIt.get<BlockchainNetworkPath>());
+    BlockchainNetwork blockchainNetworkFactory() =>
+        loader(getIt.get<BlockchainNetworkPath>());
     getIt
       ..registerLazySingleton<BlockchainNetwork>(blockchainNetworkFactory)
       ..allowReassignment = true;

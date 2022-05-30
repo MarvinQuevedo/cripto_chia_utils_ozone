@@ -1,5 +1,5 @@
 @Skip('interacts with mainnet')
-import 'package:chia_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:test/scaffolding.dart';
 
 Future<void> main() async {
@@ -26,11 +26,14 @@ Future<void> main() async {
 
   final targetPuzzleHash = keychain.unhardenedMap.values.first.puzzlehash;
 
-  final targetAddress =
-      Address.fromPuzzlehash(targetPuzzleHash, NetworkContext().blockchainNetwork.addressPrefix);
+  final targetAddress = Address.fromPuzzlehash(
+    targetPuzzleHash,
+    NetworkContext().blockchainNetwork.addressPrefix,
+  );
   print(targetAddress.address);
 
-  final coins = await fullNode.getCoinsByPuzzleHashes([targetPuzzleHash], includeSpentCoins: true);
+  final coins = await fullNode
+      .getCoinsByPuzzleHashes([targetPuzzleHash], includeSpentCoins: true);
 
   coins.sort(
     (a, b) => b.spentBlockIndex.compareTo(a.spentBlockIndex),
@@ -44,8 +47,9 @@ Future<void> main() async {
 
   final initialTargetState = PoolState(
     poolSingletonState: PoolSingletonState.farmingToPool,
-    targetPuzzlehash:
-        Puzzlehash.fromHex('6bde1e0c6f9d3b93dc5e7e878723257ede573deeed59e3b4a90f5c86de1a0bd3'),
+    targetPuzzlehash: Puzzlehash.fromHex(
+      '6bde1e0c6f9d3b93dc5e7e878723257ede573deeed59e3b4a90f5c86de1a0bd3',
+    ),
     ownerPublicKey: keychain.unhardenedMap.values.first.childPublicKey,
     relativeLockHeight: 100,
     poolUrl: 'https://xch-us-west.flexpool.io',
@@ -60,11 +64,13 @@ Future<void> main() async {
     genesisCoinId: genesisCoin.id,
   );
   await fullNode.pushTransaction(plotNftSpendBundle);
-  final launcherCoinPrototype = PlotNftWalletService.makeLauncherCoin(genesisCoin.id);
+  final launcherCoinPrototype =
+      PlotNftWalletService.makeLauncherCoin(genesisCoin.id);
 
   print('launcher_id: ${launcherCoinPrototype.id}');
   print(
-      'farmer_public_key: ${masterSkToFarmerSk(keychainSecret.masterPrivateKey).getG1().toHex()}',);
+    'farmer_public_key: ${masterSkToFarmerSk(keychainSecret.masterPrivateKey).getG1().toHex()}',
+  );
   final poolPuzzlehash = poolWalletService.launcherIdToP2Puzzlehash(
     launcherCoinPrototype.id,
     p2SingletonDelayedTime,
@@ -85,6 +91,10 @@ Future<void> main() async {
 
     print('singleton_puzzle_hash: ${launcherCoinSpend!.solution.first()}');
     print('pool_state:');
-    print(PlotNft.fromCoinSpend(launcherCoinSpend, launcherCoin.id).extraData.poolState);
+    print(
+      PlotNft.fromCoinSpend(launcherCoinSpend, launcherCoin.id)
+          .extraData
+          .poolState,
+    );
   }
 }

@@ -2,12 +2,12 @@
 
 import 'dart:typed_data';
 
-import 'package:chia_utils/chia_crypto_utils.dart';
-import 'package:chia_utils/src/core/service/base_wallet.dart';
-import 'package:chia_utils/src/singleton/puzzles/p2_singleton_or_delayed_puzhash/p2_singleton_or_delayed_puzhash.clvm.hex.dart';
-import 'package:chia_utils/src/singleton/puzzles/singleton_launcher/singleton_launcher.clvm.hex.dart';
-import 'package:chia_utils/src/singleton/puzzles/singleton_top_layer/singleton_top_layer.clvm.hex.dart';
-import 'package:chia_utils/src/singleton/puzzles/singleton_top_layer_v1_1/singleton_top_layer_v1_1.clvm.hex.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
+import 'package:chia_crypto_utils/src/singleton/puzzles/p2_singleton_or_delayed_puzhash/p2_singleton_or_delayed_puzhash.clvm.hex.dart';
+import 'package:chia_crypto_utils/src/singleton/puzzles/singleton_launcher/singleton_launcher.clvm.hex.dart';
+import 'package:chia_crypto_utils/src/singleton/puzzles/singleton_top_layer/singleton_top_layer.clvm.hex.dart';
+import 'package:chia_crypto_utils/src/singleton/puzzles/singleton_top_layer_v1_1/singleton_top_layer_v1_1.clvm.hex.dart';
 
 class SingletonService extends BaseWalletService {
   static Program puzzleForSingleton(
@@ -32,7 +32,11 @@ class SingletonService extends BaseWalletService {
         ),
       );
 
-  static Program makeSingletonLauncherSolution(int amount, Puzzlehash puzzlehash) => Program.list([
+  static Program makeSingletonLauncherSolution(
+    int amount,
+    Puzzlehash puzzlehash,
+  ) =>
+      Program.list([
         Program.fromBytes(puzzlehash),
         Program.fromInt(amount),
         Program.fromBytes(List.filled(128, 0)),

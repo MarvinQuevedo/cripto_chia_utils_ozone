@@ -1,7 +1,7 @@
 // ignore_for_file: lines_longer_than_80_chars
 
-import 'package:chia_utils/chia_crypto_utils.dart';
-import 'package:chia_utils/src/utils/serialization.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/utils/serialization.dart';
 import 'package:meta/meta.dart';
 
 @immutable
@@ -28,7 +28,8 @@ class Coin extends CoinPrototype with ToBytesMixin {
         );
 
   factory Coin.fromChiaCoinRecordJson(Map<String, dynamic> json) {
-    final coinPrototype = CoinPrototype.fromJson(json['coin'] as Map<String, dynamic>);
+    final coinPrototype =
+        CoinPrototype.fromJson(json['coin'] as Map<String, dynamic>);
     return Coin(
       confirmedBlockIndex: json['confirmed_block_index'] as int,
       spentBlockIndex: json['spent_block_index'] as int,
@@ -55,7 +56,10 @@ class Coin extends CoinPrototype with ToBytesMixin {
     length = decodeInt(bytes.sublist(right, right + 4));
     left = right + 4;
     right = left + length;
-    assert(bytes.sublist(left, right).length == 1, 'bool should have only one byte');
+    assert(
+      bytes.sublist(left, right).length == 1,
+      'bool should have only one byte',
+    );
     final coinbase = bytes.sublist(left, right)[0] == 1;
 
     length = decodeInt(bytes.sublist(right, right + 4));
@@ -79,7 +83,11 @@ class Coin extends CoinPrototype with ToBytesMixin {
     );
   }
 
-  CoinPrototype toCoinPrototype() => CoinPrototype(parentCoinInfo: parentCoinInfo, puzzlehash: puzzlehash, amount: amount);
+  CoinPrototype toCoinPrototype() => CoinPrototype(
+        parentCoinInfo: parentCoinInfo,
+        puzzlehash: puzzlehash,
+        amount: amount,
+      );
 
   @override
   Bytes toBytes() {
@@ -95,5 +103,6 @@ class Coin extends CoinPrototype with ToBytesMixin {
   }
 
   @override
-  String toString() => 'Coin(id: $id, parentCoinInfo: $parentCoinInfo puzzlehash: $puzzlehash, amount: $amount, confirmedBlockIndex: $confirmedBlockIndex), spentBlockIndex: $spentBlockIndex, coinbase: $coinbase, timestamp: $timestamp';
+  String toString() =>
+      'Coin(id: $id, parentCoinInfo: $parentCoinInfo puzzlehash: $puzzlehash, amount: $amount, confirmedBlockIndex: $confirmedBlockIndex), spentBlockIndex: $spentBlockIndex, coinbase: $coinbase, timestamp: $timestamp';
 }

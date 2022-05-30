@@ -1,7 +1,7 @@
 // ignore_for_file: lines_longer_than_80_chars
 
-import 'package:chia_utils/chia_crypto_utils.dart';
-import 'package:chia_utils/src/standard/exceptions/invalid_condition_cast_exception.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/standard/exceptions/invalid_condition_cast_exception.dart';
 
 class AssertMyCoinIdCondition implements Condition {
   static int conditionCode = 70;
@@ -38,5 +38,6 @@ class AssertMyCoinIdCondition implements Condition {
   }
 
   @override
-  String toString() => 'AssertMyCoinIdCondition(code: $conditionCode, coinId: $coinId)';
+  String toString() =>
+      'AssertMyCoinIdCondition(code: $conditionCode, coinId: $coinId)';
 }

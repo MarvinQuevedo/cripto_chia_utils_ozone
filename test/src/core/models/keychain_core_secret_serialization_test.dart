@@ -1,4 +1,4 @@
-import 'package:chia_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -6,7 +6,8 @@ void main() {
 
   test('should serialize and deserialize keychain core secret', () {
     final keychainsSecretSerialized = keychainSecret.toBytes();
-    final keychainSecretDeSerialized = KeychainCoreSecret.fromBytes(keychainsSecretSerialized);
+    final keychainSecretDeSerialized =
+        KeychainCoreSecret.fromBytes(keychainsSecretSerialized);
     final keychainSecretReSerialized = keychainSecretDeSerialized.toBytes();
 
     expect(keychainSecretReSerialized, equals(keychainsSecretSerialized));

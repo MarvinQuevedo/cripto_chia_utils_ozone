@@ -2,7 +2,7 @@
 
 import 'dart:io';
 
-import 'package:chia_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:path/path.dart' as path;
 
 class FullNodeUtils {
@@ -13,7 +13,8 @@ class FullNodeUtils {
 
   static const String defaultUrl = 'https://localhost:8555';
 
-  String get checkNetworkMessage => 'Check if your full node is runing on $network';
+  String get checkNetworkMessage =>
+      'Check if your full node is runing on $network';
 
   String get sslPath => 'lib/src/networks/chia/${network.name}/ssl';
 

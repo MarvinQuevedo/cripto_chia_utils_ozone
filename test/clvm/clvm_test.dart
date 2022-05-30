@@ -1,4 +1,4 @@
-import 'package:chia_utils/src/clvm/program.dart';
+import 'package:chia_crypto_utils/src/clvm/program.dart';
 import 'package:hex/hex.dart';
 import 'package:test/expect.dart';
 import 'package:test/scaffolding.dart';

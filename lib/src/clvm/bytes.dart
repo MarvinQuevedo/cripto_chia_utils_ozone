@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:chia_utils/chia_crypto_utils.dart';
-import 'package:chia_utils/src/clvm/exceptions/unexpected_end_of_bytes_exception.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/clvm/exceptions/unexpected_end_of_bytes_exception.dart';
 import 'package:crypto/crypto.dart';
 import 'package:hex/hex.dart';
 
@@ -48,7 +48,8 @@ class Bytes extends Comparable<Bytes> implements List<int> {
     return iterator.extractBytesAndAdvance(length);
   }
 
-  Bytes.encodeFromString(String text) : _byteList = Uint8List.fromList(utf8.encode(text));
+  Bytes.encodeFromString(String text)
+      : _byteList = Uint8List.fromList(utf8.encode(text));
 
   factory Bytes.fromHex(String hex) {
     if (hex.startsWith(bytesPrefix)) {
@@ -331,7 +332,8 @@ class Bytes extends Comparable<Bytes> implements List<int> {
   }
 
   @override
-  void setRange(int start, int end, Iterable<int> iterable, [int skipCount = 0]) {
+  void setRange(int start, int end, Iterable<int> iterable,
+      [int skipCount = 0]) {
     _byteList.setRange(start, end, iterable);
   }
 

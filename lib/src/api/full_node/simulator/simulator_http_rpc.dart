@@ -2,7 +2,7 @@
 
 import 'dart:convert';
 
-import 'package:chia_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 class SimulatorHttpRpc extends FullNodeHttpRpc {
   const SimulatorHttpRpc(String baseUrl, {Bytes? certBytes, Bytes? keyBytes})
@@ -19,6 +19,8 @@ class SimulatorHttpRpc extends FullNodeHttpRpc {
     );
     FullNodeHttpRpc.mapResponseToError(responseData);
 
-    return ChiaBaseResponse.fromJson(jsonDecode(responseData.body) as Map<String, dynamic>);
+    return ChiaBaseResponse.fromJson(
+      jsonDecode(responseData.body) as Map<String, dynamic>,
+    );
   }
 }
