@@ -1,4 +1,4 @@
-import 'package:chia_utils/chia_crypto_utils.dart';
+import '../../../chia_crypto_utils.dart';
 
 /// NFT Info for displaying NFT on the UI
 class NFTInfo {

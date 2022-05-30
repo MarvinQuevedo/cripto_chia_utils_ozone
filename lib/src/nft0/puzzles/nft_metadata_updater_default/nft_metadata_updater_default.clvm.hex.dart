@@ -1,6 +1,5 @@
 // ignore_for_file: lines_longer_than_80_chars
-
-import 'package:chia_utils/chia_crypto_utils.dart';
+import '../../../clvm.dart';
 
 final nftMetadataUpdaterDefaultProgram = Program.deserializeHex(
   'ff02ffff01ff04ffff04ffff02ffff03ff17ffff01ff02ff02ffff04ff02ffff04ff05ffff04ff17ff8080808080ffff010580ff0180ffff04ff0bff808080ffff01ff808080ffff04ffff01ff02ffff03ff05ffff01ff02ffff03ffff09ff11ffff017580ffff01ff04ffff04ffff0175ffff04ff0bff198080ff0d80ffff01ff04ff09ffff02ff02ffff04ff02ffff04ff0dffff04ff0bff80808080808080ff0180ff8080ff0180ff018080',
