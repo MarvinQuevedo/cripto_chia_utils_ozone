@@ -30,6 +30,21 @@ class SingletonWalletVector with ToBytesMixin {
     final iterator = bytes.iterator;
     return SingletonWalletVector.fromStream(iterator);
   }
+  factory SingletonWalletVector.fromMap(Map<String, dynamic> map) {
+    return SingletonWalletVector(
+      singletonOwnerPrivateKey: PrivateKey.fromHex(map['singletonOwnerPrivateKey']),
+      poolingAuthenticationPrivateKey: PrivateKey.fromHex(map['poolingAuthenticationPrivateKey']),
+      derivationIndex: map['derivationIndex'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'singletonOwnerPrivateKey': singletonOwnerPrivateKey.toHex(),
+      'poolingAuthenticationPrivateKey': poolingAuthenticationPrivateKey.toHex(),
+      'derivationIndex': derivationIndex,
+    };
+  }
 
   final PrivateKey singletonOwnerPrivateKey;
   final PrivateKey poolingAuthenticationPrivateKey;

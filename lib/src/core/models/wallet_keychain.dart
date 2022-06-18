@@ -15,7 +15,7 @@ class WalletKeychain with ToBytesMixin {
   WalletKeychain._internal(
       {required this.hardenedMap,
       required this.unhardenedMap,
-      this.singletonWalletVectorsMap = const {}});
+      required this.singletonWalletVectorsMap});
 
   factory WalletKeychain.fromWalletSets(List<WalletSet> walletSets) {
     final newHardenedMap = <Puzzlehash, WalletVector>{};
@@ -231,16 +231,29 @@ class WalletKeychain with ToBytesMixin {
       final unhardenedWalletVector = UnhardenedWalletVector.fromMap(value);
       unhardenedMap[puzzlehash] = unhardenedWalletVector;
     }
-
+    Map<JacobianPoint, SingletonWalletVector> singletonWalletVectorsMap = {};
+    if (json['singletonWalletVectorsMap'] != null) {
+      final singletonWalletVectorsMapJson =
+          json['singletonWalletVectorsMap'] as Map<String, dynamic>;
+      singletonWalletVectorsMap = {};
+      for (final key in singletonWalletVectorsMapJson.keys) {
+        final value = singletonWalletVectorsMapJson[key] as Map<String, dynamic>;
+        final singletonOwnerPublicKey = JacobianPoint.fromBytesG1(Bytes.fromHex(key));
+        final singletonWalletVector = SingletonWalletVector.fromMap(value);
+        singletonWalletVectorsMap[singletonOwnerPublicKey] = singletonWalletVector;
+      }
+    }
     return WalletKeychain._internal(
-      hardenedMap: hardenedMap,
-      unhardenedMap: unhardenedMap,
-    );
+        hardenedMap: hardenedMap,
+        unhardenedMap: unhardenedMap,
+        singletonWalletVectorsMap: singletonWalletVectorsMap);
   }
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{};
     map['hardenedMap'] = hardenedMap.map((k, v) => MapEntry(k.toHex(), v.toMap()));
     map['unhardenedMap'] = unhardenedMap.map((k, v) => MapEntry(k.toHex(), v.toMap()));
+    map['singletonWalletVectorsMap'] =
+        singletonWalletVectorsMap.map((k, v) => MapEntry(k.toBytes().toHex(), v.toMap()));
     return map;
   }
 }
