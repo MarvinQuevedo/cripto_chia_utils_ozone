@@ -4,6 +4,7 @@
 .dart_tool/
 .packages
 build/
+
 # If you're building an application, you may want to check-in your pubspec.lock
 pubspec.lock
 
@@ -22,8 +23,11 @@ doc/api/
 
 *.DS_Store
 
+# Ignore downloaded entities
+mozilla-ca
+
 # Ignore IDE generated folders
 .idea
 
 # Ignore generated plots
-integration_test/simulator/temp
+lib/src/api/full_node/simulator/run/temp

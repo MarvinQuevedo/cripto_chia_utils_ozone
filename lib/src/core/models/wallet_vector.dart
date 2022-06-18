@@ -7,7 +7,6 @@ import 'package:meta/meta.dart';
 class WalletVector with ToBytesMixin {
   WalletVector({
     required this.childPrivateKey,
-    required this.childPublicKey,
     required this.puzzlehash,
     Map<Puzzlehash, Puzzlehash>? assetIdtoOuterPuzzlehash,
   }) {
@@ -15,40 +14,26 @@ class WalletVector with ToBytesMixin {
   }
   late final Map<Puzzlehash, Puzzlehash> assetIdtoOuterPuzzlehash;
 
-  factory WalletVector.fromBytes(Bytes bytes) {
-    var length = decodeInt(bytes.sublist(0, 4));
-    var left = 4;
-    var right = left + length;
-
-    final childPrivateKey = PrivateKey.fromBytes(bytes.sublist(left, right));
-
-    length = decodeInt(bytes.sublist(right, right + 4));
-    left = right + 4;
-    right = left + length;
-    final childPublicKey = JacobianPoint.fromBytes(
-      bytes.sublist(left, right),
-      bytes[right] == 1,
-    );
-
-    length = decodeInt(bytes.sublist(right + 1, right + 5));
-    left = right + 5;
-    right = left + length;
-
-    final puzzlehash = Puzzlehash(bytes.sublist(left, right));
+  factory WalletVector.fromStream(Iterator<int> iterator) {
+    final childPrivateKey = PrivateKey.fromStream(iterator);
+    final puzzlehash = Puzzlehash.fromStream(iterator);
 
     return WalletVector(
       childPrivateKey: childPrivateKey,
-      childPublicKey: childPublicKey,
       puzzlehash: puzzlehash,
     );
+  }
+
+  factory WalletVector.fromBytes(Bytes bytes) {
+    final iterator = bytes.iterator;
+    return WalletVector.fromStream(iterator);
   }
 
   factory WalletVector.fromPrivateKey(
     PrivateKey masterPrivateKey,
     int derivationIndex,
   ) {
-    final childPrivateKeyHardened =
-        masterSkToWalletSk(masterPrivateKey, derivationIndex);
+    final childPrivateKeyHardened = masterSkToWalletSk(masterPrivateKey, derivationIndex);
     final childPublicKeyHardened = childPrivateKeyHardened.getG1();
 
     final puzzleHardened = getPuzzleFromPk(childPublicKeyHardened);
@@ -56,13 +41,12 @@ class WalletVector with ToBytesMixin {
 
     return WalletVector(
       childPrivateKey: childPrivateKeyHardened,
-      childPublicKey: childPublicKeyHardened,
       puzzlehash: puzzlehashHardened,
     );
   }
 
   final PrivateKey childPrivateKey;
-  final JacobianPoint childPublicKey;
+  JacobianPoint get childPublicKey => childPrivateKey.getG1();
   final Puzzlehash puzzlehash;
 
   @override
@@ -84,19 +68,7 @@ class WalletVector with ToBytesMixin {
 
   @override
   Bytes toBytes() {
-    final childPrivateKeyBytes = childPrivateKey.toBytes();
-    final childPublicKeyBytes = childPublicKey.toBytes();
-    final puzzlehashBytes = puzzlehash;
-
-    return Bytes([
-      ...intTo32Bytes(childPrivateKeyBytes.length),
-      ...childPrivateKeyBytes,
-      ...intTo32Bytes(childPublicKeyBytes.length),
-      ...childPublicKeyBytes,
-      if (childPublicKey.isExtension) 1 else 0,
-      ...intTo32Bytes(puzzlehashBytes.length),
-      ...puzzlehashBytes,
-    ]);
+    return childPrivateKey.toBytes() + puzzlehash.byteList;
   }
 
   Map<String, dynamic> toMap() {
@@ -141,14 +113,11 @@ class WalletVector with ToBytesMixin {
 class UnhardenedWalletVector extends WalletVector {
   UnhardenedWalletVector({
     required PrivateKey childPrivateKey,
-    required JacobianPoint childPublicKey,
     required Puzzlehash puzzlehash,
     Map<Puzzlehash, Puzzlehash>? assetIdtoOuterPuzzlehash,
-  })  : assetIdtoOuterPuzzlehash =
-            assetIdtoOuterPuzzlehash ?? <Puzzlehash, Puzzlehash>{},
+  })  : assetIdtoOuterPuzzlehash = assetIdtoOuterPuzzlehash ?? <Puzzlehash, Puzzlehash>{},
         super(
           childPrivateKey: childPrivateKey,
-          childPublicKey: childPublicKey,
           puzzlehash: puzzlehash,
         );
 
@@ -165,80 +134,43 @@ class UnhardenedWalletVector extends WalletVector {
 
     return UnhardenedWalletVector(
       childPrivateKey: childPrivateKeyUnhardened,
-      childPublicKey: childPublicKeyUnhardened,
       puzzlehash: puzzlehashUnhardened,
     );
   }
 
   @override
   Bytes toBytes() {
-    final childPrivateKeyBytes = childPrivateKey.toBytes();
-    final childPublicKeyBytes = childPublicKey.toBytes();
-    final puzzlehashBytes = puzzlehash;
+    var bytesList = <int>[];
+    bytesList += childPrivateKey.toBytes();
+    bytesList += puzzlehash.byteList;
 
-    final assetIdMapBytes = <int>[];
+    bytesList += intTo32Bits(assetIdtoOuterPuzzlehash.length);
+
     assetIdtoOuterPuzzlehash.forEach((assetId, outerPuzzlehash) {
-      assetIdMapBytes
+      bytesList
         ..addAll(assetId)
         ..addAll(outerPuzzlehash);
     });
 
-    return Bytes([
-      ...intTo32Bytes(childPrivateKeyBytes.length),
-      ...childPrivateKeyBytes,
-      ...intTo32Bytes(childPublicKeyBytes.length),
-      ...childPublicKeyBytes,
-      if (childPublicKey.isExtension) 1 else 0,
-      ...intTo32Bytes(puzzlehashBytes.length),
-      ...puzzlehashBytes,
-      ...intTo32Bytes(assetIdtoOuterPuzzlehash.length),
-      ...assetIdMapBytes,
-    ]);
+    return Bytes(bytesList);
   }
 
-  factory UnhardenedWalletVector.fromBytes(Bytes bytes) {
-    var length = decodeInt(bytes.sublist(0, 4));
-    var left = 4;
-    var right = left + length;
+  factory UnhardenedWalletVector.fromStream(Iterator<int> iterator) {
+    final childPrivateKey = PrivateKey.fromStream(iterator);
+    final puzzlehash = Puzzlehash.fromStream(iterator);
 
-    final childPrivateKey = PrivateKey.fromBytes(bytes.sublist(left, right));
-
-    length = decodeInt(bytes.sublist(right, right + 4));
-    left = right + 4;
-    right = left + length;
-    final childPublicKey = JacobianPoint.fromBytes(
-      bytes.sublist(left, right),
-      bytes[right] == 1,
-    );
-
-    length = decodeInt(bytes.sublist(right + 1, right + 5));
-    left = right + 5;
-    right = left + length;
-
-    final puzzlehash = Puzzlehash(bytes.sublist(left, right));
-
-    length = decodeInt(bytes.sublist(right, right + 4));
     final assetIdToOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
 
-    var assetIdLeft = right + 4;
-    var assetIdRight = assetIdLeft + Puzzlehash.bytesLength;
-    var outerPuzzlehashLeft = assetIdRight;
-    var outerPuzzlehashRight = outerPuzzlehashLeft + Puzzlehash.bytesLength;
-    for (var i = 0; i < length; i++) {
-      final assetId = Puzzlehash(bytes.sublist(assetIdLeft, assetIdRight));
-      final outerPuzzlehash =
-          Puzzlehash(bytes.sublist(outerPuzzlehashLeft, outerPuzzlehashRight));
-      assetIdToOuterPuzzlehashMap[assetId] = outerPuzzlehash;
+    final assetIdMapLength = intFrom32BitsStream(iterator);
 
-      assetIdLeft = outerPuzzlehashRight;
-      assetIdRight = assetIdLeft + Puzzlehash.bytesLength;
-      outerPuzzlehashLeft = assetIdRight;
-      outerPuzzlehashRight = outerPuzzlehashLeft + Puzzlehash.bytesLength;
+    for (var _ = 0; _ < assetIdMapLength; _++) {
+      final assetId = Puzzlehash.fromStream(iterator);
+      final outerPuzzlehash = Puzzlehash.fromStream(iterator);
+      assetIdToOuterPuzzlehashMap[assetId] = outerPuzzlehash;
     }
 
     return UnhardenedWalletVector(
       childPrivateKey: childPrivateKey,
-      childPublicKey: childPublicKey,
       puzzlehash: puzzlehash,
       assetIdtoOuterPuzzlehash: assetIdToOuterPuzzlehashMap,
     );
@@ -261,10 +193,14 @@ class UnhardenedWalletVector extends WalletVector {
 
     return UnhardenedWalletVector(
       childPrivateKey: childPrivateKey,
-      childPublicKey: childPublicKey,
+      // childPublicKey: childPublicKey,
       puzzlehash: puzzlehash,
       assetIdtoOuterPuzzlehash: assetIdtoOuterPuzzlehashMap,
     );
+  }
+  factory UnhardenedWalletVector.fromBytes(Bytes bytes) {
+    final iterator = bytes.iterator;
+    return UnhardenedWalletVector.fromStream(iterator);
   }
 
   @override
@@ -286,8 +222,7 @@ class UnhardenedWalletVector extends WalletVector {
     }
 
     for (final assetId in assetIdtoOuterPuzzlehash.keys) {
-      if (other.assetIdtoOuterPuzzlehash[assetId] !=
-          assetIdtoOuterPuzzlehash[assetId]) {
+      if (other.assetIdtoOuterPuzzlehash[assetId] != assetIdtoOuterPuzzlehash[assetId]) {
         return false;
       }
     }

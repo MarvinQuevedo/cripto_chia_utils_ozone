@@ -49,7 +49,7 @@ void main() {
     for (var i = 0; i < 20; i++) WalletSet.fromPrivateKey(keychainSecret.masterPrivateKey, i),
   ];
 
-  final walletKeychain = WalletKeychain(walletsSetList);
+  final walletKeychain = WalletKeychain.fromWalletSets(walletsSetList);
 
   final coinPuzzlehash = walletKeychain.unhardenedMap.values.toList()[0].puzzlehash;
   final changePuzzlehash = walletKeychain.unhardenedMap.values.toList()[1].puzzlehash;
