@@ -10,15 +10,13 @@ class SimulatorUtils {
   static String defaultUrl = 'https://localhost:5000';
 
   // if you are using this class outside of chia-crypto-utils you must set FULL_NODE_SIMULATOR_GEN_PATH
-  static String simulatorGeneratedFilesPathVariableName =
-      'FULL_NODE_SIMULATOR_GEN_PATH';
+  static String simulatorGeneratedFilesPathVariableName = 'FULL_NODE_SIMULATOR_GEN_PATH';
   static String get defaultgeneratedFilesPath =>
       path.join(path.current, 'lib/src/api/full_node/simulator/run');
 
   static String get generatedFilesPath {
     final env = Platform.environment;
-    return env[simulatorGeneratedFilesPathVariableName] ??
-        defaultgeneratedFilesPath;
+    return env[simulatorGeneratedFilesPathVariableName] ?? defaultgeneratedFilesPath;
   }
 
   static String get simulatorUrl {
@@ -52,22 +50,16 @@ class SimulatorUtils {
   }
 
   static Future<bool> checkIfSimulatorIsRunning() async {
-    SimulatorHttpRpc? simulatorRpc;
-    try {
-      simulatorRpc = SimulatorHttpRpc(
-        simulatorUrl,
-        certBytes: certBytes,
-        keyBytes: keyBytes,
-      );
-    } on SimulatorAuthFilesNotFoundException {
-      // if cert/keys havent been generated then the simulator can't be running
-      return false;
-    }
+    final simulatorRpc = SimulatorHttpRpc(
+      simulatorUrl,
+      certBytes: certBytes,
+      keyBytes: keyBytes,
+    );
 
     final simulator = SimulatorFullNodeInterface(simulatorRpc);
     try {
       await simulator.getBlockchainState();
-    } on SocketException {
+    } on NotRunningException {
       return false;
     }
     return true;

@@ -3,7 +3,9 @@
 import 'dart:convert';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:meta/meta.dart';
 
+@immutable
 class Payment {
   final int amount;
   final Puzzlehash puzzlehash;
@@ -15,9 +17,7 @@ class Payment {
             : memos is List<String>
                 ? memos.map((memo) => Bytes(utf8.encode(memo))).toList()
                 : memos is List<int>
-                    ? memos
-                        .map((memo) => Bytes(utf8.encode(memo.toString())))
-                        .toList()
+                    ? memos.map((memo) => Bytes(utf8.encode(memo.toString()))).toList()
                     : memos is List<Bytes>
                         ? memos
                         : throw ArgumentError(
@@ -43,12 +43,23 @@ class Payment {
     return Payment(
       programList[1].toInt(),
       Puzzlehash(programList[0].atom),
-      memos: programList.length > 2
-          ? programList[2].toList().map((p) => p.atom).toList()
-          : <Bytes>[],
+      memos:
+          programList.length > 2 ? programList[2].toList().map((p) => p.atom).toList() : <Bytes>[],
     );
   }
   @override
-  String toString() =>
-      'Payment(amount: $amount, puzzlehash: $puzzlehash, memos: $memos)';
+  String toString() => 'Payment(amount: $amount, puzzlehash: $puzzlehash, memos: $memos)';
+
+  @override
+  bool operator ==(Object other) =>
+      other is Payment && puzzlehash == other.puzzlehash && amount == other.amount;
+
+  @override
+  int get hashCode => puzzlehash.hashCode ^ amount.hashCode;
+}
+
+extension PaymentValue on List<Payment> {
+  int get totalValue {
+    return fold(0, (int previousValue, payment) => previousValue + payment.amount);
+  }
 }

@@ -10,13 +10,21 @@ import 'package:meta/meta.dart';
 class FullNodeHttpRpc implements FullNode {
   const FullNodeHttpRpc(this.baseURL, {this.certBytes, this.keyBytes});
 
+  factory FullNodeHttpRpc.fromContext() {
+    final fullNodeContext = FullNodeContext();
+    return FullNodeHttpRpc(
+      fullNodeContext.url,
+      certBytes: fullNodeContext.certificateBytes,
+      keyBytes: fullNodeContext.keyBytes,
+    );
+  }
+
   @override
   final String baseURL;
   final Bytes? certBytes;
   final Bytes? keyBytes;
 
-  Client get client =>
-      Client(baseURL, certBytes: certBytes, keyBytes: keyBytes);
+  Client get client => Client(baseURL, certBytes: certBytes, keyBytes: keyBytes);
 
   @override
   Future<CoinRecordsResponse> getCoinRecordsByPuzzleHashes(
@@ -61,6 +69,43 @@ class FullNodeHttpRpc implements FullNode {
   }
 
   @override
+  Future<CoinRecordsResponse> getCoinsByHint(Bytes hint) async {
+    final response = await client.post(Uri.parse('get_coin_records_by_hint'), {
+      'hint': hint.toHex(),
+    });
+    mapResponseToError(response);
+
+    return CoinRecordsResponse.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
+  @override
+  Future<CoinRecordsResponse> getCoinsByParentIds(
+    List<Bytes> parentIds, {
+    int? startHeight,
+    int? endHeight,
+    bool includeSpentCoins = false,
+  }) async {
+    final body = <String, dynamic>{
+      'parent_ids': parentIds.map((parentId) => parentId.toHex()).toList(),
+    };
+    if (startHeight != null) {
+      body['start_height'] = startHeight;
+    }
+    if (endHeight != null) {
+      body['end_height'] = endHeight;
+    }
+    body['include_spent_coins'] = includeSpentCoins;
+    final response = await client.post(Uri.parse('get_coin_records_by_parent_ids'), body);
+    mapResponseToError(response);
+
+    return CoinRecordsResponse.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
+  @override
   Future<CoinRecordResponse> getCoinByName(Bytes coinId) async {
     final response = await client.post(Uri.parse('get_coin_record_by_name'), {
       'name': coinId.toHex(),
@@ -89,8 +134,7 @@ class FullNodeHttpRpc implements FullNode {
       body['end_height'] = endHeight;
     }
     body['include_spent_coins'] = includeSpentCoins;
-    final response =
-        await client.post(Uri.parse('get_coin_records_by_names'), body);
+    final response = await client.post(Uri.parse('get_coin_records_by_names'), body);
     mapResponseToError(response);
 
     return CoinRecordsResponse.fromJson(
@@ -116,8 +160,7 @@ class FullNodeHttpRpc implements FullNode {
 
   @override
   Future<BlockchainStateResponse> getBlockchainState() async {
-    final response = await client
-        .post(Uri.parse('get_blockchain_state'), <dynamic, dynamic>{});
+    final response = await client.post(Uri.parse('get_blockchain_state'), <dynamic, dynamic>{});
     mapResponseToError(response);
 
     return BlockchainStateResponse.fromJson(
@@ -138,9 +181,7 @@ class FullNodeHttpRpc implements FullNode {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is FullNodeHttpRpc &&
-          runtimeType == other.runtimeType &&
-          baseURL == other.baseURL;
+      other is FullNodeHttpRpc && runtimeType == other.runtimeType && baseURL == other.baseURL;
 
   @override
   int get hashCode => runtimeType.hashCode ^ baseURL.hashCode;

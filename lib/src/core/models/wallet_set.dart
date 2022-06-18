@@ -37,8 +37,7 @@ class WalletSet {
     required PrivateKey rootChildPrivateKeyUnhardened,
     required int derivationIndex,
   }) {
-    final childPrivateKeyHardened =
-        rootWalletSkToWalletSk(rootChildPrivateKey, derivationIndex);
+    final childPrivateKeyHardened = rootWalletSkToWalletSk(rootChildPrivateKey, derivationIndex);
     final childPublicKeyHardened = childPrivateKeyHardened.getG1();
 
     final puzzleHardened = getPuzzleFromPk(childPublicKeyHardened);
@@ -46,12 +45,12 @@ class WalletSet {
 
     final hardened = WalletVector(
       childPrivateKey: childPrivateKeyHardened,
-      childPublicKey: childPublicKeyHardened,
+      //childPublicKey: childPublicKeyHardened,
       puzzlehash: puzzlehashHardened,
     );
 
-    final childPrivateKeyUnhardened = rootWalletSkToWalletSkUnhardened(
-        rootChildPrivateKeyUnhardened, derivationIndex);
+    final childPrivateKeyUnhardened =
+        rootWalletSkToWalletSkUnhardened(rootChildPrivateKeyUnhardened, derivationIndex);
     final childPublicKeyUnhardened = childPrivateKeyUnhardened.getG1();
 
     final puzzleUnhardened = getPuzzleFromPk(childPublicKeyUnhardened);
@@ -59,7 +58,7 @@ class WalletSet {
 
     final unhardened = UnhardenedWalletVector(
       childPrivateKey: childPrivateKeyUnhardened,
-      childPublicKey: childPublicKeyUnhardened,
+      // childPublicKey: childPublicKeyUnhardened,
       puzzlehash: puzzlehashUnhardened,
     );
 

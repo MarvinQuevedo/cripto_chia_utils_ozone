@@ -2,9 +2,27 @@
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/core/models/blockchain_state.dart';
+import 'package:chia_crypto_utils/src/plot_nft/models/exceptions/invalid_pool_singleton_exception.dart';
+import 'package:chia_crypto_utils/src/singleton/puzzles/singleton_launcher/singleton_launcher.clvm.hex.dart';
+import 'package:chia_crypto_utils/src/singleton/service/singleton_service.dart';
 
 class ChiaFullNodeInterface {
   const ChiaFullNodeInterface(this.fullNode);
+  factory ChiaFullNodeInterface.fromURL(
+    String baseURL, {
+    Bytes? certBytes,
+    Bytes? keyBytes,
+  }) {
+    return ChiaFullNodeInterface(
+      FullNodeHttpRpc(
+        baseURL,
+        certBytes: certBytes,
+        keyBytes: keyBytes,
+      ),
+    );
+  }
+
+  ChiaFullNodeInterface.fromContext() : fullNode = FullNodeHttpRpc.fromContext();
 
   final FullNode fullNode;
 
@@ -22,9 +40,7 @@ class ChiaFullNodeInterface {
     );
     mapResponseToError(recordsResponse);
 
-    return recordsResponse.coinRecords
-        .map((record) => record.toCoin())
-        .toList();
+    return recordsResponse.coinRecords.map((record) => record.toCoin()).toList();
   }
 
   Future<int> getBalance(
@@ -37,8 +53,7 @@ class ChiaFullNodeInterface {
       startHeight: startHeight,
       endHeight: endHeight,
     );
-    final balance =
-        coins.fold(0, (int previousValue, coin) => previousValue + coin.amount);
+    final balance = coins.fold(0, (int previousValue, coin) => previousValue + coin.amount);
     return balance;
   }
 
@@ -68,25 +83,67 @@ class ChiaFullNodeInterface {
     );
     mapResponseToError(coinRecordsResponse);
 
-    return coinRecordsResponse.coinRecords
-        .map((record) => record.toCoin())
-        .toList();
+    return coinRecordsResponse.coinRecords.map((record) => record.toCoin()).toList();
+  }
+
+  Future<List<Coin>> getCoinsByParentIds(
+    List<Bytes> parentIds, {
+    int? startHeight,
+    int? endHeight,
+    bool includeSpentCoins = false,
+  }) async {
+    final coinRecordsResponse = await fullNode.getCoinsByParentIds(
+      parentIds,
+      startHeight: startHeight,
+      endHeight: endHeight,
+      includeSpentCoins: includeSpentCoins,
+    );
+    mapResponseToError(coinRecordsResponse);
+
+    return coinRecordsResponse.coinRecords.map((record) => record.toCoin()).toList();
+  }
+
+  Future<List<Coin>> getCoinsByMemo(Bytes memo) async {
+    final coinRecordsResponse = await fullNode.getCoinsByHint(
+      memo,
+    );
+    mapResponseToError(coinRecordsResponse);
+
+    return coinRecordsResponse.coinRecords.map((record) => record.toCoin()).toList();
   }
 
   Future<CoinSpend?> getCoinSpend(Coin coin) async {
-    final coinSpendResponse =
-        await fullNode.getPuzzleAndSolution(coin.id, coin.spentBlockIndex);
+    final coinSpendResponse = await fullNode.getPuzzleAndSolution(coin.id, coin.spentBlockIndex);
     mapResponseToError(coinSpendResponse);
 
     return coinSpendResponse.coinSpend;
   }
 
-  Future<List<CatCoin>> getCatCoinsByOuterPuzzleHashes(
-    List<Puzzlehash> puzzlehashes,
+  Future<List<CatCoin>> getCatCoinsByMemo(
+    Bytes memo,
   ) async {
-    final coins = await getCoinsByPuzzleHashes(puzzlehashes);
+    final coins = await getCoinsByMemo(memo);
+    return _hydrateCatCoins(coins);
+  }
+
+  Future<List<CatCoin>> getCatCoinsByOuterPuzzleHashes(
+    List<Puzzlehash> puzzlehashes, {
+    int? startHeight,
+    int? endHeight,
+    bool includeSpentCoins = false,
+  }) async {
+    final coins = await getCoinsByPuzzleHashes(
+      puzzlehashes,
+      startHeight: startHeight,
+      endHeight: endHeight,
+      includeSpentCoins: includeSpentCoins,
+    );
+    return _hydrateCatCoins(coins);
+  }
+
+  Future<List<CatCoin>> _hydrateCatCoins(List<Coin> unHydratedCatCoins) async {
     final catCoins = <CatCoin>[];
-    for (final coin in coins) {
+    for (final coin in unHydratedCatCoins) {
       final parentCoin = await getCoinById(coin.parentCoinInfo);
 
       final parentCoinSpend = await getCoinSpend(parentCoin!);
@@ -102,18 +159,70 @@ class ChiaFullNodeInterface {
     return catCoins;
   }
 
-  Future<PlotNft> getPlotNftByLauncherId(Bytes launcherId) async {
-    final launcherCoin = await getCoinById(launcherId);
-    final launcherCoinSpend = await getCoinSpend(launcherCoin!);
-    final plotNft = PlotNft.fromCoinSpend(launcherCoinSpend!, launcherId);
+  Future<List<PlotNft>> scroungeForPlotNfts(List<Puzzlehash> puzzlehashes) async {
+    final allCoins = await getCoinsByPuzzleHashes(puzzlehashes, includeSpentCoins: true);
 
-    final singletonCoin = await getCoinById(plotNft.singletonCoin.id);
-    if (singletonCoin!.spentBlockIndex != 0) {
-      throw UnimplementedError(
-        'Does not support plot entities that have been modified since creation',
-      );
+    final spentCoins = allCoins.where((c) => c.isSpent);
+    final plotNfts = <PlotNft>[];
+    for (final spentCoin in spentCoins) {
+      final coinSpend = await getCoinSpend(spentCoin);
+      for (final childCoin in coinSpend!.additions) {
+        // check if coin is singleton launcher
+        if (childCoin.puzzlehash == singletonLauncherProgram.hash()) {
+          final launcherId = childCoin.id;
+          try {
+            final plotNft = await getPlotNftByLauncherId(launcherId);
+            plotNfts.add(plotNft!);
+          } on InvalidPoolSingletonException {
+            // pass. Launcher id was not for plot nft
+          }
+        }
+      }
     }
-    return plotNft;
+    return plotNfts;
+  }
+
+  Future<PlotNft?> getPlotNftByLauncherId(Bytes launcherId) async {
+    final launcherCoin = await getCoinById(launcherId);
+    if (launcherCoin == null) {
+      return null;
+    }
+    final launcherCoinSpend = await getCoinSpend(launcherCoin);
+    final initialExtraData = PlotNftWalletService.launcherCoinSpendToExtraData(launcherCoinSpend!);
+
+    final firstSingletonCoinPrototype =
+        SingletonService.getMostRecentSingletonCoinFromCoinSpend(launcherCoinSpend);
+
+    var lastNotNullPoolState = initialExtraData.poolState;
+    var singletonCoin = await getCoinById(firstSingletonCoinPrototype.id);
+
+    while (singletonCoin!.isSpent) {
+      final lastCoinSpend = (await getCoinSpend(singletonCoin))!;
+      final nextSingletonCoinPrototype =
+          SingletonService.getMostRecentSingletonCoinFromCoinSpend(lastCoinSpend);
+      final poolState = PlotNftWalletService.coinSpendToPoolState(lastCoinSpend);
+      if (poolState != null) {
+        lastNotNullPoolState = poolState;
+      }
+
+      singletonCoin = await getCoinById(nextSingletonCoinPrototype.id);
+    }
+
+    PlotNftWalletService().validateSingletonPuzzlehash(
+      singletonPuzzlehash: singletonCoin.puzzlehash,
+      launcherId: launcherId,
+      poolState: lastNotNullPoolState,
+      delayPuzzlehash: initialExtraData.delayPuzzlehash,
+      delayTime: initialExtraData.delayTime,
+    );
+
+    return PlotNft(
+      launcherId: launcherId,
+      singletonCoin: singletonCoin,
+      poolState: lastNotNullPoolState,
+      delayPuzzlehash: initialExtraData.delayPuzzlehash,
+      delayTime: initialExtraData.delayTime,
+    );
   }
 
   Future<bool> checkForSpentCoins(List<CoinPrototype> coins) async {
