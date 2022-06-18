@@ -103,7 +103,7 @@ class WalletVector with ToBytesMixin {
 
     return WalletVector(
       childPrivateKey: childPrivateKey,
-      childPublicKey: childPublicKey,
+      //childPublicKey: childPublicKey,
       puzzlehash: puzzlehash,
       assetIdtoOuterPuzzlehash: assetIdtoOuterPuzzlehashMap,
     );
