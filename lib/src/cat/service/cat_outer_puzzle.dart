@@ -38,16 +38,10 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
       required Solver solver,
       required Program innerPuzzle,
       required Program innerSolution}) {
-    // final Bytes tailHash = constructor.info["tail"];
     final Bytes coinBytes = solver.info["coin"];
-    /*    final parentCoinInfo = Bytes(coinBytes.getRange(0, 32).toList());
-    final puzzleHash = Puzzlehash(coinBytes.getRange(32, 64).toList());
-    final amount = bytesToInt(Bytes(coinBytes.getRange(64, 72).toList()), Endian.big); */
 
     final CoinPrototype coin = CoinPrototype.fromStream(coinBytes.iterator);
-
     final CoinSpend parentSpend = CoinSpend.fromStream(solver.info["parent_spend"]);
-    // CoinPrototype parentCoin = parentSpend.coin;
 
     if (constructor.also != null) {
       innerPuzzle = outerPuzzle.constructPuzzle(

@@ -1,5 +1,5 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/core/models/outer_puzzle.dart';
+import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/models/conditions/announcement.dart';
 import '../puzzles/settlement_payments/settlement_payments.clvm.hex.dart';
@@ -99,10 +99,12 @@ class Offert {
           throw Exception(
               "Cannot calculate announcements without driver of requested item $assetId");
         }
-        settlementPh = constructPuzzle(
-          constructor: driverDict[assetId]!,
-          innerPuzzle: offertProgram,
-        ).hash();
+        settlementPh = outerPuzzle
+            .constructPuzzle(
+              constructor: driverDict[assetId]!,
+              innerPuzzle: offertProgram,
+            )
+            .hash();
       } else {
         settlementPh = offertProgram.hash();
       }
@@ -116,9 +118,4 @@ class Offert {
     });
     return result;
   }
-
-  /*  Program construct_puzzle(PuzzleInfo constructor ,Program inner_puzzle){
-return driver_lookup[AssetType(constructor.type())].construct(constructor, inner_puzzle)  # type: ignore
-  }
-     */
 }
