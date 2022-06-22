@@ -2,6 +2,7 @@ import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/models/conditions/announcement.dart';
+import '../exceptions/coin_not_in_bundle.dart';
 import '../puzzles/settlement_payments/settlement_payments.clvm.hex.dart';
 import 'notarized_payment.dart';
 import 'puzzle_info.dart';
@@ -161,6 +162,73 @@ class Offert {
       _keysToStrings(requested_amounts),
       _keysToStrings(driverDictR)
     ];
+  }
+
+  /// Also mostly for the UI, returns a dictionary of assets and how much of them is pended for this offer
+  /// This method is also imperfect for sufficiently complex spends
+  Map<String, int> getPendingAmounts() {
+    final allAdittions = spendBundle.additions;
+    final allRemovals = spendBundle.removals;
+    final notEphomeralRemovals = allRemovals
+        .where(
+          (coin) => !allAdittions.contains(coin),
+        )
+        .toList();
+    Map<String, int> pendingDict = {};
+    // First we add up the amounts of all coins that share an ancestor with the offered coins (i.e. a primary coin)
+    final offerred = getOfferedCoins();
+    offerred.forEach((assetId, coins) {
+      final name = assetId == null ? "xch" : assetId.toHex();
+      pendingDict[name] = 0;
+      for (var coin in coins) {
+        final rootRemoval = getRootRemoval(coin);
+        final pocessableAdditions =
+            allAdittions.where((element) => element.parentCoinInfo == rootRemoval.id).toList();
+        pocessableAdditions.forEach((addition) {
+          final lastAmount = pendingDict[name]!;
+          pendingDict[name] = lastAmount + addition.amount;
+        });
+      }
+    });
+    final sumOfadditionssoFar =
+        pendingDict.values.fold<int>(0, (previousValue, element) => previousValue + element);
+    final nonEphimeralsSum = notEphomeralRemovals
+        .map((e) => e.amount)
+        .fold<int>(0, (previousValue, element) => previousValue + element);
+    final unknownAmount = nonEphimeralsSum - sumOfadditionssoFar;
+    if (unknownAmount > 0) {
+      pendingDict["unknown"] = unknownAmount;
+    }
+    return pendingDict;
+  }
+
+  List<CoinPrototype> getInvolvedCoins() {
+    final additions = spendBundle.additions;
+    return spendBundle.removals.where((coin) => !additions.contains(coin)).toList();
+  }
+
+  /// This returns the non-ephemeral removal that is an ancestor of the specified coins
+  /// This should maybe move to the SpendBundle object at some point
+  CoinPrototype getRootRemoval(CoinPrototype coin) {
+    //TODO check this functions, the opetions in python are insane jajaj
+    final allRemovals = spendBundle.removals.toSet();
+    final allRemovalsIds = allRemovals.map((e) => e.id).toList().toSet();
+    final nonEphemeralRemovals = allRemovals
+        .where((element) => !allRemovalsIds.contains(
+              element.id,
+            ))
+        .toSet();
+    if (!allRemovalsIds.contains(coin.id) && !allRemovalsIds.contains(coin.parentCoinInfo)) {
+      throw CoinNotInBundle(coin.id);
+    }
+
+    while (!nonEphemeralRemovals.contains(coin)) {
+      final removalsIter =
+          allRemovals.where((element) => element.id == coin.parentCoinInfo).iterator;
+      removalsIter.moveNext();
+      coin = removalsIter.current;
+    }
+    return coin;
   }
 }
 

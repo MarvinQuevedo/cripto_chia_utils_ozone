@@ -30,6 +30,7 @@ class SpendBundle with ToBytesMixin {
   }
 
   List<CoinPrototype> get coins => coinSpends.map((cs) => cs.coin).toList();
+  List<CoinPrototype> get removals => coins;
 
   SpendBundle({
     required this.coinSpends,
