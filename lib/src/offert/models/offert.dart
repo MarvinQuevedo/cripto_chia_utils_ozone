@@ -1,4 +1,5 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/utils/check_set_overlay.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/models/conditions/announcement.dart';
@@ -10,14 +11,14 @@ import 'puzzle_info.dart';
 class Offert {
   /// The key is the asset id of the asset being requested, if is null then request XCH
   final Map<Bytes?, List<NotarizedPayment>> requestedPayments;
-  final SpendBundle spendBundle;
+  final SpendBundle bundle;
 
   ///  asset_id -> asset driver
   final Map<Bytes, PuzzleInfo> driverDict;
 
   Offert({
     required this.requestedPayments,
-    required this.spendBundle,
+    required this.bundle,
     required this.driverDict,
   });
 
@@ -83,13 +84,11 @@ class Offert {
 
   Map<Bytes?, List<CoinPrototype>> getOfferedCoins() {
     final offeredCoins = <Bytes?, List<CoinPrototype>>{};
-    final additions = spendBundle.additions;
+    final additions = bundle.additions;
 
     for (var addition in additions) {
-      final parentPuzzle = spendBundle.coinSpends
-          .where((element) => element.coin.id == addition.id)
-          .first
-          .puzzleReveal;
+      final parentPuzzle =
+          bundle.coinSpends.where((element) => element.coin.id == addition.id).first.puzzleReveal;
       Bytes? assetId;
       late Puzzlehash offertPh;
 
@@ -167,8 +166,8 @@ class Offert {
   /// Also mostly for the UI, returns a dictionary of assets and how much of them is pended for this offer
   /// This method is also imperfect for sufficiently complex spends
   Map<String, int> getPendingAmounts() {
-    final allAdittions = spendBundle.additions;
-    final allRemovals = spendBundle.removals;
+    final allAdittions = bundle.additions;
+    final allRemovals = bundle.removals;
     final notEphomeralRemovals = allRemovals
         .where(
           (coin) => !allAdittions.contains(coin),
@@ -190,11 +189,15 @@ class Offert {
         });
       }
     });
+
+    // Then we gather anything else as unknown
     final sumOfadditionssoFar =
         pendingDict.values.fold<int>(0, (previousValue, element) => previousValue + element);
+
     final nonEphimeralsSum = notEphomeralRemovals
         .map((e) => e.amount)
         .fold<int>(0, (previousValue, element) => previousValue + element);
+
     final unknownAmount = nonEphimeralsSum - sumOfadditionssoFar;
     if (unknownAmount > 0) {
       pendingDict["unknown"] = unknownAmount;
@@ -203,19 +206,18 @@ class Offert {
   }
 
   List<CoinPrototype> getInvolvedCoins() {
-    final additions = spendBundle.additions;
-    return spendBundle.removals.where((coin) => !additions.contains(coin)).toList();
+    final additions = bundle.additions;
+    return bundle.removals.where((coin) => !additions.contains(coin)).toList();
   }
 
   /// This returns the non-ephemeral removal that is an ancestor of the specified coins
   /// This should maybe move to the SpendBundle object at some point
   CoinPrototype getRootRemoval(CoinPrototype coin) {
-    //TODO check this functions, the opetions in python are insane jajaj
-    final allRemovals = spendBundle.removals.toSet();
+    final allRemovals = bundle.removals.toSet();
     final allRemovalsIds = allRemovals.map((e) => e.id).toList().toSet();
     final nonEphemeralRemovals = allRemovals
         .where((element) => !allRemovalsIds.contains(
-              element.id,
+              element.parentCoinInfo,
             ))
         .toSet();
     if (!allRemovalsIds.contains(coin.id) && !allRemovalsIds.contains(coin.parentCoinInfo)) {
@@ -229,6 +231,69 @@ class Offert {
       coin = removalsIter.current;
     }
     return coin;
+  }
+
+  /// This will only return coins that are ancestors of settlement payments
+  List<CoinPrototype> getPrimaryCoins() {
+    final pCoins = Set<CoinPrototype>();
+    final offerredCoins = getOfferedCoins();
+    offerredCoins.forEach((_, coins) {
+      coins.forEach((coin) {
+        final rootRemoval = getRootRemoval(coin);
+        if (!pCoins.contains(rootRemoval)) {
+          pCoins.add(rootRemoval);
+        }
+      });
+    });
+    return pCoins.toList();
+  }
+
+  static aggreate(List<Offert> offerts) {
+    final totalRequestedPayments = <Bytes?, List<NotarizedPayment>>{};
+    SpendBundle totalBundle = SpendBundle.empty;
+    final totalDriverDict = <Bytes, PuzzleInfo>{};
+    for (var offert in offerts) {
+      final totalInputs = totalBundle.coinSpends.map((e) => e.coin).toSet();
+      final offerInputs = offert.bundle.coinSpends.map((e) => e.coin).toSet();
+      if (totalInputs.checkOverlay(offerInputs)) {
+        throw Exception("The aggregated offers overlap inputs $offert");
+      }
+
+      // Next,  do the aggregation
+      final requestedPayments = offert.requestedPayments;
+      requestedPayments.forEach((Bytes? assetId, List<NotarizedPayment> payments) {
+        if (totalRequestedPayments[assetId] != null) {
+          totalRequestedPayments[assetId]!.addAll(payments);
+        } else {
+          totalRequestedPayments[assetId] = payments.toList();
+        }
+      });
+      offert.driverDict.forEach((Bytes? key, PuzzleInfo value) {
+        if (totalDriverDict.containsKey(key) && totalDriverDict[key] != value) {
+          throw Exception("The offers to aggregate disagree on the drivers for ${key?.toHex()}");
+        }
+      });
+
+      totalBundle = totalBundle + offert.bundle;
+      offert.driverDict.forEach((offerKey, offerValue) {
+        totalDriverDict.update(offerKey, (value) => offerValue);
+      });
+    }
+    return Offert(
+        requestedPayments: totalRequestedPayments,
+        bundle: totalBundle,
+        driverDict: totalDriverDict);
+  }
+
+  /// Validity is defined by having enough funds within the offer to satisfy both sidess
+  bool isValid() {
+    final arbitrageValues = arbitrage().values;
+    return arbitrageValues
+            .where(
+              (element) => (element >= 0),
+            )
+            .length ==
+        arbitrageValues.length;
   }
 }
 
