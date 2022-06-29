@@ -1,3 +1,4 @@
+import 'package:bech32m/bech32m.dart';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/offert/models/solver.dart';
 import 'package:chia_crypto_utils/src/offert/utils/puzzle_compression.dart';
@@ -344,17 +345,16 @@ class Offert {
           for (var nonce in noncesValues) {
             final noncePayments = allPayments.where((p) => p.nonce == nonce).toList();
 
-            innerSolutions.add(Program.list(
-              <Program>[
-                Program.fromBytes(nonce),
-              ]..addAll(
-                  noncePayments
-                      .map(
-                        (e) => e.toProgram(),
-                      )
-                      .toList(),
-                ),
-            ));
+            innerSolutions.add(Program.list(<Program>[
+              Program.fromBytes(nonce),
+              Program.list(
+                noncePayments
+                    .map(
+                      (e) => e.toProgram(),
+                    )
+                    .toList(),
+              )
+            ]));
           }
         }
         coinToSolutionDict[coin] = Program.list(innerSolutions);
@@ -430,17 +430,16 @@ class Offert {
       final nonces = cleanDuplicatesValues(payments.map((e) => e.nonce).toList());
       nonces.forEach((nonce) {
         final noncePayments = payments.where((element) => element.nonce == nonce).toList();
-        innerSolutions.add(Program.list(
-          <Program>[
-            Program.fromBytes(nonce),
-          ]..addAll(
-              noncePayments
-                  .map(
-                    (e) => e.toProgram(),
-                  )
-                  .toList(),
-            ),
-        ));
+        innerSolutions.add(Program.list(<Program>[
+          Program.fromBytes(nonce),
+          Program.list(
+            noncePayments
+                .map(
+                  (e) => e.toProgram(),
+                )
+                .toList(),
+          )
+        ]));
       });
     });
 
@@ -448,7 +447,45 @@ class Offert {
   }
 
   static Offert fromSpendBundle(SpendBundle bundle) {
-    throw Exception("No implemented");
+    final requestedPayments = <Bytes?, List<NotarizedPayment>>{};
+    final driverDict = <Bytes, PuzzleInfo>{};
+    final leftoverCoinSpends = <CoinSpend>[];
+    for (var coinSpend in bundle.coinSpends) {
+      final driver = outerPuzzle.matchPuzzle(coinSpend.puzzleReveal);
+      Bytes? assetId;
+      if (driver != null) {
+        assetId = outerPuzzle.createAssetId(driver);
+
+        driverDict[assetId] = driver;
+      }
+
+      if (coinSpend.coin.parentCoinInfo == ZERO_32) {
+        final notarizedPayments = <NotarizedPayment>[];
+        for (var paymentGroup in coinSpend.solution.toList()) {
+          final nonce = paymentGroup.first().atom;
+          final paymentArgsList = paymentGroup.rest().toList();
+
+          notarizedPayments.addAll(paymentArgsList
+              .map((condition) =>
+                  NotarizedPayment.fromConditionAndNonce(condition: condition, nonce: nonce))
+              .toList());
+        }
+        if (requestedPayments[assetId] == null) {
+          requestedPayments[assetId] = [];
+        }
+        requestedPayments[assetId]!.addAll(notarizedPayments);
+      } else {
+        leftoverCoinSpends.add(coinSpend);
+      }
+    }
+
+    return Offert(
+        requestedPayments: requestedPayments,
+        bundle: SpendBundle(
+          coinSpends: leftoverCoinSpends,
+          aggregatedSignature: bundle.aggregatedSignature,
+        ),
+        driverDict: driverDict);
   }
 
   Bytes compress({int? version}) {
@@ -461,7 +498,30 @@ class Offert {
     return compressObjectWithPuzzles(asSpendBundle.toBytes(), version);
   }
 
-  Bytes get id => toSpendBundle().toBytes().sha256Hash();
+  Bytes get id => toBytes().sha256Hash();
+
+  Bytes toBytes() {
+    return toSpendBundle().toBytes();
+  }
+
+  String toBench32({String prefix = "offert", int? compressionVersion}) {
+    final offertBytes = compress(version: compressionVersion);
+    final encoded = segwit.encode(Segwit(prefix, offertBytes));
+    return encoded;
+  }
+
+  static Offert fromBench32(String offerBech32) {
+    final bytes = segwit.decode(offerBech32).program;
+    return try_offer_decompression(Bytes(bytes));
+  }
+
+  static Offert try_offer_decompression(Bytes dataBytes) {
+    try {
+      return Offert.fromCompressed(dataBytes);
+    } catch (e) {
+      return Offert.fromBytes(dataBytes);
+    }
+  }
 
   static Offert fromCompressed(Bytes compressedBytes) {
     return Offert.fromBytes(decompressObjectWithPuzzles(compressedBytes));
