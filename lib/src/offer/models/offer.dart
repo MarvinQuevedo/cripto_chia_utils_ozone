@@ -1,7 +1,7 @@
 import 'package:bech32m/bech32m.dart';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/offert/models/solver.dart';
-import 'package:chia_crypto_utils/src/offert/utils/puzzle_compression.dart';
+import 'package:chia_crypto_utils/src/offer/models/solver.dart';
+import 'package:chia_crypto_utils/src/offer/utils/puzzle_compression.dart';
 import 'package:chia_crypto_utils/src/utils/check_set_overlay.dart';
 import 'package:quiver/iterables.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
@@ -13,7 +13,7 @@ import '../utils/clean_dulicates_values.dart';
 import 'notarized_payment.dart';
 import 'puzzle_info.dart';
 
-class Offert {
+class Offer {
   /// The key is the asset id of the asset being requested, if is null then request XCH
   final Map<Bytes?, List<NotarizedPayment>> requestedPayments;
   final SpendBundle bundle;
@@ -21,7 +21,7 @@ class Offert {
   ///  asset_id -> asset driver
   final Map<Bytes, PuzzleInfo> driverDict;
 
-  Offert({
+  Offer({
     required this.requestedPayments,
     required this.bundle,
     required this.driverDict,
@@ -253,7 +253,7 @@ class Offert {
     return pCoins.toList();
   }
 
-  static aggreate(List<Offert> offerts) {
+  static aggreate(List<Offer> offerts) {
     final totalRequestedPayments = <Bytes?, List<NotarizedPayment>>{};
     SpendBundle totalBundle = SpendBundle.empty;
     final totalDriverDict = <Bytes, PuzzleInfo>{};
@@ -284,7 +284,7 @@ class Offert {
         totalDriverDict.update(offerKey, (value) => offerValue);
       });
     }
-    return Offert(
+    return Offer(
         requestedPayments: totalRequestedPayments,
         bundle: totalBundle,
         driverDict: totalDriverDict);
@@ -308,7 +308,7 @@ class Offert {
   ///  A "valid" spend means that this bundle can be pushed to the network and will succeed
   /// This differs from the `to_spend_bundle` method which deliberately creates an invalid SpendBundle
   SpendBundle toValidSpend({Bytes? arbitragePh}) {
-    Offert offert = this;
+    Offer offert = this;
     if (!isValid()) {
       throw Exception("Offer is currently incomplete");
     }
@@ -446,7 +446,7 @@ class Offert {
     return SpendBundle(coinSpends: aditionalCoinSpends) + this.bundle;
   }
 
-  static Offert fromSpendBundle(SpendBundle bundle) {
+  static Offer fromSpendBundle(SpendBundle bundle) {
     final requestedPayments = <Bytes?, List<NotarizedPayment>>{};
     final driverDict = <Bytes, PuzzleInfo>{};
     final leftoverCoinSpends = <CoinSpend>[];
@@ -479,7 +479,7 @@ class Offert {
       }
     }
 
-    return Offert(
+    return Offer(
         requestedPayments: requestedPayments,
         bundle: SpendBundle(
           coinSpends: leftoverCoinSpends,
@@ -510,25 +510,25 @@ class Offert {
     return encoded;
   }
 
-  static Offert fromBench32(String offerBech32) {
+  static Offer fromBench32(String offerBech32) {
     final bytes = segwit.decode(offerBech32).program;
     return try_offer_decompression(Bytes(bytes));
   }
 
-  static Offert try_offer_decompression(Bytes dataBytes) {
+  static Offer try_offer_decompression(Bytes dataBytes) {
     try {
-      return Offert.fromCompressed(dataBytes);
+      return Offer.fromCompressed(dataBytes);
     } catch (e) {
-      return Offert.fromBytes(dataBytes);
+      return Offer.fromBytes(dataBytes);
     }
   }
 
-  static Offert fromCompressed(Bytes compressedBytes) {
-    return Offert.fromBytes(decompressObjectWithPuzzles(compressedBytes));
+  static Offer fromCompressed(Bytes compressedBytes) {
+    return Offer.fromBytes(decompressObjectWithPuzzles(compressedBytes));
   }
 
-  static Offert fromBytes(Bytes objectBytes) {
-    return Offert.fromSpendBundle(SpendBundle.fromBytes(objectBytes));
+  static Offer fromBytes(Bytes objectBytes) {
+    return Offer.fromSpendBundle(SpendBundle.fromBytes(objectBytes));
   }
 }
 
