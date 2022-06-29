@@ -1,6 +1,8 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/offert/models/solver.dart';
+import 'package:chia_crypto_utils/src/offert/utils/puzzle_compression.dart';
 import 'package:chia_crypto_utils/src/utils/check_set_overlay.dart';
+import 'package:quiver/iterables.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/models/conditions/announcement.dart';
@@ -449,7 +451,25 @@ class Offert {
     throw Exception("No implemented");
   }
 
+  Bytes compress({int? version}) {
+    final asSpendBundle = toSpendBundle();
+    if (version == null) {
+      final mods =
+          asSpendBundle.coinSpends.map((e) => e.puzzleReveal.uncurry().program.toBytes()).toList();
+      version = max([lowestBestVersion(mods), 2])!;
+    }
+    return compressObjectWithPuzzles(asSpendBundle.toBytes(), version);
+  }
+
   Bytes get id => toSpendBundle().toBytes().sha256Hash();
+
+  static Offert fromCompressed(Bytes compressedBytes) {
+    return Offert.fromBytes(decompressObjectWithPuzzles(compressedBytes));
+  }
+
+  static Offert fromBytes(Bytes objectBytes) {
+    return Offert.fromSpendBundle(SpendBundle.fromBytes(objectBytes));
+  }
 }
 
 Map<String, dynamic> _keysToStrings(Map<Bytes?, dynamic> dic) {
