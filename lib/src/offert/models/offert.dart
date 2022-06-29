@@ -1,10 +1,12 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/offert/models/solver.dart';
 import 'package:chia_crypto_utils/src/utils/check_set_overlay.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/models/conditions/announcement.dart';
 import '../exceptions/coin_not_in_bundle.dart';
 import '../puzzles/settlement_payments/settlement_payments.clvm.hex.dart';
+import '../utils/clean_dulicates_values.dart';
 import 'notarized_payment.dart';
 import 'puzzle_info.dart';
 
@@ -295,6 +297,159 @@ class Offert {
             .length ==
         arbitrageValues.length;
   }
+
+  CoinSpend _getSpendSpendOfCoin(CoinPrototype coin) {
+    return bundle.coinSpends.where((element) => element.coin.id == coin.id).first;
+  }
+
+  ///  A "valid" spend means that this bundle can be pushed to the network and will succeed
+  /// This differs from the `to_spend_bundle` method which deliberately creates an invalid SpendBundle
+  SpendBundle toValidSpend({Bytes? arbitragePh}) {
+    Offert offert = this;
+    if (!isValid()) {
+      throw Exception("Offer is currently incomplete");
+    }
+    final completionSpends = <CoinSpend>[];
+    final allOfferredCoins = offert.getOfferedCoins();
+    final allArbitragePh = offert.arbitrage();
+    offert.requestedPayments.forEach((Bytes? assetId, List<NotarizedPayment> payments) {
+      final List<CoinPrototype> offerredCoins = allOfferredCoins[assetId]!;
+
+      // Because of CAT supply laws, we must specify a place for the leftovers to go
+      final int? arbitrageAmount = allArbitragePh[assetId];
+      final allPayments = payments.toList();
+      if ((arbitrageAmount ?? 0) > 0) {
+        assert(arbitrageAmount == null,
+            "Amount can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}");
+        assert(
+          arbitragePh == null,
+          "ArbitragePH can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}",
+        );
+        allPayments.add(NotarizedPayment(arbitrageAmount!, Puzzlehash(arbitragePh!)));
+      }
+
+      // Some assets need to know about siblings so we need to collect all spends first to be able to use them
+      final coinToSpendDict = <CoinPrototype, CoinSpend>{};
+      final coinToSolutionDict = <CoinPrototype, Program>{};
+      for (var coin in offerredCoins) {
+        final parentSpend = _getSpendSpendOfCoin(coin);
+        coinToSpendDict[coin] = parentSpend;
+        final List<Program> innerSolutions = [];
+        if (coin == offerredCoins.first) {
+          final nonces = allPayments.map((e) => e.nonce).toList();
+
+          final noncesValues = cleanDuplicatesValues(nonces);
+          for (var nonce in noncesValues) {
+            final noncePayments = allPayments.where((p) => p.nonce == nonce).toList();
+
+            innerSolutions.add(Program.list(
+              <Program>[
+                Program.fromBytes(nonce),
+              ]..addAll(
+                  noncePayments
+                      .map(
+                        (e) => e.toProgram(),
+                      )
+                      .toList(),
+                ),
+            ));
+          }
+        }
+        coinToSolutionDict[coin] = Program.list(innerSolutions);
+      }
+
+      for (var coin in offerredCoins) {
+        Program? solution;
+
+        if (assetId != null) {
+          String siblings = "(";
+          String siblingsSpends = "(";
+          String silblingsPuzzles = "(";
+          String silblingsSolutions = "(";
+          String disassembledOfferMod = offertProgram.toSource();
+          for (var siblingCoin in offerredCoins) {
+            if (siblingCoin != coin) {
+              siblings += siblingCoin.toBytes().toHexWithPrefix();
+              siblingsSpends += "0x" + coinToSpendDict[siblingCoin]!.toHex() + ")";
+              silblingsPuzzles += disassembledOfferMod;
+              silblingsSolutions += coinToSolutionDict[siblingCoin]!.toSource();
+            }
+          }
+          siblings += ")";
+          siblingsSpends += ")";
+          silblingsPuzzles += ")";
+          silblingsSolutions += ")";
+
+          final solver = Solver({
+            "coin": coin.toBytes().toHexWithPrefix(),
+            "parent_spend": coinToSolutionDict[coin]!.toHexWithPrefix(),
+            "siblings": siblings,
+            "sibling_spends": siblingsSpends,
+            "sibling_puzzles": silblingsPuzzles,
+            "sibling_solutions": silblingsSolutions,
+          });
+
+          solution = outerPuzzle.solvePuzzle(
+            constructor: offert.driverDict[assetId]!,
+            solver: solver,
+            innerPuzzle: offertProgram,
+            innerSolution: coinToSolutionDict[coin]!,
+          );
+        } else {
+          solution = coinToSolutionDict[coin]!;
+        }
+        final puzzleReveal = (assetId != null)
+            ? outerPuzzle.constructPuzzle(
+                constructor: offert.driverDict[assetId]!,
+                innerPuzzle: offertProgram,
+              )
+            : offertProgram;
+        completionSpends.add(CoinSpend(
+          coin: coin,
+          puzzleReveal: puzzleReveal,
+          solution: solution,
+        ));
+      }
+    });
+
+    return SpendBundle(coinSpends: completionSpends) + offert.bundle;
+  }
+
+  /// Before we serialze this as a SpendBundle, we need to serialze the `requested_payments` as dummy CoinSpends
+  SpendBundle toSpendBundle() {
+    final aditionalCoinSpends = <CoinSpend>[];
+    requestedPayments.forEach((assetId, payments) {
+      final puzzleReveal = outerPuzzle.constructPuzzle(
+        constructor: driverDict[assetId]!,
+        innerPuzzle: offertProgram,
+      );
+
+      List innerSolutions = [];
+      final nonces = cleanDuplicatesValues(payments.map((e) => e.nonce).toList());
+      nonces.forEach((nonce) {
+        final noncePayments = payments.where((element) => element.nonce == nonce).toList();
+        innerSolutions.add(Program.list(
+          <Program>[
+            Program.fromBytes(nonce),
+          ]..addAll(
+              noncePayments
+                  .map(
+                    (e) => e.toProgram(),
+                  )
+                  .toList(),
+            ),
+        ));
+      });
+    });
+
+    return SpendBundle(coinSpends: aditionalCoinSpends) + this.bundle;
+  }
+
+  static Offert fromSpendBundle(SpendBundle bundle) {
+    throw Exception("No implemented");
+  }
+
+  Bytes get id => toSpendBundle().toBytes().sha256Hash();
 }
 
 Map<String, dynamic> _keysToStrings(Map<Bytes?, dynamic> dic) {

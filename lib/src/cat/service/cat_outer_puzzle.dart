@@ -1,3 +1,5 @@
+import 'package:quiver/iterables.dart';
+
 import '../../core/models/outer_puzzle.dart';
 import '../../offert/models/solver.dart';
 import '../../offert/models/puzzle_info.dart';
@@ -38,41 +40,67 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
       required Solver solver,
       required Program innerPuzzle,
       required Program innerSolution}) {
-    final Bytes coinBytes = solver.info["coin"];
+    final Bytes tailHash = solver.info["tail"];
+    final spendableCatsList = <SpendableCat>[];
 
-    final CoinPrototype coin = CoinPrototype.fromStream(coinBytes.iterator);
-    final CoinSpend parentSpend = CoinSpend.fromStream(solver.info["parent_spend"]);
+    CoinPrototype? targetCoin;
+    final siblingsIter = (solver["siblings"] as Program).toList();
+    final siblingSpends = (solver.info["sibling_spends"] as Program).toList();
+    final siblingPuzzles = (solver.info["sibling_puzzles"] as Program).toList();
+    final siblingSolutions = (solver.info["sibling_solutions"] as Program).toList();
+    final zipped = zip([
+      siblingsIter,
+      siblingSpends,
+      siblingPuzzles,
+      siblingSolutions,
+    ]);
+    final base = [
+      (solver["coin"]) as Program,
+      (solver["parent_spend"]) as Program,
+      innerPuzzle,
+      innerSolution,
+    ];
+    final workIterable = zipped.toList()..add(base);
+    for (var item in workIterable) {
+      final coinProg = item[0];
+      final spendProg = item[1];
+      Program puzzle = item[2];
+      Program solution = item[3];
 
-    if (constructor.also != null) {
-      innerPuzzle = outerPuzzle.constructPuzzle(
-        constructor: constructor.also!,
-        innerPuzzle: innerPuzzle,
+      final coinBytes = coinProg.atom;
+
+      final coin = CoinPrototype.fromBytes(coinBytes);
+      if (coinBytes == solver["coin"]) {
+        targetCoin = coin;
+      }
+      final parentSpend = CoinSpend.fromBytes(spendProg.atom);
+      // final parentCoin = parentSpend.coin;
+      if (constructor.also != null) {
+        puzzle = outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: puzzle);
+        solution = outerPuzzle.solvePuzzle(
+            constructor: constructor.also!,
+            solver: solver,
+            innerPuzzle: innerPuzzle,
+            innerSolution: innerSolution);
+      }
+      final matched = CatWalletService.matchCatPuzzle(parentSpend.puzzleReveal);
+      assert(matched != null, "Cat puzzle can be match");
+      //final parentInnerPuzzle = matched!.innerPuzzle;
+      final catCoin = CatCoin(parentCoinSpend: parentSpend, coin: coin);
+
+      // the [lineage_proof] is calc in the constructor of the [SpendableCat]
+      final spendableCat = SpendableCat(
+        coin: catCoin,
+        innerPuzzle: puzzle,
+        innerSolution: solution,
       );
-      innerSolution = outerPuzzle.solvePuzzle(
-        constructor: constructor.also!,
-        solver: solver,
-        innerPuzzle: innerPuzzle,
-        innerSolution: innerSolution,
-      );
-    }
-    final matched = CatWalletService.matchCatPuzzle(parentSpend.puzzleReveal);
-    if (matched == null) {
-      throw Exception("Could not match puzzle");
+      spendableCatsList.add(spendableCat);
     }
 
-    final catCoin = CatCoin(
-      parentCoinSpend: parentSpend,
-      coin: coin,
-    );
-
-    final spendableCat = SpendableCat(
-      coin: catCoin,
-      innerPuzzle: innerPuzzle,
-      innerSolution: innerSolution,
-    );
-
-    return CatWalletService.makeUnsignedSpendBundleForSpendableCats([
-      spendableCat,
-    ]).coinSpends.first.solution;
+    return CatWalletService.makeUnsignedSpendBundleForSpendableCats(spendableCatsList)
+        .coinSpends
+        .where((element) => element.coin == targetCoin)
+        .first
+        .solution;
   }
 }

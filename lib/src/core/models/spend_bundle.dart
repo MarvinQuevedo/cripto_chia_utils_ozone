@@ -63,6 +63,7 @@ class SpendBundle with ToBytesMixin {
       aggregatedSignature: (signatures.isNotEmpty) ? AugSchemeMPL.aggregate(signatures) : null,
     );
   }
+  
 
   @override
   bool operator ==(Object other) {
