@@ -35,7 +35,7 @@ class CompressionVersionError {
 Bytes zDictForVersion(int version) {
   Bytes summedDict = Bytes.empty;
   final subList = ZDICT.sublist(0, version);
-  print("zdict len ${subList.length}");
+
   for (var item in subList) {
     summedDict += item;
   }
@@ -68,8 +68,7 @@ Bytes decompressObjectWithPuzzles(Bytes compressedObjectBlob) {
     throw CompressionVersionError(version);
   }
   final zdict = zDictForVersion(version);
-  print(zdict.length);
-  print("zdict hash = ${zdict.sha256Hash()}");
+
   final objectBytes = decompressWithZdict(
       blobIterator.extractBytesAndAdvance(compressedObjectBlob.length - 2), zdict);
   return objectBytes;

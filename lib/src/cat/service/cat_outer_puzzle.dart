@@ -9,12 +9,18 @@ import '../../offer/models/solver.dart';
 class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
-    return CatWalletService.makeCatPuzzle(constructor.info["tail"]!, innerPuzzle);
+    return CatWalletService.makeCatPuzzle(createAssetId(constructor: constructor), innerPuzzle);
   }
 
   @override
-  Bytes createAssetId({required PuzzleInfo constructor}) {
-    return constructor.info["tail"]!;
+  Puzzlehash createAssetId({required PuzzleInfo constructor}) {
+    final tail = constructor.info["tail"]!;
+    if (tail is Bytes) {
+      return Puzzlehash(tail);
+    } else if (tail is Puzzlehash) {
+      return tail;
+    }
+    return Puzzlehash.fromHex(tail);
   }
 
   @override
@@ -102,5 +108,34 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
         .where((element) => element.coin == targetCoin)
         .first
         .solution;
+  }
+
+  @override
+  Program getInnerPuzzle({required PuzzleInfo constructor, required Program puzzleReveal}) {
+    final matched = CatWalletService.matchCatPuzzle(puzzleReveal);
+    if (matched != null) {
+      final innerPuzzle = matched.innerPuzzle;
+      if (constructor.also != null) {
+        final deopInnerPuzzle = outerPuzzle.getInnerPuzzle(
+          constructor: constructor.also!,
+          puzzleReveal: puzzleReveal,
+        );
+        return deopInnerPuzzle;
+      }
+      return innerPuzzle;
+    } else {
+      throw Exception("This driver is not for the specified puzzle reveal");
+    }
+  }
+
+  @override
+  Program getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
+    final myInnerSolution = solution.first();
+    if (constructor.also != null) {
+      final deepInnerSolution =
+          outerPuzzle.getInnerSolution(constructor: constructor.also!, solution: solution);
+      return deepInnerSolution;
+    }
+    return myInnerSolution;
   }
 }

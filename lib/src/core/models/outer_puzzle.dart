@@ -58,12 +58,30 @@ Program solvePuzzle({
   );
 }
 
+Program getInnerPuzzle({
+  required PuzzleInfo constructor,
+  required Program puzzleReveal,
+}) {
+  final driver = _driverLookup[constructor.info['type']];
+  if (driver == null) throw Exception('Unknown asset type: ${constructor.info["type"]}');
+  return driver.getInnerPuzzle(constructor: constructor, puzzleReveal: puzzleReveal);
+}
+
+Program getInnerSolution({
+  required PuzzleInfo constructor,
+  required Program solution,
+}) {
+  final driver = _driverLookup[constructor.info['type']];
+  if (driver == null) throw Exception('Unknown asset type: ${constructor.info["type"]}');
+  return driver.getInnerSolution(constructor: constructor, solution: solution);
+}
+
 abstract class OuterPuzzle {
   Program constructPuzzle({
     required PuzzleInfo constructor,
     required Program innerPuzzle,
   });
-  Bytes createAssetId({
+  Puzzlehash createAssetId({
     required PuzzleInfo constructor,
   });
   PuzzleInfo? matchPuzzle(Program puzzle);
@@ -72,5 +90,13 @@ abstract class OuterPuzzle {
     required Solver solver,
     required Program innerPuzzle,
     required Program innerSolution,
+  });
+  Program getInnerPuzzle({
+    required PuzzleInfo constructor,
+    required Program puzzleReveal,
+  });
+  Program getInnerSolution({
+    required PuzzleInfo constructor,
+    required Program solution,
   });
 }

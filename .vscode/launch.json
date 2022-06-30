@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Dart",
+            "name": "Offer test",
             "type": "dart",
             "request": "launch",
             "program": "integration_test/offers/offer_test.dart"

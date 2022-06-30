@@ -21,7 +21,7 @@ class NotarizedPayment extends Payment {
   factory NotarizedPayment.fromConditionAndNonce(
       {required Program condition, required Bytes nonce}) {
     final withOpcode = Program.list([Program.fromInt(51), condition]);
-    final p = Payment.fromProgram(withOpcode);
+    final p = Payment.fromCondition(withOpcode);
     //final args = p.toProgram();
     return NotarizedPayment(p.amount, p.puzzlehash, memos: p.memos, nonce: nonce);
   }

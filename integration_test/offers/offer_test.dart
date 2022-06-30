@@ -27,6 +27,7 @@ Future<void> main() async {
 
   void testParseOfferFile() {
     final offer = Offer.fromBench32(testOfferData);
+    print(offer.summary());
   }
 
   test('Test Puzzle compression', () async {

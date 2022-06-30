@@ -90,33 +90,66 @@ class Offer {
 
   Map<Bytes?, List<CoinPrototype>> getOfferedCoins() {
     final offeredCoins = <Bytes?, List<CoinPrototype>>{};
-    final additions = bundle.additions;
 
-    for (var addition in additions) {
-      final parentPuzzle =
-          bundle.coinSpends.where((element) => element.coin.id == addition.id).first.puzzleReveal;
-      Bytes? assetId;
-      late Puzzlehash offertPh;
-
+    final OFFER_HASH = offertProgram.hash();
+    for (var parentSpend in bundle.coinSpends) {
+      final coinForThisSpend = <CoinPrototype>[];
+      final parentPuzzle = parentSpend.puzzleReveal;
+      final parentSolution = parentSpend.solution;
+      final additions =
+          bundle.additions.where((element) => !bundle.removals.contains(element)).toList();
       final puzzleDriver = outerPuzzle.matchPuzzle(parentPuzzle);
+
+      Bytes? assetId;
+
       if (puzzleDriver != null) {
         assetId = outerPuzzle.createAssetId(puzzleDriver);
-        offertPh = outerPuzzle
-            .constructPuzzle(
-              constructor: puzzleDriver,
-              innerPuzzle: offertProgram,
-            )
-            .hash();
+        final innerPuzzle = outerPuzzle.getInnerPuzzle(
+          constructor: puzzleDriver,
+          puzzleReveal: parentPuzzle,
+        );
+        final innerSolution = outerPuzzle.getInnerSolution(
+          constructor: puzzleDriver,
+          solution: parentSolution,
+        );
+        //assert(innerSolution != null && innerPuzzle != null);
+        final conditionResult = innerPuzzle.run(innerSolution);
+        final conditionResultIter = conditionResult.program.toList();
+        for (var condition in conditionResultIter) {
+          try {
+            if (condition.first().toInt() == 51 && condition.rest().first().atom == OFFER_HASH) {
+              final additionsWAmount = additions
+                  .where((element) => element.amount == condition.rest().rest().first().toInt())
+                  .toList();
+              if (additionsWAmount.length == 1) {
+                coinForThisSpend.add(additionsWAmount.first);
+              } else {
+                final additionsWAmountAndPuzzlehashes = additionsWAmount.where((element) =>
+                    element.puzzlehash ==
+                    outerPuzzle
+                        .constructPuzzle(
+                          constructor: puzzleDriver,
+                          innerPuzzle: offertProgram,
+                        )
+                        .hash());
+
+                if (additionsWAmountAndPuzzlehashes.length == 1) {
+                  coinForThisSpend.add(additionsWAmountAndPuzzlehashes.first);
+                }
+              }
+            }
+          } catch (_) {}
+        }
       } else {
         assetId = null;
-        offertPh = offertProgram.hash();
+        coinForThisSpend
+            .addAll(additions.where((element) => element.puzzlehash == OFFER_HASH).toList());
       }
-      if (addition.puzzlehash == offertPh) {
+      if (coinForThisSpend.isNotEmpty) {
         offeredCoins[assetId] ??= [];
-        offeredCoins[assetId]!.add(addition);
+        offeredCoins[assetId]!.addAll(coinForThisSpend);
       }
     }
-
     return offeredCoins;
   }
 
@@ -466,10 +499,9 @@ class Offer {
           final nonce = paymentGroup.first().atom;
           final paymentArgsList = paymentGroup.rest().toList();
 
-          notarizedPayments.addAll(paymentArgsList
-              .map((condition) =>
-                  NotarizedPayment.fromConditionAndNonce(condition: condition, nonce: nonce))
-              .toList());
+          notarizedPayments.addAll(paymentArgsList.map((condition) {
+            return NotarizedPayment.fromConditionAndNonce(condition: condition, nonce: nonce);
+          }).toList());
         }
         if (requestedPayments[assetId] == null) {
           requestedPayments[assetId] = [];
@@ -513,7 +545,7 @@ class Offer {
 
   static Offer fromBench32(String offerBech32) {
     final bytes = Bytes(OfferSegwitDecoder().convert(offerBech32).program);
-    print(bytes.toHex());
+
     return try_offer_decompression(bytes);
   }
 
