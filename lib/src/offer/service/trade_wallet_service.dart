@@ -4,10 +4,10 @@ import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 import '../../core/models/conditions/announcement.dart';
 import '../models/full_coin.dart';
 import '../models/notarized_payment.dart';
-import '../models/offer.dart';
-import '../models/puzzle_info.dart';
+import 'package:chia_crypto_utils/src/offer/models/offer.dart';
+import 'package:chia_crypto_utils/src/offer/models/puzzle_info.dart';
 
-class TraderWalletService extends BaseWalletService {
+class TradeWalletService extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
   final catWallet = CatWalletService();
 
