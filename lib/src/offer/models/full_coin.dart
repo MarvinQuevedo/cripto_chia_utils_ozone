@@ -16,7 +16,7 @@ class FullCoin extends CoinPrototype {
   final CoinSpend? parentCoinSpend;
   late final Puzzlehash? assetId;
   late final Program lineageProof;
-  late final CoinPrototype coin;
+  late final Coin coin;
   bool get isCatCoin {
     final uncurriedParentPuzzleReveal = parentCoinSpend?.puzzleReveal.uncurry();
     if (uncurriedParentPuzzleReveal == null) {
@@ -59,10 +59,10 @@ class FullCoin extends CoinPrototype {
   factory FullCoin.fromCoin(Coin coin, CoinSpend parentCoinSpend) {
     return FullCoin(parentCoinSpend: parentCoinSpend, coin: coin);
   }
-  factory FullCoin.fromCatCoin(CatCoin catCoin) {
+  /*  factory FullCoin.fromCatCoin(CatCoin catCoin) {
     return FullCoin(
       parentCoinSpend: catCoin.parentCoinSpend,
       coin: catCoin.toCoinPrototype(),
     );
-  }
+  } */
 }
