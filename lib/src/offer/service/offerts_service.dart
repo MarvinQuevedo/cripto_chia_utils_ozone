@@ -3,7 +3,7 @@ import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 
 import '../../../chia_crypto_utils.dart';
 
-class OffertsService extends BaseWalletService {
+class OffersService extends BaseWalletService {
   final catWallet = CatWalletService();
   final standardWalletService = StandardWalletService();
 }

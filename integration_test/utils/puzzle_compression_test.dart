@@ -50,8 +50,8 @@ Future<void> main() async {
     print("Cat factor = ${factor}");
   }
 
-  void testOffertPuzzle() {
-    final coinSpend = CoinSpend(coin: COIN, puzzleReveal: offertProgram, solution: SOLUTION);
+  void testOfferPuzzle() {
+    final coinSpend = CoinSpend(coin: COIN, puzzleReveal: offerProgram, solution: SOLUTION);
     final compressed = compressObjectWithPuzzles(coinSpend.toBytes(), LATEST_VERSION);
 
     assert(coinSpend.toBytes().length > compressed.length);
@@ -59,18 +59,18 @@ Future<void> main() async {
     final coinsSpendUncompressed = CoinSpend.fromBytes(decompressObjectWithPuzzles(compressed));
     assert(coinsSpendUncompressed == coinSpend);
     final factor = compressed.length / coinSpend.toBytes().length;
-    print("Offert factor = ${factor}");
+    print("Offer factor = ${factor}");
   }
 
   void testLowestBestVersion() {
     assert(lowestBestVersion([catProgram.toBytes()]) == 1);
-    assert(lowestBestVersion([offertProgram.toBytes()]) == 2);
+    assert(lowestBestVersion([offerProgram.toBytes()]) == 2);
   }
 
   test('Test Puzzle compression', () async {
     testStandardPuzzle();
     testCatPuzzle();
-    testOffertPuzzle();
+    testOfferPuzzle();
     testLowestBestVersion();
   });
 }

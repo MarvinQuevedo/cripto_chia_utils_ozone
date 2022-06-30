@@ -28,7 +28,7 @@ class Offer {
     required this.driverDict,
   });
 
-  Bytes get ph => offertProgram.hash();
+  Bytes get ph => offerProgram.hash();
 
   /// calc the coins hash [nonce]
   Map<Bytes?, List<NotarizedPayment>> notarizePayments({
@@ -71,11 +71,11 @@ class Offer {
         settlementPh = outerPuzzle
             .constructPuzzle(
               constructor: driverDict[assetId]!,
-              innerPuzzle: offertProgram,
+              innerPuzzle: offerProgram,
             )
             .hash();
       } else {
-        settlementPh = offertProgram.hash();
+        settlementPh = offerProgram.hash();
       }
 
       Bytes msg = Program.list([
@@ -91,7 +91,7 @@ class Offer {
   Map<Bytes?, List<CoinPrototype>> getOfferedCoins() {
     final offeredCoins = <Bytes?, List<CoinPrototype>>{};
 
-    final OFFER_HASH = offertProgram.hash();
+    final OFFER_HASH = offerProgram.hash();
     for (var parentSpend in bundle.coinSpends) {
       final coinForThisSpend = <CoinPrototype>[];
       final parentPuzzle = parentSpend.puzzleReveal;
@@ -129,7 +129,7 @@ class Offer {
                     outerPuzzle
                         .constructPuzzle(
                           constructor: puzzleDriver,
-                          innerPuzzle: offertProgram,
+                          innerPuzzle: offerProgram,
                         )
                         .hash());
 
@@ -287,19 +287,19 @@ class Offer {
     return pCoins.toList();
   }
 
-  static aggreate(List<Offer> offerts) {
+  static aggreate(List<Offer> offers) {
     final totalRequestedPayments = <Bytes?, List<NotarizedPayment>>{};
     SpendBundle totalBundle = SpendBundle.empty;
     final totalDriverDict = <Bytes, PuzzleInfo>{};
-    for (var offert in offerts) {
+    for (var offer in offers) {
       final totalInputs = totalBundle.coinSpends.map((e) => e.coin).toSet();
-      final offerInputs = offert.bundle.coinSpends.map((e) => e.coin).toSet();
+      final offerInputs = offer.bundle.coinSpends.map((e) => e.coin).toSet();
       if (totalInputs.checkOverlay(offerInputs)) {
-        throw Exception("The aggregated offers overlap inputs $offert");
+        throw Exception("The aggregated offers overlap inputs $offer");
       }
 
       // Next,  do the aggregation
-      final requestedPayments = offert.requestedPayments;
+      final requestedPayments = offer.requestedPayments;
       requestedPayments.forEach((Bytes? assetId, List<NotarizedPayment> payments) {
         if (totalRequestedPayments[assetId] != null) {
           totalRequestedPayments[assetId]!.addAll(payments);
@@ -307,14 +307,14 @@ class Offer {
           totalRequestedPayments[assetId] = payments.toList();
         }
       });
-      offert.driverDict.forEach((Bytes? key, PuzzleInfo value) {
+      offer.driverDict.forEach((Bytes? key, PuzzleInfo value) {
         if (totalDriverDict.containsKey(key) && totalDriverDict[key] != value) {
           throw Exception("The offers to aggregate disagree on the drivers for ${key?.toHex()}");
         }
       });
 
-      totalBundle = totalBundle + offert.bundle;
-      offert.driverDict.forEach((offerKey, offerValue) {
+      totalBundle = totalBundle + offer.bundle;
+      offer.driverDict.forEach((offerKey, offerValue) {
         totalDriverDict.update(offerKey, (value) => offerValue);
       });
     }
@@ -342,14 +342,14 @@ class Offer {
   ///  A "valid" spend means that this bundle can be pushed to the network and will succeed
   /// This differs from the `to_spend_bundle` method which deliberately creates an invalid SpendBundle
   SpendBundle toValidSpend({Bytes? arbitragePh}) {
-    Offer offert = this;
+    Offer offer = this;
     if (!isValid()) {
       throw Exception("Offer is currently incomplete");
     }
     final completionSpends = <CoinSpend>[];
-    final allOfferredCoins = offert.getOfferedCoins();
-    final allArbitragePh = offert.arbitrage();
-    offert.requestedPayments.forEach((Bytes? assetId, List<NotarizedPayment> payments) {
+    final allOfferredCoins = offer.getOfferedCoins();
+    final allArbitragePh = offer.arbitrage();
+    offer.requestedPayments.forEach((Bytes? assetId, List<NotarizedPayment> payments) {
       final List<CoinPrototype> offerredCoins = allOfferredCoins[assetId]!;
 
       // Because of CAT supply laws, we must specify a place for the leftovers to go
@@ -401,7 +401,7 @@ class Offer {
           String siblingsSpends = "(";
           String silblingsPuzzles = "(";
           String silblingsSolutions = "(";
-          String disassembledOfferMod = offertProgram.toSource();
+          String disassembledOfferMod = offerProgram.toSource();
           for (var siblingCoin in offerredCoins) {
             if (siblingCoin != coin) {
               siblings += siblingCoin.toBytes().toHexWithPrefix();
@@ -425,9 +425,9 @@ class Offer {
           });
 
           solution = outerPuzzle.solvePuzzle(
-            constructor: offert.driverDict[assetId]!,
+            constructor: offer.driverDict[assetId]!,
             solver: solver,
-            innerPuzzle: offertProgram,
+            innerPuzzle: offerProgram,
             innerSolution: coinToSolutionDict[coin]!,
           );
         } else {
@@ -435,10 +435,10 @@ class Offer {
         }
         final puzzleReveal = (assetId != null)
             ? outerPuzzle.constructPuzzle(
-                constructor: offert.driverDict[assetId]!,
-                innerPuzzle: offertProgram,
+                constructor: offer.driverDict[assetId]!,
+                innerPuzzle: offerProgram,
               )
-            : offertProgram;
+            : offerProgram;
         completionSpends.add(CoinSpend(
           coin: coin,
           puzzleReveal: puzzleReveal,
@@ -447,7 +447,7 @@ class Offer {
       }
     });
 
-    return SpendBundle(coinSpends: completionSpends) + offert.bundle;
+    return SpendBundle(coinSpends: completionSpends) + offer.bundle;
   }
 
   /// Before we serialze this as a SpendBundle, we need to serialze the `requested_payments` as dummy CoinSpends
@@ -456,7 +456,7 @@ class Offer {
     requestedPayments.forEach((assetId, payments) {
       final puzzleReveal = outerPuzzle.constructPuzzle(
         constructor: driverDict[assetId]!,
-        innerPuzzle: offertProgram,
+        innerPuzzle: offerProgram,
       );
 
       List<Program> innerSolutions = [];
@@ -543,9 +543,9 @@ class Offer {
   }
 
   String toBench32({String prefix = "offer", int? compressionVersion}) {
-    final offertBytes = compress(version: compressionVersion);
+    final offerBytes = compress(version: compressionVersion);
 
-    final encoded = OfferSegwitEncoder().convert(Segwit(prefix, offertBytes));
+    final encoded = OfferSegwitEncoder().convert(Segwit(prefix, offerBytes));
     return encoded;
   }
 
