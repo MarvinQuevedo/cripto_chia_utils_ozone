@@ -20,7 +20,7 @@ class Offer {
   final SpendBundle bundle;
 
   ///  asset_id -> asset driver
-  final Map<Bytes, PuzzleInfo> driverDict;
+  final Map<Bytes?, PuzzleInfo> driverDict;
 
   Offer({
     required this.requestedPayments,
@@ -28,13 +28,12 @@ class Offer {
     required this.driverDict,
   });
 
-  Bytes get ph => offerProgram.hash();
+  static Puzzlehash get ph => offerProgram.hash();
 
   /// calc the coins hash [nonce]
-  Map<Bytes?, List<NotarizedPayment>> notarizePayments({
-    required Map<Bytes?, List<NotarizedPayment>>
-        requestedPayments, //`Null` means you are requesting XCH
-    required List<Coin> coins,
+  static Map<Bytes?, List<NotarizedPayment>> notarizePayments({
+    required Map<Bytes?, List<Payment>> requestedPayments, //`Null` means you are requesting XCH
+    required List<CoinPrototype> coins,
   }) {
     // This sort should be reproducible in CLVM with `>s`
 
@@ -46,19 +45,16 @@ class Offer {
     requestedPayments.forEach((assetId, payments) {
       result[assetId] = [];
       payments.forEach((payment) {
-        result[assetId]!.add(
-          payment.copyWith(
-            nonce: nonce,
-          ),
-        );
+        result[assetId]!.add(NotarizedPayment(payment.amount, payment.puzzlehash,
+            memos: payment.memos, nonce: nonce));
       });
     });
     return result;
   }
 
-  List<Announcement> calculateAnnouncements({
+  static List<Announcement> calculateAnnouncements({
     required Map<Bytes?, List<NotarizedPayment>> notarizedPayment,
-    required Map<Bytes, PuzzleInfo> driverDict,
+    required Map<Bytes?, PuzzleInfo> driverDict,
   }) {
     final result = <Announcement>[];
     notarizedPayment.forEach((assetId, payments) {
@@ -190,7 +186,7 @@ class Offer {
     final offered_amounts = getOfferedAmounts();
     final requested_amounts = getRequestedAmounts();
 
-    final driverDictR = <Bytes, Map<String, dynamic>>{};
+    final driverDictR = <Bytes?, Map<String, dynamic>>{};
     driverDict.forEach((key, value) {
       driverDictR[key] = value.info;
     });
@@ -290,7 +286,7 @@ class Offer {
   static aggreate(List<Offer> offers) {
     final totalRequestedPayments = <Bytes?, List<NotarizedPayment>>{};
     SpendBundle totalBundle = SpendBundle.empty;
-    final totalDriverDict = <Bytes, PuzzleInfo>{};
+    final totalDriverDict = <Bytes?, PuzzleInfo>{};
     for (var offer in offers) {
       final totalInputs = totalBundle.coinSpends.map((e) => e.coin).toSet();
       final offerInputs = offer.bundle.coinSpends.map((e) => e.coin).toSet();
@@ -556,12 +552,12 @@ class Offer {
   }
 
   static Offer try_offer_decompression(Bytes dataBytes) {
-    // try {
-    return Offer.fromCompressed(dataBytes);
-    /*  } catch (e) {
+    try {
+      return Offer.fromCompressed(dataBytes);
+    } catch (e) {
       print(e);
       return Offer.fromBytes(dataBytes);
-    } */
+    }
   }
 
   static Offer fromCompressed(Bytes compressedBytes) {
