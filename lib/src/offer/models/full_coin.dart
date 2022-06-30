@@ -1,12 +1,12 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
-Puzzlehash? _getPuzzleHash(CoinSpend? parentCoinSpend) {
+Puzzlehash? _getTailHash(CoinSpend? parentCoinSpend) {
   try {
     final arguments = parentCoinSpend!.puzzleReveal.uncurry().arguments;
     if (arguments.length > 1) {
       return Puzzlehash(parentCoinSpend.puzzleReveal.uncurry().arguments[1].atom);
     }
-    return parentCoinSpend.coin.puzzlehash;
+    return null;
   } catch (e) {
     return null;
   }
@@ -29,7 +29,7 @@ class FullCoin extends CoinPrototype {
   FullCoin({
     this.parentCoinSpend,
     required this.coin,
-  })  : assetId = _getPuzzleHash(parentCoinSpend),
+  })  : assetId = _getTailHash(parentCoinSpend),
         lineageProof = (parentCoinSpend?.puzzleReveal.uncurry().arguments.length ?? 0) > 2
             ? Program.list([
                 Program.fromBytes(
