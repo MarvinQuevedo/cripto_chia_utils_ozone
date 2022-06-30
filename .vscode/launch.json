@@ -8,7 +8,7 @@
             "name": "Offer test",
             "type": "dart",
             "request": "launch",
-            "program": "integration_test/offers/offer_test.dart"
+            "program": "integration_test/offers/offer_parse_test.dart"
         },
         {
             "name": "Flutter",

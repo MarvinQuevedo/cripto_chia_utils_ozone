@@ -381,14 +381,13 @@ class Offer {
 
             innerSolutions.add(Program.list(<Program>[
               Program.fromBytes(nonce),
-              Program.list(
+            ]..addAll(
                 noncePayments
                     .map(
                       (e) => e.toProgram(),
                     )
                     .toList(),
-              )
-            ]));
+              )));
           }
         }
         coinToSolutionDict[coin] = Program.list(innerSolutions);
@@ -460,21 +459,26 @@ class Offer {
         innerPuzzle: offertProgram,
       );
 
-      List innerSolutions = [];
+      List<Program> innerSolutions = [];
       final nonces = cleanDuplicatesValues(payments.map((e) => e.nonce).toList());
       nonces.forEach((nonce) {
         final noncePayments = payments.where((element) => element.nonce == nonce).toList();
         innerSolutions.add(Program.list(<Program>[
           Program.fromBytes(nonce),
-          Program.list(
-            noncePayments
-                .map(
-                  (e) => e.toProgram(),
-                )
-                .toList(),
-          )
-        ]));
+        ]..addAll(noncePayments
+            .map(
+              (e) => e.toProgram(),
+            )
+            .toList())));
       });
+      aditionalCoinSpends.add(CoinSpend(
+          coin: CoinPrototype(
+            parentCoinInfo: ZERO_32,
+            puzzlehash: puzzleReveal.hash(),
+            amount: 0,
+          ),
+          puzzleReveal: puzzleReveal,
+          solution: Program.list(innerSolutions)));
     });
 
     return SpendBundle(coinSpends: aditionalCoinSpends) + this.bundle;
@@ -528,6 +532,7 @@ class Offer {
           asSpendBundle.coinSpends.map((e) => e.puzzleReveal.uncurry().program.toBytes()).toList();
       version = max([lowestBestVersion(mods), 2])!;
     }
+
     return compressObjectWithPuzzles(asSpendBundle.toBytes(), version);
   }
 
@@ -539,7 +544,8 @@ class Offer {
 
   String toBench32({String prefix = "offert", int? compressionVersion}) {
     final offertBytes = compress(version: compressionVersion);
-    final encoded = segwit.encode(Segwit(prefix, offertBytes));
+
+    final encoded = OfferSegwitEncoder().convert(Segwit(prefix, offertBytes));
     return encoded;
   }
 

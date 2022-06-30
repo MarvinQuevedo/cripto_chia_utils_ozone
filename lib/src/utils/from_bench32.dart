@@ -40,6 +40,24 @@ class OfferSegwitDecoder extends Converter<String, Segwit> with SegwitValidation
   }
 }
 
+class OfferSegwitEncoder extends Converter<Segwit, String> with SegwitValidations {
+  @override
+  String convert(Segwit input) {
+    var program = input.program;
+
+    if (isTooShortProgram(program)) {
+      throw InvalidProgramLength('too short');
+    }
+
+    var data = _convertBits(program, 8, 5, true);
+
+    return Bech32mEncoder().convert(
+      Bech32m(input.hrp, data),
+      data.length + input.hrp.length + 1 + Bech32mValidations.checksumLength,
+    );
+  }
+}
+
 Bytes decodeFromBench32(String input) {
   return Bytes(SegwitDecoder().convert(input).program);
 }

@@ -1,6 +1,5 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/offer/models/offer.dart';
-import 'package:chia_crypto_utils/src/offer/puzzles/settlement_payments/settlement_payments.clvm.hex.dart';
 import 'package:chia_crypto_utils/src/offer/utils/puzzle_compression.dart';
 import 'package:test/test.dart';
 
@@ -27,10 +26,14 @@ Future<void> main() async {
 
   void testParseOfferFile() {
     final offer = Offer.fromBench32(testOfferData);
-    print(offer.summary());
+
+    final compressedAgain = offer.toBench32();
+
+    final offer2 = Offer.fromBench32(compressedAgain);
+    expect(offer2.id == offer.id, true);
   }
 
-  test('Test Puzzle compression', () async {
+  test('Test Puzzle compression parse', () async {
     testParseOfferFile();
   });
 }
