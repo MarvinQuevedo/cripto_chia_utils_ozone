@@ -30,7 +30,8 @@ Future<void> main() async {
     final compressedAgain = offer.toBench32();
 
     final offer2 = Offer.fromBench32(compressedAgain);
-    expect(offer2.id == offer.id, true);
+    print(compressedAgain);
+    expect(compressedAgain == testOfferData, true);
   }
 
   test('Test Puzzle compression parse', () async {

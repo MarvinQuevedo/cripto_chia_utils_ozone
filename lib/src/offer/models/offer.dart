@@ -542,7 +542,7 @@ class Offer {
     return toSpendBundle().toBytes();
   }
 
-  String toBench32({String prefix = "offert", int? compressionVersion}) {
+  String toBench32({String prefix = "offer", int? compressionVersion}) {
     final offertBytes = compress(version: compressionVersion);
 
     final encoded = OfferSegwitEncoder().convert(Segwit(prefix, offertBytes));
