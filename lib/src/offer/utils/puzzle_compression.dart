@@ -14,11 +14,11 @@ import '../../standard/puzzles/p2_delegated_puzzle_or_hidden_puzzle/p2_delegated
 final ZDICT = [
   p2DelegatedPuzzleOrHiddenPuzzleProgram.toBytes() + catProgram.toBytes(),
   offertProgram.toBytes(),
-  (singletonTopLayerProgram.toBytes() +
+  singletonTopLayerV1Program.toBytes() +
       nftStateLayerProgram.toBytes() +
       nftOwnershipLayer.toBytes() +
       nftMetadataUpdaterProgram.toBytes() +
-      nftTransferProgram.toBytes()),
+      nftTransferProgram.toBytes(),
   // more dictionaries go here
 ];
 
@@ -34,7 +34,8 @@ class CompressionVersionError {
 
 Bytes zDictForVersion(int version) {
   Bytes summedDict = Bytes.empty;
-  final subList = ZDICT.sublist(0, version - 1);
+  final subList = ZDICT.sublist(0, version);
+  print("zdict len ${subList.length}");
   for (var item in subList) {
     summedDict += item;
   }
@@ -67,6 +68,8 @@ Bytes decompressObjectWithPuzzles(Bytes compressedObjectBlob) {
     throw CompressionVersionError(version);
   }
   final zdict = zDictForVersion(version);
+  print(zdict.length);
+  print("zdict hash = ${zdict.sha256Hash()}");
   final objectBytes = decompressWithZdict(
       blobIterator.extractBytesAndAdvance(compressedObjectBlob.length - 2), zdict);
   return objectBytes;

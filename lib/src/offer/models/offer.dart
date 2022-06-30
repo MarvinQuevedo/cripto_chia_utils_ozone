@@ -7,6 +7,7 @@ import 'package:quiver/iterables.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/models/conditions/announcement.dart';
+import '../../utils/from_bench32.dart';
 import '../exceptions/coin_not_in_bundle.dart';
 import '../puzzles/settlement_payments/settlement_payments.clvm.hex.dart';
 import '../utils/clean_dulicates_values.dart';
@@ -511,16 +512,18 @@ class Offer {
   }
 
   static Offer fromBench32(String offerBech32) {
-    final bytes = segwit.decode(offerBech32).program;
-    return try_offer_decompression(Bytes(bytes));
+    final bytes = Bytes(OfferSegwitDecoder().convert(offerBech32).program);
+    print(bytes.toHex());
+    return try_offer_decompression(bytes);
   }
 
   static Offer try_offer_decompression(Bytes dataBytes) {
-    try {
-      return Offer.fromCompressed(dataBytes);
-    } catch (e) {
+    // try {
+    return Offer.fromCompressed(dataBytes);
+    /*  } catch (e) {
+      print(e);
       return Offer.fromBytes(dataBytes);
-    }
+    } */
   }
 
   static Offer fromCompressed(Bytes compressedBytes) {
