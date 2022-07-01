@@ -30,12 +30,13 @@ class TradeWalletService extends BaseWalletService {
     for (var coin in selectedCoins) {
       if (coin.assetId == null) {
         final standarBundle = StandardWalletService().createSpendBundle(
-            payments: [Payment(offeredAmounts[coin.assetId]!.abs(), Offer.ph)],
-            coinsInput: selectedCoins,
-            keychain: keychain,
-            fee: feeLeftToPay,
-            puzzleAnnouncementsToAssert: announcements,
-            changePuzzlehash: changePuzzlehash);
+          payments: [Payment(offeredAmounts[coin.assetId]!.abs(), Offer.ph)],
+          coinsInput: selectedCoins,
+          keychain: keychain,
+          fee: feeLeftToPay,
+          puzzleAnnouncementsToAssert: announcements,
+          changePuzzlehash: changePuzzlehash,
+        );
         transactions.add(standarBundle);
       } else if (coin.assetId != null) {
         final catBundle = CatWalletService().createSpendBundle(

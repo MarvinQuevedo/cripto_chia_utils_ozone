@@ -16,7 +16,7 @@ class StandardWalletService extends BaseWalletService {
     int fee = 0,
     Bytes? originId,
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
-    List<Condition> puzzleAnnouncementsToAssert = const [],
+    List<AssertPuzzleAnnouncementCondition> puzzleAnnouncementsToAssert = const [],
   }) {
     // copy coins input since coins list is modified in this function
     final coins = List<CoinPrototype>.from(coinsInput);

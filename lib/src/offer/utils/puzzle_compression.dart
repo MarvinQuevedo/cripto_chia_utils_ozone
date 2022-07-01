@@ -13,7 +13,7 @@ import '../../standard/puzzles/p2_delegated_puzzle_or_hidden_puzzle/p2_delegated
 
 final ZDICT = [
   p2DelegatedPuzzleOrHiddenPuzzleProgram.toBytes() + catProgram.toBytes(),
-  offerProgram.toBytes(),
+  OFFER_MOD.toBytes(),
   singletonTopLayerV1Program.toBytes() +
       nftStateLayerProgram.toBytes() +
       nftOwnershipLayer.toBytes() +

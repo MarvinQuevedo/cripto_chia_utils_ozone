@@ -28,7 +28,7 @@ class Offer {
     required this.driverDict,
   });
 
-  static Puzzlehash get ph => offerProgram.hash();
+  static Puzzlehash get ph => OFFER_MOD.hash();
 
   /// calc the coins hash [nonce]
   static Map<Bytes?, List<NotarizedPayment>> notarizePayments({
@@ -67,11 +67,11 @@ class Offer {
         settlementPh = outerPuzzle
             .constructPuzzle(
               constructor: driverDict[assetId]!,
-              innerPuzzle: offerProgram,
+              innerPuzzle: OFFER_MOD,
             )
             .hash();
       } else {
-        settlementPh = offerProgram.hash();
+        settlementPh = OFFER_MOD.hash();
       }
 
       Bytes msg = Program.list([
@@ -87,7 +87,7 @@ class Offer {
   Map<Bytes?, List<CoinPrototype>> getOfferedCoins() {
     final offeredCoins = <Bytes?, List<CoinPrototype>>{};
 
-    final OFFER_HASH = offerProgram.hash();
+    final OFFER_HASH = OFFER_MOD.hash();
     for (var parentSpend in bundle.coinSpends) {
       final coinForThisSpend = <CoinPrototype>[];
       final parentPuzzle = parentSpend.puzzleReveal;
@@ -125,7 +125,7 @@ class Offer {
                     outerPuzzle
                         .constructPuzzle(
                           constructor: puzzleDriver,
-                          innerPuzzle: offerProgram,
+                          innerPuzzle: OFFER_MOD,
                         )
                         .hash());
 
@@ -397,7 +397,7 @@ class Offer {
           String siblingsSpends = "(";
           String silblingsPuzzles = "(";
           String silblingsSolutions = "(";
-          String disassembledOfferMod = offerProgram.toSource();
+          String disassembledOfferMod = OFFER_MOD.toSource();
           for (var siblingCoin in offerredCoins) {
             if (siblingCoin != coin) {
               siblings += siblingCoin.toBytes().toHexWithPrefix();
@@ -423,7 +423,7 @@ class Offer {
           solution = outerPuzzle.solvePuzzle(
             constructor: offer.driverDict[assetId]!,
             solver: solver,
-            innerPuzzle: offerProgram,
+            innerPuzzle: OFFER_MOD,
             innerSolution: coinToSolutionDict[coin]!,
           );
         } else {
@@ -432,9 +432,9 @@ class Offer {
         final puzzleReveal = (assetId != null)
             ? outerPuzzle.constructPuzzle(
                 constructor: offer.driverDict[assetId]!,
-                innerPuzzle: offerProgram,
+                innerPuzzle: OFFER_MOD,
               )
-            : offerProgram;
+            : OFFER_MOD;
         completionSpends.add(CoinSpend(
           coin: coin,
           puzzleReveal: puzzleReveal,
@@ -451,10 +451,10 @@ class Offer {
     final aditionalCoinSpends = <CoinSpend>[];
     requestedPayments.forEach((assetId, payments) {
       final puzzleReveal = (assetId == null)
-          ? offerProgram
+          ? OFFER_MOD
           : outerPuzzle.constructPuzzle(
               constructor: driverDict[assetId]!,
-              innerPuzzle: offerProgram,
+              innerPuzzle: OFFER_MOD,
             );
 
       List<Program> innerSolutions = [];

@@ -51,7 +51,7 @@ Future<void> main() async {
   }
 
   void testOfferPuzzle() {
-    final coinSpend = CoinSpend(coin: COIN, puzzleReveal: offerProgram, solution: SOLUTION);
+    final coinSpend = CoinSpend(coin: COIN, puzzleReveal: OFFER_MOD, solution: SOLUTION);
     final compressed = compressObjectWithPuzzles(coinSpend.toBytes(), LATEST_VERSION);
 
     assert(coinSpend.toBytes().length > compressed.length);
@@ -64,7 +64,7 @@ Future<void> main() async {
 
   void testLowestBestVersion() {
     assert(lowestBestVersion([catProgram.toBytes()]) == 1);
-    assert(lowestBestVersion([offerProgram.toBytes()]) == 2);
+    assert(lowestBestVersion([OFFER_MOD.toBytes()]) == 2);
   }
 
   test('Test Puzzle compression', () async {
