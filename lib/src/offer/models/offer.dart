@@ -90,10 +90,12 @@ class Offer {
     final OFFER_HASH = OFFER_MOD.hash();
     for (var parentSpend in bundle.coinSpends) {
       final coinForThisSpend = <CoinPrototype>[];
+
       final parentPuzzle = parentSpend.puzzleReveal;
       final parentSolution = parentSpend.solution;
       final additions =
           bundle.additions.where((element) => !bundle.removals.contains(element)).toList();
+
       final puzzleDriver = outerPuzzle.matchPuzzle(parentPuzzle);
 
       Bytes? assetId;
@@ -324,12 +326,13 @@ class Offer {
   /// Validity is defined by having enough funds within the offer to satisfy both sidess
   bool isValid() {
     final arbitrageValues = arbitrage().values;
-    return arbitrageValues
-            .where(
-              (element) => (element >= 0),
-            )
-            .length ==
-        arbitrageValues.length;
+    final satisfaceds = arbitrageValues
+        .where(
+          (element) => (element >= 0),
+        )
+        .length;
+    final valid = satisfaceds == arbitrageValues.length;
+    return valid;
   }
 
   CoinSpend _getSpendSpendOfCoin(CoinPrototype coin) {
