@@ -7,6 +7,7 @@ import 'package:chia_crypto_utils/src/offer/models/full_coin.dart';
 import 'package:chia_crypto_utils/src/offer/models/notarized_payment.dart';
 import 'package:chia_crypto_utils/src/offer/models/offer.dart';
 import 'package:chia_crypto_utils/src/offer/models/puzzle_info.dart';
+import 'package:chia_crypto_utils/src/offer/service/trade_wallet_service.dart';
 import 'package:chia_crypto_utils/src/offer/utils/puzzle_compression.dart';
 import 'package:test/test.dart';
 
@@ -32,7 +33,6 @@ Offer generate_secure_bundle(
           coinsInput: selectedCoins,
           keychain: keychain,
           fee: feeLeftToPay,
-          coinAnnouncementsToAssert: announcements,
           changePuzzlehash: changePuzzlehash);
       transactions.add(standarBundle);
     } else if (coin.assetId != null) {
@@ -42,7 +42,7 @@ Offer generate_secure_bundle(
             selectedCoins.where((element) => element.isCatCoin).map((e) => e.toCatCoin()).toList(),
         keychain: keychain,
         fee: feeLeftToPay,
-        coinAnnouncementsToAssert: announcements,
+        puzzleAnnouncementsToAssert: announcements,
       );
       transactions.add(catBundle);
     }

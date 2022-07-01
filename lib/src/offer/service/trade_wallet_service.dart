@@ -33,7 +33,7 @@ class TradeWalletService extends BaseWalletService {
             coinsInput: selectedCoins,
             keychain: keychain,
             fee: feeLeftToPay,
-            coinAnnouncementsToAssert: announcements,
+            puzzleAnnouncementsToAssert: announcements,
             changePuzzlehash: changePuzzlehash);
         transactions.add(standarBundle);
       } else if (coin.assetId != null) {
@@ -45,7 +45,7 @@ class TradeWalletService extends BaseWalletService {
               .toList(),
           keychain: keychain,
           fee: feeLeftToPay,
-          coinAnnouncementsToAssert: announcements,
+          puzzleAnnouncementsToAssert: announcements,
         );
         transactions.add(catBundle);
       }

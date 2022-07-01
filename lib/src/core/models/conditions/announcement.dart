@@ -1,12 +1,11 @@
 import '../../../../chia_crypto_utils.dart';
 
-class Announcement extends AssertCoinAnnouncementCondition {
-  Announcement(Bytes coinId, Bytes message, {Bytes? morphBytes})
+class Announcement extends AssertPuzzleAnnouncementCondition {
+  final Bytes message;
+  Announcement(Bytes coinId, this.message, {Bytes? morphBytes})
       : super(
           coinId,
-          message,
-          morphBytes: morphBytes,
         );
 
-  Bytes get originInfo => this.coinId;
+  Bytes get originInfo => this.announcementHash;
 }
