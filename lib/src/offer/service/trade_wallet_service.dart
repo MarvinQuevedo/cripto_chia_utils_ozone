@@ -30,7 +30,9 @@ class TradeWalletService extends BaseWalletService {
     for (var coin in selectedCoins) {
       if (coin.assetId == null) {
         final standarBundle = StandardWalletService().createSpendBundle(
-          payments: [Payment(offeredAmounts[coin.assetId]!.abs(), Offer.ph)],
+          payments: [
+            Payment(offeredAmounts[coin.assetId]!.abs(), Offer.ph),
+          ],
           coinsInput: selectedCoins,
           keychain: keychain,
           fee: feeLeftToPay,
@@ -40,7 +42,9 @@ class TradeWalletService extends BaseWalletService {
         transactions.add(standarBundle);
       } else if (coin.assetId != null) {
         final catBundle = CatWalletService().createSpendBundle(
-          payments: [Payment(offeredAmounts[coin.assetId]!.abs(), Offer.ph)],
+          payments: [
+            Payment(offeredAmounts[coin.assetId]!.abs(), Offer.ph),
+          ],
           catCoinsInput: selectedCoins
               .where((element) => element.isCatCoin)
               .map((e) => e.toCatCoin())
@@ -75,7 +79,6 @@ class TradeWalletService extends BaseWalletService {
     required WalletKeychain keychain,
   }) {
     final chiaRequestedPayments = payments;
-    final chiaOfferedAmount = offeredAmounts[null] ?? 0;
 
     final chiaNotariedPayments = Offer.notarizePayments(
       requestedPayments: chiaRequestedPayments,
@@ -86,7 +89,7 @@ class TradeWalletService extends BaseWalletService {
 
     final chiaOffer = createOfferBundle(
       announcements: chiaAnnouncements,
-      offeredAmounts: {null: chiaOfferedAmount},
+      offeredAmounts: offeredAmounts,
       selectedCoins: coins,
       fee: 0,
       changePuzzlehash: changePuzzlehash,
