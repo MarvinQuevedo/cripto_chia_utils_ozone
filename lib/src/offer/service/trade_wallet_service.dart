@@ -16,7 +16,7 @@ class TradeWalletService extends BaseWalletService {
   /// but doesn't bother with non-offer announcements
   Offer createOfferBundle(
       {required List<FullCoin> selectedCoins,
-      required List<Announcement> announcements,
+      required List<AssertPuzzleAnnouncementCondition> announcements,
       required Map<Bytes?, int> offeredAmounts,
       required WalletKeychain keychain,
       required int fee,
@@ -53,7 +53,9 @@ class TradeWalletService extends BaseWalletService {
       }
     }
     final totalSpendBundle = transactions.fold<SpendBundle>(
-        SpendBundle(coinSpends: []), (previousValue, spendBundle) => previousValue + spendBundle);
+      SpendBundle(coinSpends: []),
+      (previousValue, spendBundle) => previousValue + spendBundle,
+    );
 
     return Offer(
       requestedPayments: notarizedPayments,
@@ -95,4 +97,43 @@ class TradeWalletService extends BaseWalletService {
 
     return chiaOffer;
   }
+/* 
+  Offer responseOffer({
+    required Offer offer,
+    int fee = 0,
+    required WalletKeychain keychain,
+    required List<FullCoin> coins,
+    required Puzzlehash changePuzzlehash,
+    required Puzzlehash receivePuzzlehash,
+  }) {
+    final takeOfferDict = <Bytes?, int>{};
+    final driverDict = <Bytes?, PuzzleInfo>{};
+    final arbitrage = offer.arbitrage();
+
+    arbitrage.forEach((assetId, amount) {
+      takeOfferDict[assetId] = amount;
+      if (assetId != null) {
+        driverDict[assetId] = PuzzleInfo({
+          "type": "CAT",
+          "tail": assetId,
+        });
+      }
+    });
+    final payments = <Bytes?, List<Payment>>{};
+    offer.getOfferedAmounts().forEach((assetId, amount) {
+      if (payments[assetId] == null) {
+        payments[assetId] = [];
+      }
+      payments[assetId]!.add(Payment(amount, receivePuzzlehash));
+    });
+
+    return createOfferForIds(
+        changePuzzlehash: changePuzzlehash,
+        coins: coins,
+        driverDict: driverDict,
+        keychain: keychain,
+        offeredAmounts: takeOfferDict,
+        fee: fee,
+        payments: payments);
+  } */
 }

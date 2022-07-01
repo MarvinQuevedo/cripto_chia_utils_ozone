@@ -283,7 +283,7 @@ class Offer {
     return pCoins.toList();
   }
 
-  static aggreate(List<Offer> offers) {
+  static Offer aggreate(List<Offer> offers) {
     final totalRequestedPayments = <Bytes?, List<NotarizedPayment>>{};
     SpendBundle totalBundle = SpendBundle.empty;
     final totalDriverDict = <Bytes?, PuzzleInfo>{};
@@ -305,13 +305,14 @@ class Offer {
       });
       offer.driverDict.forEach((Bytes? key, PuzzleInfo value) {
         if (totalDriverDict.containsKey(key) && totalDriverDict[key] != value) {
-          throw Exception("The offers to aggregate disagree on the drivers for ${key?.toHex()}");
+          throw Exception(
+              "The offers to aggregate disagree on the drivers for ${key?.toHex()} ${totalDriverDict[key]} != ${totalDriverDict[key]}");
         }
       });
 
       totalBundle = totalBundle + offer.bundle;
       offer.driverDict.forEach((offerKey, offerValue) {
-        totalDriverDict.update(offerKey, (value) => offerValue);
+        totalDriverDict.update(offerKey, (value) => offerValue, ifAbsent: () => offerValue);
       });
     }
     return Offer(
