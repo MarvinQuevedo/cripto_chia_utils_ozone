@@ -75,7 +75,7 @@ class Offer {
       }
 
       Bytes msg = Program.list([
-        Program.fromBytes(payments[0].nonce),
+        Program.fromBytes(payments.first.nonce),
         Program.list(payments.map((e) => e.toProgram()).toList()),
       ]).hash();
 
@@ -450,10 +450,12 @@ class Offer {
   SpendBundle toSpendBundle() {
     final aditionalCoinSpends = <CoinSpend>[];
     requestedPayments.forEach((assetId, payments) {
-      final puzzleReveal = outerPuzzle.constructPuzzle(
-        constructor: driverDict[assetId]!,
-        innerPuzzle: offerProgram,
-      );
+      final puzzleReveal = (assetId == null)
+          ? offerProgram
+          : outerPuzzle.constructPuzzle(
+              constructor: driverDict[assetId]!,
+              innerPuzzle: offerProgram,
+            );
 
       List<Program> innerSolutions = [];
       final nonces = cleanDuplicatesValues(payments.map((e) => e.nonce).toList());

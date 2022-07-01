@@ -6,6 +6,7 @@ import '../models/full_coin.dart';
 import '../models/notarized_payment.dart';
 import 'package:chia_crypto_utils/src/offer/models/offer.dart';
 import 'package:chia_crypto_utils/src/offer/models/puzzle_info.dart';
+import 'dart:math' as math;
 
 class TradeWalletService extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
@@ -29,7 +30,7 @@ class TradeWalletService extends BaseWalletService {
     for (var coin in selectedCoins) {
       if (coin.assetId == null) {
         final standarBundle = StandardWalletService().createSpendBundle(
-            payments: [Payment(offeredAmounts[coin.assetId]!, Offer.ph)],
+            payments: [Payment(offeredAmounts[coin.assetId]!.abs(), Offer.ph)],
             coinsInput: selectedCoins,
             keychain: keychain,
             fee: feeLeftToPay,
@@ -38,7 +39,7 @@ class TradeWalletService extends BaseWalletService {
         transactions.add(standarBundle);
       } else if (coin.assetId != null) {
         final catBundle = CatWalletService().createSpendBundle(
-          payments: [Payment(offeredAmounts[coin.assetId]!, Offer.ph)],
+          payments: [Payment(offeredAmounts[coin.assetId]!.abs(), Offer.ph)],
           catCoinsInput: selectedCoins
               .where((element) => element.isCatCoin)
               .map((e) => e.toCatCoin())
@@ -51,7 +52,7 @@ class TradeWalletService extends BaseWalletService {
       }
     }
     final totalSpendBundle = transactions.fold<SpendBundle>(
-        SpendBundle.empty, (previousValue, spendBundle) => previousValue + spendBundle);
+        SpendBundle(coinSpends: []), (previousValue, spendBundle) => previousValue + spendBundle);
 
     return Offer(
       requestedPayments: notarizedPayments,
@@ -64,13 +65,14 @@ class TradeWalletService extends BaseWalletService {
     required List<FullCoin> coins,
     required Map<Bytes?, PuzzleInfo> driverDict,
     required Map<Bytes?, List<Payment>> payments,
+    required Map<Bytes?, int> offeredAmounts,
     int fee = 0,
     validateOnly = false,
     required Puzzlehash changePuzzlehash,
     required WalletKeychain keychain,
   }) {
     final chiaRequestedPayments = payments;
-    final chiaOfferedAmount = 100;
+    final chiaOfferedAmount = offeredAmounts[null] ?? 0;
 
     final chiaNotariedPayments = Offer.notarizePayments(
       requestedPayments: chiaRequestedPayments,
