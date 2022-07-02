@@ -1,7 +1,7 @@
 import 'package:bech32m/bech32m.dart';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/offer/models/solver.dart';
-import 'package:chia_crypto_utils/src/offer/utils/puzzle_compression.dart';
+import 'package:chia_crypto_utils/src/offers_ozone/models/solver.dart';
+import 'package:chia_crypto_utils/src/offers_ozone/utils/puzzle_compression.dart';
 import 'package:chia_crypto_utils/src/utils/check_set_overlay.dart';
 import 'package:quiver/iterables.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;

@@ -1,8 +1,8 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 import '../../cat/service/cat_outer_puzzle.dart';
-import '../../offer/models/puzzle_info.dart';
-import '../../offer/models/solver.dart';
+import '../../offers_ozone/models/puzzle_info.dart';
+import '../../offers_ozone/models/solver.dart';
 
 class AssetType {
   static String get CAT => 'CAT';

@@ -1,6 +1,6 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/offer/puzzles/settlement_payments/settlement_payments.clvm.hex.dart';
-import 'package:chia_crypto_utils/src/offer/utils/puzzle_compression.dart';
+import 'package:chia_crypto_utils/src/offers_ozone/puzzles/settlement_payments/settlement_payments.clvm.hex.dart';
+import 'package:chia_crypto_utils/src/offers_ozone/utils/puzzle_compression.dart';
 import 'package:test/test.dart';
 
 Future<void> main() async {

@@ -3,8 +3,8 @@ import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 
 import '../models/full_coin.dart';
 import '../models/notarized_payment.dart';
-import 'package:chia_crypto_utils/src/offer/models/offer.dart';
-import 'package:chia_crypto_utils/src/offer/models/puzzle_info.dart';
+import 'package:chia_crypto_utils/src/offers_ozone/models/offer.dart';
+import 'package:chia_crypto_utils/src/offers_ozone/models/puzzle_info.dart';
 
 class TradeWalletService extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();

@@ -3,8 +3,8 @@ import 'package:quiver/iterables.dart';
 import '../../core/models/outer_puzzle.dart';
 import '../../../chia_crypto_utils.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
-import '../../offer/models/puzzle_info.dart';
-import '../../offer/models/solver.dart';
+import '../../offers_ozone/models/puzzle_info.dart';
+import '../../offers_ozone/models/solver.dart';
 
 class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
   @override
