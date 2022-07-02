@@ -88,7 +88,7 @@ class WalletVector with ToBytesMixin {
 
   factory WalletVector.fromMap(Map<String, dynamic> map) {
     final childPrivateKey = PrivateKey.fromHex(map['childPrivateKey'] as String);
-    final childPublicKey = childPrivateKey.getG1();
+    //final childPublicKey = childPrivateKey.getG1();
     final puzzlehash = Puzzlehash.fromHex(map['puzzlehash'] as String);
 
     final assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
@@ -178,7 +178,7 @@ class UnhardenedWalletVector extends WalletVector {
 
   factory UnhardenedWalletVector.fromMap(Map<String, dynamic> map) {
     final childPrivateKey = PrivateKey.fromHex(map['childPrivateKey'] as String);
-    final childPublicKey = childPrivateKey.getG1();
+    //final childPublicKey = childPrivateKey.getG1();
     final puzzlehash = Puzzlehash.fromHex(map['puzzlehash'] as String);
 
     final assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};

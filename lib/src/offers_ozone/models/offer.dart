@@ -1,17 +1,11 @@
 import 'package:bech32m/bech32m.dart';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/offers_ozone/models/solver.dart';
-import 'package:chia_crypto_utils/src/offers_ozone/utils/puzzle_compression.dart';
 import 'package:chia_crypto_utils/src/utils/check_set_overlay.dart';
 import 'package:quiver/iterables.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/models/conditions/announcement.dart';
 import '../../utils/from_bench32.dart';
-import '../exceptions/coin_not_in_bundle.dart';
-import '../puzzles/settlement_payments/settlement_payments.clvm.hex.dart';
-import '../utils/clean_dulicates_values.dart';
-import 'notarized_payment.dart';
 import 'puzzle_info.dart';
 
 class Offer {

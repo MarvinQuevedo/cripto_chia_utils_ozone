@@ -1,6 +1,6 @@
+// ignore_for_file: unused_local_variable
+
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/offers_ozone/models/offer.dart';
-import 'package:chia_crypto_utils/src/offers_ozone/utils/puzzle_compression.dart';
 import 'package:test/test.dart';
 
 const testOfferData =

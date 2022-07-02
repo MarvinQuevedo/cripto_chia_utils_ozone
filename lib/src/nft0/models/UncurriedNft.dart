@@ -1,6 +1,5 @@
 import '../../../chia_crypto_utils.dart';
 import '../../clvm/keywords.dart';
-import '../../singleton/index.dart';
 import '../puzzles/nft_state_layer/nft_state_layer.clvm.hex.dart';
 
 /// A simple solution for uncurry NFT puzzle.

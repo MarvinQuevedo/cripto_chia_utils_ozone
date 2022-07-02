@@ -1,14 +1,10 @@
+// ignore_for_file: unused_local_variable
+
 import 'dart:convert';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/core/models/conditions/announcement.dart';
-import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
-import 'package:chia_crypto_utils/src/offers_ozone/models/full_coin.dart';
-import 'package:chia_crypto_utils/src/offers_ozone/models/notarized_payment.dart';
-import 'package:chia_crypto_utils/src/offers_ozone/models/offer.dart';
 import 'package:chia_crypto_utils/src/offers_ozone/models/puzzle_info.dart';
-import 'package:chia_crypto_utils/src/offers_ozone/service/trade_wallet_service.dart';
-import 'package:chia_crypto_utils/src/offers_ozone/utils/puzzle_compression.dart';
 import 'package:test/test.dart';
 
 /// `generate_secure_bundle` simulates a wallet's `generate_signed_transaction`
@@ -127,6 +123,7 @@ Future<void> main() async {
   final otherParentCoinSpend = CoinSpend.fromJson(
     jsonDecode(otherCatParentJson) as Map<String, dynamic>,
   );
+
   final otherCat = CatCoin(
     coin: otherCoin,
     parentCoinSpend: otherParentCoinSpend,
@@ -147,6 +144,7 @@ Future<void> main() async {
   );
 
   ChiaNetworkContextWrapper().registerNetworkContext(Network.mainnet);
+
   final catWalletService = CatWalletService();
 
   const testMnemonic = [

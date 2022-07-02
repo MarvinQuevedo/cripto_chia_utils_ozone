@@ -11,3 +11,4 @@ export './spend_bundle.dart';
 export './wallet_keychain.dart';
 export './wallet_set.dart';
 export './wallet_vector.dart';
+export './outer_puzzle.dart';
