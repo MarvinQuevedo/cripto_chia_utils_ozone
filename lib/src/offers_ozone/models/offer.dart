@@ -6,7 +6,6 @@ import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/models/conditions/announcement.dart';
 import '../../utils/from_bench32.dart';
-import 'puzzle_info.dart';
 
 class Offer {
   /// The key is the asset id of the asset being requested, if is null then request XCH
