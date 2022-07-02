@@ -325,7 +325,7 @@ class Offer {
 
   /// Validity is defined by having enough funds within the offer to satisfy both sidess
   bool isValid() {
-    final arbitrageValues = arbitrage().values;
+    final arbitrageValues = arbitrage().values.toList();
     final satisfaceds = arbitrageValues
         .where(
           (element) => (element >= 0),
@@ -336,7 +336,7 @@ class Offer {
   }
 
   CoinSpend _getSpendSpendOfCoin(CoinPrototype coin) {
-    return bundle.coinSpends.where((element) => element.coin.id == coin.id).first;
+    return bundle.coinSpends.where((element) => element.coin.id == coin.parentCoinInfo).first;
   }
 
   ///  A "valid" spend means that this bundle can be pushed to the network and will succeed
@@ -405,19 +405,20 @@ class Offer {
           for (var siblingCoin in offerredCoins) {
             if (siblingCoin != coin) {
               siblings += siblingCoin.toBytes().toHexWithPrefix();
-              siblingsSpends += "0x" + coinToSpendDict[siblingCoin]!.toHex() + ")";
               silblingsPuzzles += disassembledOfferMod;
-              silblingsSolutions += coinToSolutionDict[siblingCoin]!.toSource();
+              silblingsSolutions += coinToSolutionDict[siblingCoin]!.serialize().toHexWithPrefix();
             }
           }
           siblings += ")";
           siblingsSpends += ")";
           silblingsPuzzles += ")";
           silblingsSolutions += ")";
+          /*    print("parent spend =  " +
+              coinToSpendDict[coin]!.toProgramList().serialize().toHexWithPrefix()); */
 
           final solver = Solver({
             "coin": coin.toBytes().toHexWithPrefix(),
-            "parent_spend": coinToSolutionDict[coin]!.toHexWithPrefix(),
+            "parent_spend": coinToSpendDict[coin]!.toProgramList().serialize().toHexWithPrefix(),
             "siblings": siblings,
             "sibling_spends": siblingsSpends,
             "sibling_puzzles": silblingsPuzzles,

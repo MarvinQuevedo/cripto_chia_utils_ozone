@@ -46,23 +46,28 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
       required Solver solver,
       required Program innerPuzzle,
       required Program innerSolution}) {
-    final Bytes tailHash = solver.info["tail"];
+    //final Bytes tailHash = solver.info["tail"];
     final spendableCatsList = <SpendableCat>[];
 
     CoinPrototype? targetCoin;
     final siblingsIter = (solver["siblings"] as Program).toList();
-    final siblingSpends = (solver.info["sibling_spends"] as Program).toList();
-    final siblingPuzzles = (solver.info["sibling_puzzles"] as Program).toList();
-    final siblingSolutions = (solver.info["sibling_solutions"] as Program).toList();
+    final siblingSpends = (solver["sibling_spends"] as Program).toList();
+    final siblingPuzzles = (solver["sibling_puzzles"] as Program).toList();
+    final siblingSolutions = (solver["sibling_solutions"] as Program).toList();
     final zipped = zip([
       siblingsIter,
       siblingSpends,
       siblingPuzzles,
       siblingSolutions,
     ]);
+
+    final coinProgram = Program.fromBytes(solver["coin"]);
+    final _parentSpendProgram = Program.deserialize(solver["parent_spend"]);
+    //final parentSpend = CoinSpend.fromProgramList(_parentSpendProgram);
+
     final base = [
-      (solver["coin"]) as Program,
-      (solver["parent_spend"]) as Program,
+      coinProgram,
+      _parentSpendProgram,
       innerPuzzle,
       innerSolution,
     ];
@@ -79,7 +84,8 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
       if (coinBytes == solver["coin"]) {
         targetCoin = coin;
       }
-      final parentSpend = CoinSpend.fromBytes(spendProg.atom);
+      final parentSpend = CoinSpend.fromProgramList(spendProg);
+
       // final parentCoin = parentSpend.coin;
       if (constructor.also != null) {
         puzzle = outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: puzzle);

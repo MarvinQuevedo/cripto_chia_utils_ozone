@@ -61,6 +61,22 @@ class CoinSpend with ToBytesMixin {
     return coin.toBytes() + Bytes(puzzleReveal.serialize()) + Bytes(solution.serialize());
   }
 
+  Program toProgramList() {
+    return Program.list([
+      Program.fromBytes(coin.toBytes()),
+      Program.fromBytes(puzzleReveal.serialize()),
+      Program.fromBytes(solution.serialize()),
+    ]);
+  }
+
+  static CoinSpend fromProgramList(Program program) {
+    final args = program.toList();
+    final coin = CoinPrototype.fromBytes(args[0].atom);
+    final puzzleReveal = Program.deserialize(args[1].atom);
+    final solution = Program.deserialize(args[2].atom);
+    return CoinSpend(coin: coin, puzzleReveal: puzzleReveal, solution: solution);
+  }
+
   factory CoinSpend.fromJson(Map<String, dynamic> json) {
     return CoinSpend(
       coin: CoinPrototype.fromJson(json['coin'] as Map<String, dynamic>),

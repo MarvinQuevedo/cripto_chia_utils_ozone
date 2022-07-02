@@ -18,9 +18,11 @@ AtomType typeForAtom(Program program) {
   final isQuoted = _isQuotedProgram(program);
   if (isQuoted) return AtomType.quoted;
   final atom = program.atom;
-  if (intToBytes(decodeInt(atom), 4, Endian.big) == atom) {
-    return AtomType.integer;
-  }
+  try {
+    if (intToBytes(decodeInt(atom), 4, Endian.big) == atom) {
+      return AtomType.integer;
+    }
+  } catch (e) {}
 
   return AtomType.atom;
 }
@@ -38,7 +40,7 @@ class Solver {
   static dynamic decodeInfoValue(Solver solver, dynamic value) {
     if (value is Solver) {
       return value;
-    } else if (value is List) {
+    } else if (value is List && !(value is Bytes)) {
       return value.map((e) => decodeInfoValue(solver, e)).toList();
     }
     // special case
