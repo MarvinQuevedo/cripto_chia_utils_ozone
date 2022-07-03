@@ -17,7 +17,7 @@ final parentCoinSpendJson = <String, dynamic>{
       "0xffffa04264c974a8e303453acf4951646a421f4eade51a6d6b8a321256d174b29ef0c1ffa0dff4fe83fdf17ed760c21aaf900ba09f756d70fd3dffae89e2e685d15ba236a3ff0180ff01ffffffff80ffff01ffff81f6ff80ff80ff8080ffff33ffa059c53da593ec38fed8daad36473d39d2da9ee7a0dc7500a3b307eca463a85ba4ff01ffffa059c53da593ec38fed8daad36473d39d2da9ee7a0dc7500a3b307eca463a85ba48080ffff3cffa0a44d2fca6f2a524c5d5efb5fe6f13fdb887341af9a04591fc1d97782beb8d0738080ff8080808080"
 };
 
-final originCoinSpendJson = {
+/* final originCoinSpendJson = {
   "coin": {
     "parent_coin_info": "0x9c9c13437bd702e00a9b8fd7b713287a8f6e89fc05844570b59735244d95d0e9",
     "puzzle_hash": "0x99980fea0917bb22f343540bf4ffbd29f8c8b2dc75eea7b20ccbecb6775bede0",
@@ -28,10 +28,11 @@ final originCoinSpendJson = {
   "solution":
       "0xff80ffff01ffff33ffa0eff07522495060c066f66f32acc2a77e3a3e737aca8baea4d1a64ea4cdc13da9ff0180ffff33ffa0e4a7619dd1d6a3f0115e90c8e272b34d61b96252eabc5c2c4ce34afaa7aa10f3ff8402160ebf80ffff34ff840fcb944080ffff3cffa0872758c10b5f1704f5fc7e44416b0fd5bf4c65aa5b1c2cafabd299b5774ebadb80ffff3dffa044d2fb5c8fdada1282ad9d759e842a00a9a67315493020f014839b6ea60d99f68080ff8080"
 };
-
+ */
 Future<void> main() async {
   test('NFT uncurried test', () async {
     final coinSpend = CoinSpend.fromJson(parentCoinSpendJson);
+    print(coinSpend.coin.id);
     final puzzleReveal = coinSpend.puzzleReveal;
     final nftUncurried = UncurriedNFT.uncurry(
       puzzleReveal,

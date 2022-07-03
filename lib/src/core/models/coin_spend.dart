@@ -94,7 +94,7 @@ class CoinSpend with ToBytesMixin {
     if (uncurriedPuzzleSource == catProgram.toSource()) {
       return SpendType.cat;
     }
-    if (uncurriedPuzzleSource == nftStateLayerProgram.toSource()) {
+    if (uncurriedPuzzleSource == singletonTopLayerV1Program.toSource()) {
       return SpendType.nft;
     }
     return SpendType.unknown;
