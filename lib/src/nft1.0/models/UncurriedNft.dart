@@ -70,7 +70,7 @@ class UncurriedNFT {
   /// [royalty_address, trade_price_percentage, settlement_mod_hash, cat_mod_hash]
   final Program? transferProgramCurryParams;
 
-  final Address? royaltyAddress;
+  final Puzzlehash? royaltyPuzzlehash;
   final int? tradePricePercentage;
 
   UncurriedNFT._({
@@ -93,7 +93,7 @@ class UncurriedNFT {
     required this.ownerDid,
     required this.metadataUpdaterHash,
     required this.transferProgramCurryParams,
-    required this.royaltyAddress,
+    required this.royaltyPuzzlehash,
     required this.tradePricePercentage,
     required this.metadata,
     required this.dataUris,
@@ -101,7 +101,7 @@ class UncurriedNFT {
     required this.innerPuzzle,
   });
 
-  static UncurriedNFT uncurry(Program puzzle, {String prefix = 'xch'}) {
+  static UncurriedNFT uncurry(Program puzzle) {
     late Program singletonStruct;
     late Program nftStateLayer;
     late Program sinletonModHash;
@@ -183,7 +183,7 @@ class UncurriedNFT {
       Program? transferProgram;
       Program? transferProgramArgs;
       late Program p2Puzzle;
-      Bytes? royaltyAddress;
+      Puzzlehash? royaltyPuzzlehash;
       int? royaltyPercentage;
       Bytes? nftInnerPuzzleMod;
 
@@ -206,7 +206,7 @@ class UncurriedNFT {
         final royaltyAddressP = transferProgramArgs[1];
         final royaltyPercentageP = transferProgramArgs[2];
         royaltyPercentage = royaltyPercentageP.toInt();
-        royaltyAddress = royaltyAddressP.atom;
+        royaltyPuzzlehash = Puzzlehash(royaltyAddressP.atom);
         currentDid = currentDidP.atom;
         if (currentDid.isEmpty) {
           currentDid = null;
@@ -241,9 +241,7 @@ class UncurriedNFT {
           supportDid: supportsDid,
           transferProgram: transferProgram,
           transferProgramCurryParams: transferProgramArgs,
-          royaltyAddress: royaltyAddress != null
-              ? Address.fromPuzzlehash(Puzzlehash(royaltyAddress), prefix)
-              : null,
+          royaltyPuzzlehash: royaltyPuzzlehash,
           tradePricePercentage: royaltyPercentage,
           nftInnerPuzzleHash: nftInnerPuzzleMod);
     } catch (e) {

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/nft1.0/models/NFTInfo.dart';
 import 'package:chia_crypto_utils/src/nft1.0/models/UncurriedNft.dart';
@@ -15,16 +17,42 @@ final parentCoinSpendJson = <String, dynamic>{
       "0xffffa04264c974a8e303453acf4951646a421f4eade51a6d6b8a321256d174b29ef0c1ffa0dff4fe83fdf17ed760c21aaf900ba09f756d70fd3dffae89e2e685d15ba236a3ff0180ff01ffffffff80ffff01ffff81f6ff80ff80ff8080ffff33ffa059c53da593ec38fed8daad36473d39d2da9ee7a0dc7500a3b307eca463a85ba4ff01ffffa059c53da593ec38fed8daad36473d39d2da9ee7a0dc7500a3b307eca463a85ba48080ffff3cffa0a44d2fca6f2a524c5d5efb5fe6f13fdb887341af9a04591fc1d97782beb8d0738080ff8080808080"
 };
 
+final originCoinSpendJson = {
+  "coin": {
+    "parent_coin_info": "0x9c9c13437bd702e00a9b8fd7b713287a8f6e89fc05844570b59735244d95d0e9",
+    "puzzle_hash": "0x99980fea0917bb22f343540bf4ffbd29f8c8b2dc75eea7b20ccbecb6775bede0",
+    "amount": 100000000
+  },
+  "puzzle_reveal":
+      "0xff02ffff01ff02ffff01ff02ffff03ff0bffff01ff02ffff03ffff09ff05ffff1dff0bffff1effff0bff0bffff02ff06ffff04ff02ffff04ff17ff8080808080808080ffff01ff02ff17ff2f80ffff01ff088080ff0180ffff01ff04ffff04ff04ffff04ff05ffff04ffff02ff06ffff04ff02ffff04ff17ff80808080ff80808080ffff02ff17ff2f808080ff0180ffff04ffff01ff32ff02ffff03ffff07ff0580ffff01ff0bffff0102ffff02ff06ffff04ff02ffff04ff09ff80808080ffff02ff06ffff04ff02ffff04ff0dff8080808080ffff01ff0bffff0101ff058080ff0180ff018080ffff04ffff01b0897c3a36310f83fdddd83303bf0cb3e9318b80abd1f4f325fc4eca7b32bdd413bd60cc30caf75d2c01a686e49bff8e60ff018080",
+  "solution":
+      "0xff80ffff01ffff33ffa0eff07522495060c066f66f32acc2a77e3a3e737aca8baea4d1a64ea4cdc13da9ff0180ffff33ffa0e4a7619dd1d6a3f0115e90c8e272b34d61b96252eabc5c2c4ce34afaa7aa10f3ff8402160ebf80ffff34ff840fcb944080ffff3cffa0872758c10b5f1704f5fc7e44416b0fd5bf4c65aa5b1c2cafabd299b5774ebadb80ffff3dffa044d2fb5c8fdada1282ad9d759e842a00a9a67315493020f014839b6ea60d99f68080ff8080"
+};
+
 Future<void> main() async {
   test('NFT uncurried test', () async {
     final coinSpend = CoinSpend.fromJson(parentCoinSpendJson);
     final puzzleReveal = coinSpend.puzzleReveal;
-    final nftUncurried = UncurriedNFT.uncurry(puzzleReveal);
+    final nftUncurried = UncurriedNFT.uncurry(
+      puzzleReveal,
+    );
     print(nftUncurried);
 
     final info = NFTInfo.fromUncurried(
       uncurriedNFT: nftUncurried,
-      coin: coinSpend.coin,
+      currentCoin: coinSpend.coin,
+      addressPrefix: "txch",
+      genesisCoin: Coin(
+        confirmedBlockIndex: 1188709,
+        spentBlockIndex: 1195599,
+        coinbase: false,
+        timestamp: 1656647940,
+        parentCoinInfo:
+            Bytes.fromHex("0x9c9c13437bd702e00a9b8fd7b713287a8f6e89fc05844570b59735244d95d0e9"),
+        puzzlehash: Address("txch1nxvql6sfz7aj9u6r2s9lflaa98uv3vkuwhh20vsve0ktva6mahsq28pd2m")
+            .toPuzzlehash(),
+        amount: (0.000100000000 * pow(10, 23)).toInt(),
+      ),
     );
     print(info);
   });
