@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import '../../../chia_crypto_utils.dart';
 
 /// NFT Info for displaying NFT on the UI
@@ -9,10 +11,13 @@ class NFTInfo {
   final Bytes nftCoinId;
 
   /// Owner DID
-  final Bytes didOwner;
+  final Bytes? didOwner;
 
   /// Percentage of the transaction fee paid to the author, e.g. 1000 = 1%
-  final int royalty;
+  final int? royaltyPercentage;
+
+  /// Puzzle hash where royalty will be sent to
+  final Bytes? royaltyPuzzlehash;
 
   /// A list of content URIs
   final List<String> dataUris;
@@ -32,96 +37,89 @@ class NFTInfo {
   /// Hash of the license
   final String licenseHash;
 
-  /// Current NFT version
-  final String version;
-
   /// How many NFTs in the current series
-  final int editionCount;
+  final String seriesTotal;
 
-  /// Number of the current NFT in the series"
-  final int editionNumber;
+  /// Number of the current NFT in the series
+  final int seriesNumber;
 
-  NFTInfo({
-    required this.launcherId,
-    required this.nftCoinId,
-    required this.didOwner,
-    required this.royalty,
-    required this.dataUris,
-    required this.metadataUris,
-    required this.licenseUris,
-    required this.dataHash,
-    required this.metadataHash,
-    required this.licenseHash,
-    required this.version,
-    required this.editionCount,
-    required this.editionNumber,
-  });
+  final Bytes updaterPuzzlehash;
+
+  /// Information saved on the chain in hex
+  final String chainInfo;
+
+  /// Block height of the NFT minting
+  final int mintHeight;
+
+  /// If the inner puzzle supports DID
+  final bool supportsDid;
+
+  final bool pendingTransaction;
+
+  final launcherPuzzlehash = singletonLauncherProgram.hash;
+
+  NFTInfo(
+      {required this.launcherId,
+      required this.nftCoinId,
+      required this.didOwner,
+      required this.royaltyPercentage,
+      required this.dataUris,
+      required this.metadataUris,
+      required this.licenseUris,
+      required this.dataHash,
+      required this.metadataHash,
+      required this.licenseHash,
+      required this.chainInfo,
+      required this.mintHeight,
+      required this.pendingTransaction,
+      required this.royaltyPuzzlehash,
+      required this.seriesNumber,
+      required this.seriesTotal,
+      required this.updaterPuzzlehash,
+      required this.supportsDid});
 
   factory NFTInfo.fromJson(Map<String, dynamic> json) {
     return NFTInfo(
-      launcherId: Bytes.fromHex(json['launcher_id'] as String),
-      nftCoinId: Bytes.fromHex(json['nft_coin_id'] as String),
-      didOwner: Bytes.fromHex(json['did_owner'] as String),
-      royalty: json['royalty'] as int,
-      dataUris: List<String>.from(json['data_uris'] as List),
-      dataHash: json['data_hash'] as String,
-      metadataUris: List<String>.from(json['metadata_uris'] as List),
-      metadataHash: json['metadata_hash'] as String,
-      licenseUris: List<String>.from(json['license_uris'] as List),
-      licenseHash: json['license_hash'] as String,
-      version: json['version'] as String,
-      editionCount: json['edition_count'] as int,
-      editionNumber: json['edition_number'] as int,
-    );
+        launcherId: Bytes.fromHex(json['launcher_id'] as String),
+        nftCoinId: Bytes.fromHex(json['nft_coin_id'] as String),
+        didOwner: Bytes.fromHex(json['did_owner'] as String),
+        royaltyPercentage: json['royalty'] as int,
+        dataUris: List<String>.from(json['data_uris'] as List),
+        dataHash: json['data_hash'] as String,
+        metadataUris: List<String>.from(json['metadata_uris'] as List),
+        metadataHash: json['metadata_hash'] as String,
+        licenseUris: List<String>.from(json['license_uris'] as List),
+        licenseHash: json['license_hash'] as String,
+        chainInfo: json["chain_info"] as String,
+        mintHeight: json["mint_height"],
+        pendingTransaction: json["pending_transaction"],
+        royaltyPuzzlehash:
+            json["royalty_puzzle_hash"] != null ? Bytes.fromHex(json["royalty_puzzle_hash"]) : null,
+        seriesNumber: json['series_number'],
+        seriesTotal: json["series_total"],
+        supportsDid: json["supports_did"],
+        updaterPuzzlehash: Bytes.fromHex(json['updater_puzhash']));
   }
 
   Map<String, dynamic> toMap() {
     return {
       'launcher_id': launcherId.toHex(),
       'nft_coin_id': nftCoinId.toHex(),
-      'did_owner': didOwner.toHex(),
-      'royalty': royalty,
+      'did_owner': didOwner?.toHex(),
+      'royalty': royaltyPercentage,
       'data_uris': dataUris,
       'data_hash': dataHash,
       'metadata_uris': metadataUris,
       'metadata_hash': metadataHash,
       'license_uris': licenseUris,
       'license_hash': licenseHash,
-      'version': version,
-      'edition_count': editionCount,
-      'edition_number': editionNumber,
+      "chain_info": chainInfo,
+      'mint_height': mintHeight,
+      'pending_transaction': pendingTransaction,
+      'royalty_puzzle_hash': royaltyPuzzlehash,
+      "series_number": seriesNumber,
+      "series_total": seriesTotal,
+      "supports_did": supportsDid
     };
-  }
-
-  NFTInfo copyWith({
-    Bytes? launcherId,
-    Bytes? nftCoinId,
-    Bytes? didOwner,
-    int? royalty,
-    List<String>? dataUris,
-    String? dataHash,
-    List<String>? metadataUris,
-    String? metadataHash,
-    List<String>? licenseUris,
-    String? licenseHash,
-    String? version,
-    int? editionCount,
-    int? editionNumber,
-  }) {
-    return NFTInfo(
-      launcherId: launcherId ?? this.launcherId,
-      nftCoinId: nftCoinId ?? this.nftCoinId,
-      didOwner: didOwner ?? this.didOwner,
-      royalty: royalty ?? this.royalty,
-      dataUris: dataUris ?? this.dataUris,
-      dataHash: dataHash ?? this.dataHash,
-      metadataUris: metadataUris ?? this.metadataUris,
-      metadataHash: metadataHash ?? this.metadataHash,
-      licenseUris: licenseUris ?? this.licenseUris,
-      licenseHash: licenseHash ?? this.licenseHash,
-      version: version ?? this.version,
-      editionCount: editionCount ?? this.editionCount,
-      editionNumber: editionNumber ?? this.editionNumber,
-    );
   }
 }

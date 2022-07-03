@@ -1,12 +1,10 @@
-import 'package:chia_crypto_utils/src/nft1.0/puzzles/nft_ownership_layer/nft_ownership_layer.clvm.hex.dart';
-
 import '../../../chia_crypto_utils.dart';
-import '../../clvm/keywords.dart';
+import '../puzzles/nft_ownership_layer/nft_ownership_layer.clvm.hex.dart';
 import '../puzzles/nft_state_layer/nft_state_layer.clvm.hex.dart';
 
-export '../puzzles/singleton_top_layer_v1_1/singleton_top_layer_v1_1.clvm.hex.dart';
-export '../puzzles/nft_state_layer/nft_state_layer.clvm.hex.dart';
 export '../puzzles/nft_ownership_layer/nft_ownership_layer.clvm.hex.dart';
+export '../puzzles/nft_state_layer/nft_state_layer.clvm.hex.dart';
+export '../puzzles/singleton_top_layer_v1_1/singleton_top_layer_v1_1.clvm.hex.dart';
 
 /// A simple solution for uncurry NFT puzzle.
 
@@ -109,19 +107,21 @@ class UncurriedNFT {
     late Program sinletonModHash;
     late Program singletonLauncherId;
     late Program launcherPuzzhash;
-    late Program dataUris;
-    late Program dataHash;
-    late Program metaUris;
-    late Program metaHash;
-    late Program licenseUris;
-    late Program licenseHash;
-    late Program seriesNumber;
-    late Program seriesTotal;
+
+    Program dataUris = Program.list([]);
+    Program dataHash = Program.fromInt(0);
+    Program metaUris = Program.list([]);
+    Program metaHash = Program.fromInt(0);
+    Program licenseUris = Program.list([]);
+    Program licenseHash = Program.fromInt(0);
+    Program seriesNumber = Program.fromInt(1);
+    Program seriesTotal = Program.fromInt(0);
 
     final uncurried = puzzle.uncurry();
     final mod = uncurried.program;
     final curried_args = uncurried.arguments;
-    if (mod.toSource() != singletonTopLayerProgram.toSource()) {
+    // print(mod.serializeHex());
+    if (mod.hash() != singletonTopLayerV1Program.hash()) {
       throw ArgumentError("Cannot uncurry NFT puzzle, failed on singleton top layer: Mod ${mod}");
     }
 
@@ -138,10 +138,9 @@ class UncurriedNFT {
 
     //TODO [curried_args] maybe would be has the method [rest], but not found, is posible the solution if corect
 
-    final uncurriedNft = curried_args[1].first().uncurry();
-
-    final nftMod = uncurriedNft.program;
-    final nftArgs = uncurriedNft.arguments;
+    final uncurred = curried_args[1].uncurry();
+    final nftMod = uncurred.program;
+    final nftArgs = uncurred.arguments;
 
     if (nftMod.toSource() != nftStateLayerProgram.toSource()) {
       throw ArgumentError("Cannot uncurry NFT puzzle, failed on NFT state layer: Mod ${mod}");
@@ -151,30 +150,31 @@ class UncurriedNFT {
       final metadata = nftArgs[1];
       final metadataUpdaterHash = nftArgs[2];
       final innerPuzzle = nftArgs[3];
+      final metadataList = metadata.toList();
 
-      for (var kvPair in metadata.toList()) {
-        if (bytesEqual(kvPair.first().atom, encodeBigInt(keywords['u']!))) {
+      for (var kvPair in metadataList) {
+        if (bytesEqual(kvPair.first().atom, 'u'.toBytes())) {
           dataUris = kvPair.rest();
         }
-        if (bytesEqual(kvPair.first().atom, encodeBigInt(keywords['h']!))) {
+        if (bytesEqual(kvPair.first().atom, 'h'.toBytes())) {
           dataHash = kvPair.rest();
         }
-        if (bytesEqual(kvPair.first().atom, encodeBigInt(keywords['mu']!))) {
+        if (bytesEqual(kvPair.first().atom, 'mu'.toBytes())) {
           metaUris = kvPair.rest();
         }
-        if (bytesEqual(kvPair.first().atom, encodeBigInt(keywords['mmhu']!))) {
+        if (bytesEqual(kvPair.first().atom, 'mmhu'.toBytes())) {
           metaHash = kvPair.rest();
         }
-        if (bytesEqual(kvPair.first().atom, encodeBigInt(keywords['lu']!))) {
+        if (bytesEqual(kvPair.first().atom, 'lu'.toBytes())) {
           licenseUris = kvPair.rest();
         }
-        if (bytesEqual(kvPair.first().atom, encodeBigInt(keywords['lh']!))) {
+        if (bytesEqual(kvPair.first().atom, 'lh'.toBytes())) {
           licenseHash = kvPair.rest();
         }
-        if (bytesEqual(kvPair.first().atom, encodeBigInt(keywords['sn']!))) {
+        if (bytesEqual(kvPair.first().atom, 'sn'.toBytes())) {
           seriesNumber = kvPair.rest();
         }
-        if (bytesEqual(kvPair.first().atom, encodeBigInt(keywords['st']!))) {
+        if (bytesEqual(kvPair.first().atom, 'st'.toBytes())) {
           seriesTotal = kvPair.rest();
         }
       }
@@ -245,6 +245,7 @@ class UncurriedNFT {
           tradePricePercentage: royaltyPercentage,
           nftInnerPuzzleHash: nftInnerPuzzleMod);
     } catch (e) {
+      print(e);
       throw Exception("Cannot uncurry NFT state layer: Args ${curried_args}");
     }
   }

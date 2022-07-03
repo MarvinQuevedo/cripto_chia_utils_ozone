@@ -2,6 +2,7 @@
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
+import 'package:chia_crypto_utils/src/nft1.0/puzzles/nft_state_layer/nft_state_layer.clvm.hex.dart';
 import 'package:chia_crypto_utils/src/standard/puzzles/p2_delegated_puzzle_or_hidden_puzzle/p2_delegated_puzzle_or_hidden_puzzle.clvm.hex.dart';
 import 'package:hex/hex.dart';
 
@@ -92,6 +93,9 @@ class CoinSpend with ToBytesMixin {
     }
     if (uncurriedPuzzleSource == catProgram.toSource()) {
       return SpendType.cat;
+    }
+    if (uncurriedPuzzleSource == nftStateLayerProgram.toSource()) {
+      return SpendType.nft;
     }
     return SpendType.unknown;
     //throw UnimplementedError('Unimplemented spend type');
