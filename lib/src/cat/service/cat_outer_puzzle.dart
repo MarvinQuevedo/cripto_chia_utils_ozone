@@ -1,9 +1,7 @@
 import 'package:quiver/iterables.dart';
 
-import '../../core/models/outer_puzzle.dart';
 import '../../../chia_crypto_utils.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
-import '../../offers_ozone/models/puzzle_info.dart';
 
 class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
   @override

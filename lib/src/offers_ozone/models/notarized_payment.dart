@@ -1,5 +1,4 @@
 import '../../../chia_crypto_utils.dart';
-import '../../core/index.dart';
 
 final ZERO_32 = Bytes(List.generate(32, (_) => 0));
 

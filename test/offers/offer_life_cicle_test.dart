@@ -4,7 +4,6 @@ import 'dart:convert';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/core/models/conditions/announcement.dart';
-import 'package:chia_crypto_utils/src/offers_ozone/models/puzzle_info.dart';
 import 'package:test/test.dart';
 
 /// `generate_secure_bundle` simulates a wallet's `generate_signed_transaction`

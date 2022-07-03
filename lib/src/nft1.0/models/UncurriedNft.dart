@@ -70,7 +70,7 @@ class UncurriedNFT {
   /// [royalty_address, trade_price_percentage, settlement_mod_hash, cat_mod_hash]
   final Program? transferProgramCurryParams;
 
-  final Bytes? royaltyAddress;
+  final Address? royaltyAddress;
   final int? tradePricePercentage;
 
   UncurriedNFT._({
@@ -101,7 +101,7 @@ class UncurriedNFT {
     required this.innerPuzzle,
   });
 
-  static UncurriedNFT uncurry(Program puzzle) {
+  static UncurriedNFT uncurry(Program puzzle, {String prefix = 'xch'}) {
     late Program singletonStruct;
     late Program nftStateLayer;
     late Program sinletonModHash;
@@ -188,23 +188,23 @@ class UncurriedNFT {
       Bytes? nftInnerPuzzleMod;
 
       final innerPuzzleUncurried = innerPuzzle.uncurry();
-      final mod = innerPuzzleUncurried.arguments.first;
-      final olArgs = innerPuzzleUncurried.arguments[1];
+      final mod = innerPuzzleUncurried.program;
+      final olArgs = innerPuzzleUncurried.arguments;
 
       bool supportsDid = false;
 
-      if (mod == nftOwnershipLayer) {
+      if (mod.toSource() == nftOwnershipLayer.toSource()) {
         supportsDid = true;
         print("parsing ownership layer");
-        final olArgsList = olArgs.toList();
-        final currentDidP = olArgsList.first;
-        transferProgram = olArgsList[1];
-        p2Puzzle = olArgsList[2];
+        final olArgsList = olArgs;
+        final currentDidP = olArgsList[1];
+        transferProgram = olArgsList[2];
+        p2Puzzle = olArgsList[3];
         final uncurriedTransferProgram = transferProgram.uncurry();
         //final transferProgramMod = uncurriedTransferProgram.program;
         final transferProgramArgs = uncurriedTransferProgram.arguments;
-        final royaltyAddressP = transferProgramArgs.first;
-        final royaltyPercentageP = transferProgramArgs[1];
+        final royaltyAddressP = transferProgramArgs[1];
+        final royaltyPercentageP = transferProgramArgs[2];
         royaltyPercentage = royaltyPercentageP.toInt();
         royaltyAddress = royaltyAddressP.atom;
         currentDid = currentDidP.atom;
@@ -241,7 +241,9 @@ class UncurriedNFT {
           supportDid: supportsDid,
           transferProgram: transferProgram,
           transferProgramCurryParams: transferProgramArgs,
-          royaltyAddress: royaltyAddress,
+          royaltyAddress: royaltyAddress != null
+              ? Address.fromPuzzlehash(Puzzlehash(royaltyAddress), prefix)
+              : null,
           tradePricePercentage: royaltyPercentage,
           nftInnerPuzzleHash: nftInnerPuzzleMod);
     } catch (e) {

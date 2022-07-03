@@ -1,4 +1,5 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/nft1.0/models/NFTInfo.dart';
 import 'package:chia_crypto_utils/src/nft1.0/models/UncurriedNft.dart';
 import 'package:test/test.dart';
 
@@ -16,8 +17,15 @@ final parentCoinSpendJson = <String, dynamic>{
 
 Future<void> main() async {
   test('NFT uncurried test', () async {
-    final puzzleReveal = Program.deserializeHex(parentCoinSpendJson["puzzle_reveal"]!);
+    final coinSpend = CoinSpend.fromJson(parentCoinSpendJson);
+    final puzzleReveal = coinSpend.puzzleReveal;
     final nftUncurried = UncurriedNFT.uncurry(puzzleReveal);
     print(nftUncurried);
+
+    final info = NFTInfo.fromUncurried(
+      uncurriedNFT: nftUncurried,
+      coin: coinSpend.coin,
+    );
+    print(info);
   });
 }
