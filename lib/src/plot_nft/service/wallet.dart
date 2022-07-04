@@ -181,7 +181,7 @@ class PlotNftWalletService extends BaseWalletService {
     Puzzlehash delayedPuzzlehash,
   ) {
     return SingletonService.createP2SingletonPuzzle(
-      singletonModHash: singletonTopLayerProgram.hash(),
+      singletonModHash: singletonTopLayerV1_1Program.hash(),
       launcherId: launcherId,
       secondsDelay: secondsDelay,
       delayedPuzzlehash: delayedPuzzlehash,

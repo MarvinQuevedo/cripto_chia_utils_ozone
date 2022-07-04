@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:chia_crypto_utils/src/nft1.0/models/UncurriedNft.dart';
+import 'package:chia_crypto_utils/src/nft1.0/models/uncurried_nft.dart';
 
 import '../../../chia_crypto_utils.dart';
 import '../../core/models/nft_address.dart';
@@ -61,6 +61,8 @@ class NFTInfo {
 
   final bool pendingTransaction;
 
+  final Puzzlehash p2Puzzlehash;
+
   final launcherPuzzlehash = singletonLauncherProgram.hash;
 
   NftAddress get nftAddress => NftAddress.fromPuzzlehash(this.launcherId);
@@ -83,6 +85,7 @@ class NFTInfo {
       required this.seriesNumber,
       required this.seriesTotal,
       required this.updaterPuzzlehash,
+      required this.p2Puzzlehash,
       required this.supportsDid});
 
   factory NFTInfo.fromJson(Map<String, dynamic> json, {String prefix = "xch"}) {
@@ -98,6 +101,7 @@ class NFTInfo {
         licenseUris: List<String>.from(json['license_uris'] as List),
         licenseHash: json['license_hash'] as String,
         chainInfo: json["chain_info"] as String,
+        p2Puzzlehash: Puzzlehash.fromHex(json["p2_puzzle_hash"]),
         mintHeight: json["mint_height"],
         pendingTransaction: json["pending_transaction"],
         royaltyAddress: json["royalty_puzzle_hash"] != null
@@ -128,7 +132,8 @@ class NFTInfo {
       "series_number": seriesNumber,
       "series_total": seriesTotal,
       "supports_did": supportsDid,
-      "nft_address": nftAddress.address
+      "nft_address": nftAddress.address,
+      "p2_puzzle_hash": p2Puzzlehash.toHex()
     };
   }
 
@@ -153,6 +158,7 @@ class NFTInfo {
     print(dataUris);
     return NFTInfo(
         launcherId: Puzzlehash(uncurriedNFT.launcherPuzhash.atom),
+        p2Puzzlehash: uncurriedNFT.p2Puzzlehash.hash(),
         nftCoinId: currentCoin.id,
         didOwner: uncurriedNFT.ownerDid,
         royaltyPercentage: uncurriedNFT.tradePricePercentage,

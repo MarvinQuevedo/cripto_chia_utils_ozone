@@ -1,9 +1,10 @@
 import '../../../chia_crypto_utils.dart';
 import '../../core/service/base_wallet.dart';
+export '../models/index.dart';
 
 class Nft0WalletService extends BaseWalletService {
   Program createFullpuzzle(Program innerpuz, Bytes genesisId) {
-    final modHash = singletonTopLayerProgram.hash();
+    final modHash = singletonTopLayerV1_1Program.hash();
     final singletonStruct = Program.list(
       [
         Program.fromBytes(modHash),
@@ -11,7 +12,7 @@ class Nft0WalletService extends BaseWalletService {
         Program.fromBytes(singletonLauncherProgram.hash())
       ],
     );
-    return singletonTopLayerProgram.curry([
+    return singletonTopLayerV1_1Program.curry([
       singletonStruct,
       innerpuz,
     ]);

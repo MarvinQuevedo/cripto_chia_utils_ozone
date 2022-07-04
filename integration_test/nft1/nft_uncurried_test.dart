@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/nft1.0/models/NFTInfo.dart';
-import 'package:chia_crypto_utils/src/nft1.0/models/UncurriedNft.dart';
+import 'package:chia_crypto_utils/src/nft1.0/models/nft_info.dart';
+import 'package:chia_crypto_utils/src/nft1.0/models/uncurried_nft.dart';
 import 'package:test/test.dart';
 
 final parentCoinSpendJson = <String, dynamic>{

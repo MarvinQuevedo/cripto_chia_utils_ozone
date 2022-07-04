@@ -59,10 +59,8 @@ class FullCoin extends CoinPrototype {
   factory FullCoin.fromCoin(Coin coin, CoinSpend parentCoinSpend) {
     return FullCoin(parentCoinSpend: parentCoinSpend, coin: coin);
   }
-  /*  factory FullCoin.fromCatCoin(CatCoin catCoin) {
-    return FullCoin(
-      parentCoinSpend: catCoin.parentCoinSpend,
-      coin: catCoin.toCoinPrototype(),
-    );
-  } */
+  SpendType get type {
+    final t = this.parentCoinSpend?.type;
+    return t ?? SpendType.standard;
+  }
 }

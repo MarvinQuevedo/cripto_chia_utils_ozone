@@ -4,7 +4,7 @@ import 'package:bech32m/bech32m.dart';
 import 'package:chia_crypto_utils/src/clvm/bytes.dart';
 import 'package:meta/meta.dart';
 
-import '../../nft1.0/models/NFTInfo.dart';
+import '../../nft1.0/models/nft_info.dart';
 
 @immutable
 class NftAddress {
