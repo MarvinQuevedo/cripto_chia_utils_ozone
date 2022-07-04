@@ -1,0 +1,21 @@
+(mod (USER_PUZZLE_HASH SKYNFT_PUZZLE_HASH ROYALTY_PERCENTAGE total_amount )
+	(include condition_codes.clib)
+	
+	(if (= ROYALTY_PERCENTAGE 250)
+		(list CREATE_COIN SKYNFT_PUZZLE_HASH total_amount )
+		(if (> ROYALTY_PERCENTAGE 250)
+			(if (> 1501 ROYALTY_PERCENTAGE)
+				(list
+					(list ASSERT_MY_AMOUNT total_amount)
+					(list CREATE_COIN USER_PUZZLE_HASH (/ (* (- ROYALTY_PERCENTAGE 250) total_amount) ROYALTY_PERCENTAGE) )
+					(list CREATE_COIN SKYNFT_PUZZLE_HASH (/ (* 250 total_amount) ROYALTY_PERCENTAGE) )
+				)
+				(x)
+			)
+			(x)
+		)
+	)
+	
+	
+	
+)
