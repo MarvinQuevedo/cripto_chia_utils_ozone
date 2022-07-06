@@ -1,9 +1,6 @@
 import 'dart:convert';
 
-import 'package:chia_crypto_utils/src/nft1.0/models/uncurried_nft.dart';
-
 import '../../../chia_crypto_utils.dart';
-import '../../core/models/nft_address.dart';
 
 const NFT_HRP = "nft";
 

@@ -1,6 +1,4 @@
 import '../../../chia_crypto_utils.dart';
-import '../puzzles/nft_ownership_layer/nft_ownership_layer.clvm.hex.dart';
-import '../puzzles/nft_state_layer/nft_state_layer.clvm.hex.dart';
 
 export '../puzzles/nft_ownership_layer/nft_ownership_layer.clvm.hex.dart';
 export '../puzzles/nft_state_layer/nft_state_layer.clvm.hex.dart';
@@ -136,8 +134,6 @@ class UncurriedNFT {
       throw ArgumentError("Cannot uncurry singleton top layer: Args ${curried_args}");
     }
 
-    //TODO [curried_args] maybe would be has the method [rest], but not found, is posible the solution if corect
-
     final uncurred = curried_args[1].uncurry();
     final nftMod = uncurred.program;
     final nftArgs = uncurred.arguments;
@@ -234,9 +230,6 @@ class UncurriedNFT {
           seriesTotal: seriesTotal,
           innerPuzzle: innerPuzzle,
           metadataUpdaterHash: metadataUpdaterHash,
-
-          // TODO Set/Remove following fields after NFT1 implemented
-
           ownerDid: currentDid,
           supportDid: supportsDid,
           transferProgram: transferProgram,

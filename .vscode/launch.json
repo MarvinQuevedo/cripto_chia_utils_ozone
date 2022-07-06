@@ -12,6 +12,12 @@
             "program": "integration_test/nft1/nft_uncurried_test.dart"
         },
         {
+            "name": "CAT",
+            "type": "dart",
+            "request": "launch",
+            "program": "integration_test/cat/get_receive_ph.dart"
+        },
+        {
             "name": "Flutter",
             "type": "dart",
             "request": "launch",
