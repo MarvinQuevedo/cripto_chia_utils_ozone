@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/context/logging_context.dart';
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
 
@@ -103,7 +104,6 @@ void main() {
     expect(loggedText.length, equals(3));
     expect(loggedText[2], equals(apiText));
 
-   
     createdFile.deleteSync();
   });
 }
