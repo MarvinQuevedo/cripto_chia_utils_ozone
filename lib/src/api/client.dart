@@ -83,16 +83,28 @@ class Client {
 
   void logRequest(Uri requestUri, [Object? requestBody]) {
     LoggingContext()
-      ..log('Uri: $requestUri')
-      ..log('request body: ')
-      ..log(' ');
+      ..api('Uri: $requestUri')
+      ..api('request body: ')
+      ..api(' ');
     if (requestBody != null) {
-      LoggingContext().log(makePrettyJsonString(requestBody));
+      LoggingContext().api(makePrettyJsonString(requestBody));
     }
   }
 
   void logResponse(HttpClientResponse response, String responseBody) {
     final loggingContext = LoggingContext();
+
+    try {
+      jsonDecode(responseBody);
+    } on FormatException {
+      loggingContext
+        ..api('response: ')
+        ..api(
+          makePrettyJsonString(responseBody),
+        )
+        ..api('------------');
+      return;
+    }
 
     final lowLogLevelResponseJson = <String, dynamic>{
       'status_code': response.statusCode,
@@ -121,12 +133,12 @@ class Client {
       'body': jsonDecode(responseBody),
     };
     loggingContext
-      ..log('response: ')
-      ..log(
+      ..api('response: ')
+      ..api(
         makePrettyJsonString(lowLogLevelResponseJson),
         makePrettyJsonString(highLogLevelResponseJson),
       )
-      ..log('------------');
+      ..api('------------');
   }
 
   static String makePrettyJsonString(Object jsonObject) {
