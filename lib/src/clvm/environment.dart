@@ -1,5 +1,5 @@
-import 'package:chia_utils/src/clvm/cost.dart';
-import 'package:chia_utils/src/clvm/program.dart';
+import 'package:chia_crypto_utils/src/clvm/cost.dart';
+import 'package:chia_crypto_utils/src/clvm/program.dart';
 
 int msbMask(int byte) {
   byte |= byte >> 1;
@@ -14,7 +14,7 @@ Output traversePath(Program value, Program environment) {
     return Output(Program.nil, cost);
   }
   var endByteCursor = 0;
-  var atom = value.atom;
+  final atom = value.atom;
   while (endByteCursor < atom.length && atom[endByteCursor] == 0) {
     endByteCursor++;
   }
@@ -22,7 +22,7 @@ Output traversePath(Program value, Program environment) {
   if (endByteCursor == atom.length) {
     return Output(Program.nil, cost);
   }
-  var endBitMask = msbMask(atom[endByteCursor]);
+  final endBitMask = msbMask(atom[endByteCursor]);
   var byteCursor = atom.length - 1;
   var bitMask = 0x01;
   while (byteCursor > endByteCursor || bitMask < endBitMask) {

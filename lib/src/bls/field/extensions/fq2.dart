@@ -1,6 +1,6 @@
-import 'package:chia_utils/src/bls/field/field.dart';
-import 'package:chia_utils/src/bls/field/field_base.dart';
-import 'package:chia_utils/src/bls/field/field_ext.dart';
+import 'package:chia_crypto_utils/src/bls/field/field.dart';
+import 'package:chia_crypto_utils/src/bls/field/field_base.dart';
+import 'package:chia_crypto_utils/src/bls/field/field_ext.dart';
 
 class Fq2 extends FieldExtBase<Fq2> {
   Fq2(BigInt Q, List<Field> args, {Field? root})
@@ -51,14 +51,11 @@ class Fq2 extends FieldExtBase<Fq2> {
   }
 
   @override
-  Fq2 construct(BigInt Q, List<Field> args, Field? root) =>
-      Fq2(Q, args, root: root);
+  Fq2 construct(BigInt Q, List<Field> args, Field? root) => Fq2(Q, args, root: root);
 
   factory Fq2.fromFq(BigInt Q, Fq fq) => Fq2.nil().myFromFq(Q, fq);
-  factory Fq2.fromBytes(List<int> bytes, BigInt Q) =>
-      Fq2.nil().myFromBytes(bytes, Q) as Fq2;
-  factory Fq2.fromHex(String hex, BigInt Q) =>
-      Fq2.nil().myFromHex(hex, Q) as Fq2;
+  factory Fq2.fromBytes(List<int> bytes, BigInt Q) => Fq2.nil().myFromBytes(bytes, Q) as Fq2;
+  factory Fq2.fromHex(String hex, BigInt Q) => Fq2.nil().myFromHex(hex, Q) as Fq2;
   factory Fq2.zero(BigInt Q) => Fq2.nil().myZero(Q);
   factory Fq2.one(BigInt Q) => Fq2.nil().myOne(Q);
 }

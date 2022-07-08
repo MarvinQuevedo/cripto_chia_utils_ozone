@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.0.15
+
+- Pooling protocol support
+- CLI bindings and utility for interactively generating a PlotNFT
+- Bug fixing and code cleanup
+
+## 1.0.14
+
+- Fixes for pub.dev
+
+## 1.0.13
+
+- Refactoring and code cleanup for publishing to pub.dev
+- Normalized Chia simulator usage to ease use in packages importing or using Chia Crypto Utils
+
+## 1.0.12
+
+- PlotNFT support
+
+## 1.0.11
+
+- Singleton support
+- Added ChiaEnthusiast for ease of testing
+- Integration with Taildatabase.com and Hash.green
+- Normalized usage of Bytes throughout the codebase
+- Serialization and deserialization mechanisms on primitives
+- Refactored IoC mechanism to use get_it
+- Additional logging controls
+- Static analysis warning resolutions
+- Bug fixes
+
 ## 1.0.10
 
 - Separated integration tests from standard tests per Dart best practices

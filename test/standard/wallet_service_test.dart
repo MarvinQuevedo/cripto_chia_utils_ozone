@@ -1,27 +1,20 @@
 // ignore_for_file: lines_longer_than_80_chars, unused_import
 
-import 'package:chia_utils/chia_crypto_utils.dart';
-import 'package:chia_utils/src/core/exceptions/change_puzzlehash_needed_exception.dart';
-import 'package:chia_utils/src/standard/exceptions/origin_id_not_in_coins_exception.dart';
-import 'package:chia_utils/src/standard/exceptions/spend_bundle_validation/duplicate_coin_exception.dart';
-import 'package:chia_utils/src/standard/exceptions/spend_bundle_validation/multiple_origin_coin_exception.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/core/exceptions/change_puzzlehash_needed_exception.dart';
+import 'package:chia_crypto_utils/src/standard/exceptions/origin_id_not_in_coins_exception.dart';
+import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validation/duplicate_coin_exception.dart';
+import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validation/multiple_origin_coin_exception.dart';
 import 'package:test/expect.dart';
 import 'package:test/scaffolding.dart';
 
 void main() {
-  final configurationProvider = ConfigurationProvider()
-    ..setConfig(NetworkFactory.configId,
-        {'yaml_file_path': 'lib/src/networks/chia/testnet10/config.yaml'});
-
-  final context = Context(configurationProvider);
-  final blockchainNetworkLoader = ChiaBlockchainNetworkLoader();
-  context.registerFactory(
-      NetworkFactory(blockchainNetworkLoader.loadfromLocalFileSystem));
-  final walletService = StandardWalletService(context);
+  ChiaNetworkContextWrapper().registerNetworkContext(Network.mainnet);
+  final walletService = StandardWalletService();
 
   final destinationPuzzlehash = const Address(
-          'txch1pdar6hnj8c9sgm74r72u40ed8cnpduzan5vr86qkvpftg0v52jksxp6hy3')
-      .toPuzzlehash();
+    'txch1pdar6hnj8c9sgm74r72u40ed8cnpduzan5vr86qkvpftg0v52jksxp6hy3',
+  ).toPuzzlehash();
 
   const testMnemonic = [
     'elder',
@@ -50,19 +43,16 @@ void main() {
     'mesh',
   ];
 
-  final masterKeyPair = MasterKeyPair.fromMnemonic(testMnemonic);
+  final keychainSecret = KeychainCoreSecret.fromMnemonic(testMnemonic);
 
   final walletsSetList = <WalletSet>[
-    for (var i = 0; i < 20; i++)
-      WalletSet.fromPrivateKey(masterKeyPair.masterPrivateKey, i),
+    for (var i = 0; i < 20; i++) WalletSet.fromPrivateKey(keychainSecret.masterPrivateKey, i),
   ];
 
-  final walletKeychain = WalletKeychain(walletsSetList);
+  final walletKeychain = WalletKeychain.fromWalletSets(walletsSetList);
 
-  final coinPuzzlehash =
-      walletKeychain.unhardenedMap.values.toList()[0].puzzlehash;
-  final changePuzzlehash =
-      walletKeychain.unhardenedMap.values.toList()[1].puzzlehash;
+  final coinPuzzlehash = walletKeychain.unhardenedMap.values.toList()[0].puzzlehash;
+  final changePuzzlehash = walletKeychain.unhardenedMap.values.toList()[1].puzzlehash;
 
   final parentInfo0 = Bytes([
     227,
@@ -167,29 +157,32 @@ void main() {
     6
   ]);
   final coin0 = Coin(
-      spentBlockIndex: 0,
-      confirmedBlockIndex: 100,
-      coinbase: false,
-      timestamp: 100177271,
-      parentCoinInfo: parentInfo0,
-      puzzlehash: coinPuzzlehash,
-      amount: 100000);
+    spentBlockIndex: 0,
+    confirmedBlockIndex: 100,
+    coinbase: false,
+    timestamp: 100177271,
+    parentCoinInfo: parentInfo0,
+    puzzlehash: coinPuzzlehash,
+    amount: 100000,
+  );
   final coin1 = Coin(
-      spentBlockIndex: 0,
-      confirmedBlockIndex: 1000,
-      coinbase: false,
-      timestamp: 100177372,
-      parentCoinInfo: parentInfo1,
-      puzzlehash: coinPuzzlehash,
-      amount: 500000);
+    spentBlockIndex: 0,
+    confirmedBlockIndex: 1000,
+    coinbase: false,
+    timestamp: 100177372,
+    parentCoinInfo: parentInfo1,
+    puzzlehash: coinPuzzlehash,
+    amount: 500000,
+  );
   final coin2 = Coin(
-      spentBlockIndex: 0,
-      confirmedBlockIndex: 2000,
-      coinbase: false,
-      timestamp: 100179373,
-      parentCoinInfo: parentInfo2,
-      puzzlehash: coinPuzzlehash,
-      amount: 200000);
+    spentBlockIndex: 0,
+    confirmedBlockIndex: 2000,
+    coinbase: false,
+    timestamp: 100179373,
+    parentCoinInfo: parentInfo2,
+    puzzlehash: coinPuzzlehash,
+    amount: 200000,
+  );
   final coins = [coin0, coin1, coin2];
 
   test('Should create valid spendbundle', () {
@@ -217,10 +210,7 @@ void main() {
 
   test('Should create valid spendbundle with multiple payments', () {
     final spendBundle = walletService.createSpendBundle(
-      payments: [
-        Payment(548000, destinationPuzzlehash),
-        Payment(2000, destinationPuzzlehash)
-      ],
+      payments: [Payment(548000, destinationPuzzlehash), Payment(2000, destinationPuzzlehash)],
       coinsInput: coins,
       changePuzzlehash: changePuzzlehash,
       keychain: walletKeychain,
@@ -267,8 +257,7 @@ void main() {
     );
   });
 
-  test('Should create valid spendbundle with total amount less than coin value',
-      () {
+  test('Should create valid spendbundle with total amount less than coin value', () {
     final spendBundle = walletService.createSpendBundle(
       payments: [Payment(3000, destinationPuzzlehash)],
       coinsInput: coins,
@@ -292,11 +281,8 @@ void main() {
     );
   });
 
-  test(
-      'Should create valid spendbundle without change puzzlehash when there is no change',
-      () {
-    final totalCoinsValue =
-        coins.fold(0, (int previousValue, coin) => previousValue + coin.amount);
+  test('Should create valid spendbundle without change puzzlehash when there is no change', () {
+    final totalCoinsValue = coins.fold(0, (int previousValue, coin) => previousValue + coin.amount);
     final spendBundle = walletService.createSpendBundle(
       payments: [Payment(totalCoinsValue, destinationPuzzlehash)],
       coinsInput: coins,
@@ -306,9 +292,7 @@ void main() {
     walletService.validateSpendBundle(spendBundle);
   });
 
-  test(
-      'Should throw exception when change puzzlehash is not given and there is change',
-      () {
+  test('Should throw exception when change puzzlehash is not given and there is change', () {
     expect(
       () {
         walletService.createSpendBundle(

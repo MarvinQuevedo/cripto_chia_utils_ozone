@@ -1,12 +1,11 @@
 // ignore_for_file: lines_longer_than_80_chars
 
-import 'package:chia_utils/chia_crypto_utils.dart';
-import 'package:chia_utils/src/cat/puzzles/cat/cat.clvm.hex.dart';
-import 'package:chia_utils/src/core/models/serializable.dart';
-import 'package:chia_utils/src/standard/puzzles/p2_delegated_puzzle_or_hidden_puzzle/p2_delegated_puzzle_or_hidden_puzzle.clvm.hex.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
+import 'package:chia_crypto_utils/src/standard/puzzles/p2_delegated_puzzle_or_hidden_puzzle/p2_delegated_puzzle_or_hidden_puzzle.clvm.hex.dart';
 import 'package:hex/hex.dart';
 
-class CoinSpend implements Serializable {
+class CoinSpend with ToBytesMixin {
   CoinPrototype coin;
   Program puzzleReveal;
   Program solution;
@@ -17,17 +16,65 @@ class CoinSpend implements Serializable {
     required this.solution,
   });
 
+  List<CoinPrototype> get additions {
+    final result = puzzleReveal.run(solution).program;
+    final createCoinConditions = BaseWalletService.extractConditionsFromResult(
+      result,
+      CreateCoinCondition.isThisCondition,
+      CreateCoinCondition.fromProgram,
+    );
+
+    return createCoinConditions
+        .map(
+          (ccc) => CoinPrototype(
+            parentCoinInfo: coin.id,
+            puzzlehash: ccc.destinationPuzzlehash,
+            amount: ccc.amount,
+          ),
+        )
+        .toList();
+  }
+
   Map<String, dynamic> toJson() => <String, dynamic>{
         'coin': coin.toJson(),
         'puzzle_reveal': const HexEncoder().convert(puzzleReveal.serialize()),
         'solution': const HexEncoder().convert(solution.serialize())
       };
 
+  factory CoinSpend.fromBytes(Bytes bytes) {
+    final iterator = bytes.iterator;
+    return CoinSpend.fromStream(iterator);
+  }
+  factory CoinSpend.fromStream(Iterator<int> iterator) {
+    final coin = CoinPrototype.fromStream(iterator);
+    final puzzleReveal = Program.fromStream(iterator);
+    final solution = Program.fromStream(iterator);
+    return CoinSpend(
+      coin: coin,
+      puzzleReveal: puzzleReveal,
+      solution: solution,
+    );
+  }
+
   @override
   Bytes toBytes() {
-    return coin.toBytes() +
-        Bytes(puzzleReveal.serialize()) +
-        Bytes(solution.serialize());
+    return coin.toBytes() + Bytes(puzzleReveal.serialize()) + Bytes(solution.serialize());
+  }
+
+  Program toProgramList() {
+    return Program.list([
+      Program.fromBytes(coin.toBytes()),
+      Program.fromBytes(puzzleReveal.serialize()),
+      Program.fromBytes(solution.serialize()),
+    ]);
+  }
+
+  static CoinSpend fromProgramList(Program program) {
+    final args = program.toList();
+    final coin = CoinPrototype.fromBytes(args[0].atom);
+    final puzzleReveal = Program.deserialize(args[1].atom);
+    final solution = Program.deserialize(args[2].atom);
+    return CoinSpend(coin: coin, puzzleReveal: puzzleReveal, solution: solution);
   }
 
   factory CoinSpend.fromJson(Map<String, dynamic> json) {
@@ -40,20 +87,21 @@ class CoinSpend implements Serializable {
 
   SpendType get type {
     final uncurriedPuzzleSource = puzzleReveal.uncurry().program.toSource();
-    if (uncurriedPuzzleSource ==
-        p2DelegatedPuzzleOrHiddenPuzzleProgram.toSource()) {
+    if (uncurriedPuzzleSource == p2DelegatedPuzzleOrHiddenPuzzleProgram.toSource()) {
       return SpendType.standard;
     }
     if (uncurriedPuzzleSource == catProgram.toSource()) {
       return SpendType.cat;
+    }
+    if (uncurriedPuzzleSource == singletonTopLayerV1Program.toSource()) {
+      return SpendType.nft;
     }
     return SpendType.unknown;
     //throw UnimplementedError('Unimplemented spend type');
   }
 
   @override
-  String toString() =>
-      'CoinSpend(coin: $coin, puzzleReveal: $puzzleReveal, solution: $solution)';
+  String toString() => 'CoinSpend(coin: $coin, puzzleReveal: $puzzleReveal, solution: $solution)';
 }
 
-enum SpendType { standard, cat, nft, unknown }
+enum SpendType { unknown, standard, cat, nft }
