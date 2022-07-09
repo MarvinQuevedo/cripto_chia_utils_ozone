@@ -11,3 +11,4 @@ export 'src/standard/index.dart';
 export 'src/utils.dart';
 export 'src/offers_ozone/index.dart';
 export 'src/nft1.0/service/wallet.dart';
+export 'src/did/index.dart';
