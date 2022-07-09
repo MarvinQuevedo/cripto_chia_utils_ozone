@@ -18,8 +18,15 @@ class DidWallet extends BaseWalletService {
       puzzlehash: genesisLauncherPuz.hash(),
       amount: amount,
     );
+    final p2Puzzle = getPuzzleFromPk(keychain.hardenedMap.values.first.childPublicKey);
 
-    final didInner = getNewDidInnerPuz(coinName: launchercoin.id, didInfo: didInfo);
+    final didInner = getNewDidInnerPuz(
+      coinName: launchercoin.id,
+      didInfo: didInfo,
+      p2Puzzle: p2Puzzle,
+    );
+    final didInnerHash = didInner.hash();
+    final didFullPuz = createDidFullpuz(didInner, launchercoin.id);
     throw Exception("no implemented");
   }
 
@@ -61,8 +68,29 @@ class DidWallet extends BaseWalletService {
 
   Program getNewDidInnerPuz({
     required DidInfo didInfo,
-    required Bytes coinName,
+    Bytes? coinName,
+    required Program p2Puzzle,
   }) {
-    throw Exception("no implemented");
+    late Program innerpuz;
+    if (didInfo.originCoin != null) {
+      innerpuz = createDidInnerpuz(
+        p2Puzzle: p2Puzzle,
+        recoveryList: didInfo.backupsIds,
+        numOfBackupIdsNeeded: didInfo.numOfBackupIdsNeeded,
+        launcherId: didInfo.originCoin!.id,
+        metadata: metadataToProgram(json.decode(didInfo.metadata)),
+      );
+    } else if (coinName != null) {
+      innerpuz = createDidInnerpuz(
+        p2Puzzle: p2Puzzle,
+        recoveryList: didInfo.backupsIds,
+        numOfBackupIdsNeeded: didInfo.numOfBackupIdsNeeded,
+        launcherId: coinName,
+        metadata: metadataToProgram(json.decode(didInfo.metadata)),
+      );
+    } else {
+      throw Exception("must have origin coin");
+    }
+    return innerpuz;
   }
 }
