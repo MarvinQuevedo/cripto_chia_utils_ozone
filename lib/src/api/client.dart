@@ -71,31 +71,64 @@ class Client {
       logResponse(response, stringData);
 
       return Response(stringData, response.statusCode);
-    } on SocketException {
+    } on SocketException catch (e) {
+      LoggingContext().error(e.toString());
       throw NotRunningException(baseURL);
     } on HttpException catch (e) {
+      LoggingContext().error(e.toString());
+
       if (e.toString().contains('Connection closed before full header was received')) {
         throw BadAuthenticationException();
       }
+      rethrow;
+    } on Exception catch (e) {
+      LoggingContext().error(e.toString());
       rethrow;
     }
   }
 
   void logRequest(Uri requestUri, [Object? requestBody]) {
     LoggingContext()
-      ..log('Uri: $requestUri')
-      ..log('request body: ')
-      ..log(' ');
+      ..api('Uri: $requestUri')
+      ..api('request body: ')
+      ..api(' ');
     if (requestBody != null) {
-      LoggingContext().log(makePrettyJsonString(requestBody));
+      LoggingContext().api(makePrettyJsonString(requestBody));
     }
   }
 
   void logResponse(HttpClientResponse response, String responseBody) {
     final loggingContext = LoggingContext();
 
+    try {
+      jsonDecode(responseBody);
+    } on FormatException {
+      loggingContext
+        ..api('response: ')
+        ..api(
+          makePrettyJsonString(responseBody),
+        )
+        ..api('------------');
+      return;
+    }
+
     final lowLogLevelResponseJson = <String, dynamic>{
       'status_code': response.statusCode,
+      'body': jsonDecode(responseBody),
+    };
+
+    final mediumLogLevelResponseJson = <String, dynamic>{
+      'headers': <String, dynamic>{
+        'content_type': response.headers.contentType?.value,
+      },
+      'status_code': response.statusCode,
+      'connection_info': response.connectionInfo != null
+          ? <String, dynamic>{
+              'local_port': response.connectionInfo!.localPort,
+              'remote_port': response.connectionInfo!.remotePort,
+              'remote_address': response.connectionInfo!.remoteAddress.address,
+            }
+          : null,
       'body': jsonDecode(responseBody),
     };
 
@@ -121,12 +154,13 @@ class Client {
       'body': jsonDecode(responseBody),
     };
     loggingContext
-      ..log('response: ')
-      ..log(
+      ..api('response: ')
+      ..api(
         makePrettyJsonString(lowLogLevelResponseJson),
-        makePrettyJsonString(highLogLevelResponseJson),
+        mediumLog: makePrettyJsonString(mediumLogLevelResponseJson),
+        highLog: makePrettyJsonString(highLogLevelResponseJson),
       )
-      ..log('------------');
+      ..api('------------');
   }
 
   static String makePrettyJsonString(Object jsonObject) {
