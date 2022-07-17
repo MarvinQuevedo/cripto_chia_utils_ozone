@@ -89,8 +89,8 @@ class CatWalletService extends BaseWalletService {
               primaryAssertCoinAnnouncement.message,
             ),
           )
-          ..addAll(puzzleAnnouncementsToAssert)
-          ..addAll(coinAnnouncementsToAssert);
+          ..addAll(coinAnnouncementsToAssert)
+          ..addAll(puzzleAnnouncementsToAssert);
 
         for (final payment in payments) {
           final sendCreateCoinCondition = payment.toCreateCoinCondition();

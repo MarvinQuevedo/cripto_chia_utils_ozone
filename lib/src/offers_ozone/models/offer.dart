@@ -66,11 +66,11 @@ class Offer {
       } else {
         settlementPh = OFFER_MOD.hash();
       }
-
-      Bytes msg = Program.list([
+      final msgProgram = Program.list([
         Program.fromBytes(payments.first.nonce),
-        Program.list(payments.map((e) => e.toProgram()).toList()),
-      ]).hash();
+      ]..addAll(payments.map((e) => e.toProgram()).toList()));
+
+      Bytes msg = msgProgram.hash();
 
       result.add(Announcement(settlementPh, msg));
     });
