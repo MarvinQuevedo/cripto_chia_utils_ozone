@@ -20,11 +20,11 @@ class TradeWalletService extends BaseWalletService {
 
     final feeLeftToPay = fee;
 
-    for (var coin in selectedCoins) {
-      if (coin.assetId == null) {
+    offeredAmounts.forEach((assetId, amount) {
+      if (assetId == null) {
         final standarBundle = StandardWalletService().createSpendBundle(
           payments: [
-            Payment(offeredAmounts[coin.assetId]!.abs(), Offer.ph),
+            Payment(offeredAmounts[assetId]!.abs(), Offer.ph),
           ],
           coinsInput: selectedCoins,
           keychain: keychain,
@@ -33,22 +33,23 @@ class TradeWalletService extends BaseWalletService {
           changePuzzlehash: changePuzzlehash,
         );
         transactions.add(standarBundle);
-      } else if (coin.assetId != null) {
+      } else {
         final catBundle = CatWalletService().createSpendBundle(
-          payments: [
-            Payment(offeredAmounts[coin.assetId]!.abs(), Offer.ph),
-          ],
-          catCoinsInput: selectedCoins
-              .where((element) => element.isCatCoin)
-              .map((e) => e.toCatCoin())
-              .toList(),
-          keychain: keychain,
-          fee: feeLeftToPay,
-          puzzleAnnouncementsToAssert: announcements,
-        );
+            payments: [
+              Payment(offeredAmounts[assetId]!.abs(), Offer.ph),
+            ],
+            catCoinsInput: selectedCoins
+                .where((element) => element.isCatCoin)
+                .map((e) => e.toCatCoin())
+                .toList(),
+            keychain: keychain,
+            fee: feeLeftToPay,
+            puzzleAnnouncementsToAssert: announcements,
+            changePuzzlehash: changePuzzlehash);
         transactions.add(catBundle);
       }
-    }
+    });
+
     final totalSpendBundle = transactions.fold<SpendBundle>(
       SpendBundle(coinSpends: []),
       (previousValue, spendBundle) => previousValue + spendBundle,

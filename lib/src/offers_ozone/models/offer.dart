@@ -411,7 +411,7 @@ class Offer {
 
           final solver = Solver({
             "coin": coin.toBytes().toHexWithPrefix(),
-            "parent_spend": coinToSpendDict[coin]!.toProgramList().serialize().toHexWithPrefix(),
+            "parent_spend": coinToSpendDict[coin]!.toProgram().serialize().toHexWithPrefix(),
             "siblings": siblings,
             "sibling_spends": siblingsSpends,
             "sibling_puzzles": silblingsPuzzles,
@@ -556,7 +556,8 @@ class Offer {
       return Offer.fromCompressed(dataBytes);
     } catch (e) {
       print(e);
-      return Offer.fromBytes(dataBytes);
+      //return Offer.fromBytes(dataBytes);
+      throw e;
     }
   }
 

@@ -81,7 +81,7 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
       if (coinBytes == solver["coin"]) {
         targetCoin = coin;
       }
-      final parentSpend = CoinSpend.fromProgramList(spendProg);
+      final parentSpend = CoinSpend.fromProgram(spendProg);
 
       // final parentCoin = parentSpend.coin;
       if (constructor.also != null) {

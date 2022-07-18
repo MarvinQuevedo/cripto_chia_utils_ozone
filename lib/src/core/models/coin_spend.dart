@@ -61,7 +61,7 @@ class CoinSpend with ToBytesMixin {
     return coin.toBytes() + Bytes(puzzleReveal.serialize()) + Bytes(solution.serialize());
   }
 
-  Program toProgramList() {
+  Program toProgram() {
     return Program.list([
       Program.fromBytes(coin.toBytes()),
       Program.fromBytes(puzzleReveal.serialize()),
@@ -69,7 +69,7 @@ class CoinSpend with ToBytesMixin {
     ]);
   }
 
-  static CoinSpend fromProgramList(Program program) {
+  static CoinSpend fromProgram(Program program) {
     final args = program.toList();
     final coin = CoinPrototype.fromBytes(args[0].atom);
     final puzzleReveal = Program.deserialize(args[1].atom);
