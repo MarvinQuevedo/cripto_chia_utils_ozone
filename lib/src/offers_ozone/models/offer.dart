@@ -318,7 +318,8 @@ class Offer {
 
   /// Validity is defined by having enough funds within the offer to satisfy both sidess
   bool isValid() {
-    final arbitrageValues = arbitrage().values.toList();
+    final _arbitrage = arbitrage();
+    final arbitrageValues = _arbitrage.values.toList();
     final satisfaceds = arbitrageValues
         .where(
           (element) => (element >= 0),
@@ -348,9 +349,9 @@ class Offer {
       // Because of CAT supply laws, we must specify a place for the leftovers to go
       final int? arbitrageAmount = allArbitragePh[assetId];
       final allPayments = payments.toList();
-      if ((arbitrageAmount ?? 0) > 0) {
-        assert(arbitrageAmount == null,
-            "Amount can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}");
+      assert(arbitrageAmount == null,
+          "Amount can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}");
+      if (arbitrageAmount! > 0) {
         assert(
           arbitragePh == null,
           "ArbitragePH can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}",
