@@ -37,8 +37,8 @@ Future<void> main() async {
   }
 
   void testCatPuzzle() {
-    final puzzle = CatWalletService.makeCatPuzzle(Program.list([]).hash(),
-        getPuzzleFromPk(keychain.unhardenedMap.values.toList()[0].childPublicKey));
+    final puzzle = OFFER_MOD;
+    //getPuzzleFromPk(keychain.unhardenedMap.values.toList()[0].childPublicKey);
     final coinSpend = CoinSpend(coin: COIN, puzzleReveal: puzzle, solution: SOLUTION);
     final compressed = compressObjectWithPuzzles(coinSpend.toBytes(), LATEST_VERSION);
 
@@ -48,6 +48,21 @@ Future<void> main() async {
     assert(coinsSpendUncompressed == coinSpend);
     final factor = compressed.length / coinSpend.toBytes().length;
     print("Cat factor = ${factor}");
+  }
+
+  void testSpendBundleCatPuzzleList() {
+    final puzzle = CatWalletService.makeCatPuzzle(Program.list([]).hash(),
+        getPuzzleFromPk(keychain.unhardenedMap.values.toList()[0].childPublicKey));
+    final coinSpend = CoinSpend(coin: COIN, puzzleReveal: puzzle, solution: SOLUTION);
+    final spendBundle = SpendBundle(coinSpends: [coinSpend, coinSpend, coinSpend, coinSpend]);
+    final compressed = compressObjectWithPuzzles(spendBundle.toBytes(), LATEST_VERSION);
+
+    assert(coinSpend.toBytes().length > compressed.length);
+
+    final spendBuneldUncompressed = SpendBundle.fromBytes(decompressObjectWithPuzzles(compressed));
+    assert(spendBuneldUncompressed == spendBundle);
+    final factor = compressed.length / spendBundle.toBytes().length;
+    print("SpendBundle factor = ${factor}");
   }
 
   void testOfferPuzzle() {
@@ -70,6 +85,7 @@ Future<void> main() async {
   test('Test Puzzle compression', () async {
     testStandardPuzzle();
     testCatPuzzle();
+    testSpendBundleCatPuzzleList();
     testOfferPuzzle();
     testLowestBestVersion();
   });

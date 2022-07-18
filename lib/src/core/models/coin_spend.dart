@@ -58,7 +58,11 @@ class CoinSpend with ToBytesMixin {
 
   @override
   Bytes toBytes() {
-    return coin.toBytes() + Bytes(puzzleReveal.serialize()) + Bytes(solution.serialize());
+    Bytes coinBytes = coin.toBytes();
+    if (coin is CatCoin) {
+      coinBytes = (coin as CatCoin).toCoinPrototype().toBytes();
+    }
+    return coinBytes + Bytes(puzzleReveal.serialize()) + Bytes(solution.serialize());
   }
 
   Program toProgram() {

@@ -34,18 +34,26 @@ class TradeWalletService extends BaseWalletService {
         );
         transactions.add(standarBundle);
       } else {
+        final catPayments = [
+          Payment(offeredAmounts[assetId]!.abs(), Offer.ph, memos: <Bytes>[
+            Offer.ph.toBytes(),
+          ]),
+        ];
+        final catCoins =
+            selectedCoins.where((element) => element.isCatCoin).map((e) => e.toCatCoin()).toList();
+        final standardsCoins =
+            selectedCoins.where((element) => !element.isCatCoin).map((e) => e.coin).toList();
         final catBundle = CatWalletService().createSpendBundle(
-            payments: [
-              Payment(offeredAmounts[assetId]!.abs(), Offer.ph),
-            ],
-            catCoinsInput: selectedCoins
-                .where((element) => element.isCatCoin)
-                .map((e) => e.toCatCoin())
-                .toList(),
-            keychain: keychain,
-            fee: feeLeftToPay,
-            puzzleAnnouncementsToAssert: announcements,
-            changePuzzlehash: changePuzzlehash);
+          payments: catPayments,
+          catCoinsInput: catCoins,
+          keychain: keychain,
+          fee: feeLeftToPay,
+          standardCoinsForFee: standardsCoins,
+          puzzleAnnouncementsToAssert: announcements,
+          changePuzzlehash: changePuzzlehash,
+        );
+        final catBytes = catBundle.toBytes();
+        final _ = SpendBundle.fromBytes(catBytes);
         transactions.add(catBundle);
       }
     });

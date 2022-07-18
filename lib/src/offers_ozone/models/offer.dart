@@ -552,13 +552,7 @@ class Offer {
   }
 
   static Offer try_offer_decompression(Bytes dataBytes) {
-    try {
-      return Offer.fromCompressed(dataBytes);
-    } catch (e) {
-      print(e);
-      //return Offer.fromBytes(dataBytes);
-      throw e;
-    }
+    return Offer.fromCompressed(dataBytes);
   }
 
   static Offer fromCompressed(Bytes compressedBytes) {

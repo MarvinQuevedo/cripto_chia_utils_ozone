@@ -18,11 +18,11 @@ class FullCoin extends CoinPrototype {
   late final Program lineageProof;
   late final Coin coin;
   bool get isCatCoin {
-    final uncurriedParentPuzzleReveal = parentCoinSpend?.puzzleReveal.uncurry();
-    if (uncurriedParentPuzzleReveal == null) {
-      return false;
-    } else {
+    try {
+      final _ = toCatCoin();
       return true;
+    } catch (_) {
+      return false;
     }
   }
 
