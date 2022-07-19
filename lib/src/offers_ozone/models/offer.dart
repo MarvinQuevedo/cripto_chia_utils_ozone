@@ -359,7 +359,7 @@ class Offer {
           arbitragePh == null,
           "ArbitragePH can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}",
         );
-        allPayments.add(NotarizedPayment(arbitrageAmount!, Puzzlehash(arbitragePh!)));
+        allPayments.add(NotarizedPayment(arbitrageAmount, Puzzlehash(arbitragePh!)));
       }
 
       // Some assets need to know about siblings so we need to collect all spends first to be able to use them
