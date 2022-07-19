@@ -349,9 +349,12 @@ class Offer {
       // Because of CAT supply laws, we must specify a place for the leftovers to go
       final int? arbitrageAmount = allArbitragePh[assetId];
       final allPayments = payments.toList();
-      assert(arbitrageAmount == null,
-          "Amount can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}");
-      if (arbitrageAmount! > 0) {
+      if (arbitrageAmount == null) {
+        throw Exception(
+            "Amount can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}");
+      }
+
+      if (arbitrageAmount > 0) {
         assert(
           arbitragePh == null,
           "ArbitragePH can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}",
