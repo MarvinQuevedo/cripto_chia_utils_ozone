@@ -139,6 +139,7 @@ class Offer {
       if (coinForThisSpend.isNotEmpty) {
         offeredCoins[assetId] ??= [];
         offeredCoins[assetId]!.addAll(coinForThisSpend);
+        offeredCoins[assetId] = offeredCoins[assetId]!.toSet().toList();
       }
     }
     return offeredCoins;
@@ -283,8 +284,8 @@ class Offer {
     SpendBundle totalBundle = SpendBundle.empty;
     final totalDriverDict = <Bytes?, PuzzleInfo>{};
     for (var offer in offers) {
-      final totalInputs = totalBundle.coinSpends.map((e) => e.coin).toSet();
-      final offerInputs = offer.bundle.coinSpends.map((e) => e.coin).toSet();
+      final totalInputs = totalBundle.coinSpends.map((e) => e.coin).toSet().toList();
+      final offerInputs = offer.bundle.coinSpends.map((e) => e.coin).toSet().toList();
       if (totalInputs.checkOverlay(offerInputs)) {
         throw Exception("The aggregated offers overlap inputs $offer");
       }
@@ -355,11 +356,16 @@ class Offer {
       }
 
       if (arbitrageAmount > 0) {
-        assert(
-          arbitragePh == null,
-          "ArbitragePH can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}",
-        );
-        allPayments.add(NotarizedPayment(arbitrageAmount, Puzzlehash(arbitragePh!)));
+        if (arbitragePh == null) {
+          throw Exception(
+            "ArbitragePH can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}",
+          );
+        }
+
+        allPayments.add(NotarizedPayment(
+          arbitrageAmount,
+          Puzzlehash(arbitragePh),
+        ));
       }
 
       // Some assets need to know about siblings so we need to collect all spends first to be able to use them
@@ -437,15 +443,17 @@ class Offer {
                 innerPuzzle: OFFER_MOD,
               )
             : OFFER_MOD;
-        completionSpends.add(CoinSpend(
+        final coinSpend = CoinSpend(
           coin: coin,
           puzzleReveal: puzzleReveal,
           solution: solution,
-        ));
+        );
+        completionSpends.add(coinSpend);
       }
     });
+    final completionSpendBundle = SpendBundle(coinSpends: completionSpends);
 
-    return SpendBundle(coinSpends: completionSpends) + offer.bundle;
+    return completionSpendBundle + offer.bundle;
   }
 
   /// Before we serialze this as a SpendBundle, we need to serialze the `requested_payments` as dummy CoinSpends
