@@ -443,7 +443,7 @@ class CatWalletService extends BaseWalletService {
     final coinsToCreate = <CoinPrototype>[];
     final coinsBeingSpent = <CoinPrototype>[];
     Bytes? originId;
-    final catSpends = spendBundle.coinSpends.where((spend) => spend.type == SpendType.cat);
+    final catSpends = spendBundle.coinSpends.where((spend) => spend.type == SpendType.cat2);
     for (final catSpend in catSpends) {
       final outputConditions = catSpend.puzzleReveal.run(catSpend.solution).program.toList();
 

@@ -99,7 +99,10 @@ class CoinSpend with ToBytesMixin {
       return SpendType.standard;
     }
     if (uncurriedPuzzleSource == CAT_MOD.toSource()) {
-      return SpendType.cat;
+      return SpendType.cat2;
+    }
+    if (uncurriedPuzzleSource == LEGACY_CAT_MOD.toSource()) {
+      return SpendType.cat1;
     }
     if (uncurriedPuzzleSource == singletonTopLayerV1Program.toSource()) {
       return SpendType.nft;
@@ -112,4 +115,4 @@ class CoinSpend with ToBytesMixin {
   String toString() => 'CoinSpend(coin: $coin, puzzleReveal: $puzzleReveal, solution: $solution)';
 }
 
-enum SpendType { unknown, standard, cat, nft }
+enum SpendType { unknown, standard, cat1, cat2, nft }
