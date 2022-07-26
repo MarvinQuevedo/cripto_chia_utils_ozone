@@ -78,7 +78,7 @@ Future<void> main() async {
   }
 
   void testLowestBestVersion() {
-    assert(lowestBestVersion([catProgram.toBytes()]) == 1);
+    assert(lowestBestVersion([CAT_MOD.toBytes()]) == 1);
     assert(lowestBestVersion([OFFER_MOD.toBytes()]) == 2);
   }
 
