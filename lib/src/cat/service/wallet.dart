@@ -77,7 +77,7 @@ class CatWalletService extends BaseWalletService {
           catCoin.id,
           message,
           // https://chialisp.com/docs/puzzles/cats under "Design Choices"
-          morphBytes: Bytes.fromHex('ca'),
+          // morphBytes: Bytes.fromHex('ca'),
         );
 
         final conditions = <Condition>[];
@@ -507,7 +507,7 @@ class CatWalletService extends BaseWalletService {
       final constructedAnnouncement = AssertCoinAnnouncementCondition(
         originId!,
         message,
-        morphBytes: Bytes.fromHex('ca'),
+        //morphBytes: Bytes.fromHex('ca'),
       );
 
       if (!actualAssertCoinAnnouncementIds!.contains(constructedAnnouncement.announcementId)) {
