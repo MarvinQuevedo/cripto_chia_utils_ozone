@@ -64,7 +64,7 @@ class CatWalletService extends BaseWalletService {
       // if first coin, make inner solution with output
       if (first) {
         first = false;
-        // see https://github.com/Chia-Network/chia-blockchain/blob/4bd5c53f48cb049eff36c87c00d21b1f2dd26b27/chia/wallet/cat_wallet/cat_wallet.py#L646
+        // see https://github.com/Chia-Network/chia-blockchain/blob/main/chia/wallet/cat_wallet/cat_wallet.py#L625
         //   announcement = Announcement(coin.name(), std_hash(b"".join([c.name() for c in cat_coins])), b"\xca")
         final message = catCoins
             .fold(
