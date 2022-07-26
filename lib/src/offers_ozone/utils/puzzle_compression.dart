@@ -8,13 +8,14 @@ import '../../nft1.0/puzzles/nft_metadata_updater/nft_metadata_updater.clvm.hex.
 import '../../standard/puzzles/p2_delegated_puzzle_or_hidden_puzzle/p2_delegated_puzzle_or_hidden_puzzle.clvm.hex.dart';
 
 final ZDICT = [
-  p2DelegatedPuzzleOrHiddenPuzzleProgram.toBytes() + catProgram.toBytes(),
+  p2DelegatedPuzzleOrHiddenPuzzleProgram.toBytes() + LEGACY_CAT_MOD.toBytes(),
   OFFER_MOD.toBytes(),
   singletonTopLayerV1Program.toBytes() +
       nftStateLayerProgram.toBytes() +
       nftOwnershipLayer.toBytes() +
       nftMetadataUpdaterProgram.toBytes() +
       nftTransferProgram.toBytes(),
+  CAT_MOD.toBytes()
   // more dictionaries go here
 ];
 
