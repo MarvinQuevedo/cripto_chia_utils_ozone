@@ -273,8 +273,8 @@ class CatWalletService extends BaseWalletService {
       ]),
     );
 
-    final catPuzzle = catProgram.curry([
-      Program.fromBytes(catProgram.hash()),
+    final catPuzzle = CAT_MOD.curry([
+      Program.fromBytes(CAT_MOD.hash()),
       Program.fromBytes(tail.hash()),
       payToPuzzle,
     ]);
@@ -431,8 +431,8 @@ class CatWalletService extends BaseWalletService {
   }
 
   static Program makeCatPuzzle(Puzzlehash assetId, Program innerPuzzle) {
-    return catProgram
-        .curry([Program.fromBytes(catProgram.hash()), Program.fromBytes(assetId), innerPuzzle]);
+    return CAT_MOD
+        .curry([Program.fromBytes(CAT_MOD.hash()), Program.fromBytes(assetId), innerPuzzle]);
   }
 
   void validateSpendBundle(SpendBundle spendBundle) {
@@ -520,7 +520,7 @@ class CatWalletService extends BaseWalletService {
     final uncurried = catPuzzle.uncurry();
 
     final uncurriedPuzzle = uncurried.program;
-    if (uncurriedPuzzle != catProgram) {
+    if (uncurriedPuzzle != CAT_MOD) {
       return null;
     }
 
@@ -541,7 +541,7 @@ class DeconstructedCatPuzzle {
     required Program uncurriedPuzzle,
     required this.assetId,
     required this.innerPuzzle,
-  }) : uncurriedPuzzle = (uncurriedPuzzle == catProgram)
+  }) : uncurriedPuzzle = (uncurriedPuzzle == CAT_MOD)
             ? uncurriedPuzzle
             : throw ArgumentError('Supplied puzzle is not cat puzzle');
 }

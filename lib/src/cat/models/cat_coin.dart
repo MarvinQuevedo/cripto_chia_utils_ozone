@@ -36,7 +36,7 @@ class CatCoin extends CoinPrototype with ToBytesMixin {
           amount: coin.amount,
         ) {
     final uncurriedParentPuzzleReveal = parentCoinSpend.puzzleReveal.uncurry();
-    if (uncurriedParentPuzzleReveal.program.toSource() != catProgram.toSource()) {
+    if (uncurriedParentPuzzleReveal.program.toSource() != CAT_MOD.toSource()) {
       throw InvalidCatException();
     }
   }

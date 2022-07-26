@@ -200,7 +200,7 @@ class WalletKeychain with ToBytesMixin {
 
   static Puzzlehash makeOuterPuzzleHash(Puzzlehash innerPuzzleHash, Puzzlehash assetId) {
     final solution = Program.list([
-      Program.fromBytes(catProgram.hash()),
+      Program.fromBytes(CAT_MOD.hash()),
       Program.fromBytes(assetId.byteList),
       Program.fromBytes(innerPuzzleHash.byteList)
     ]);

@@ -98,7 +98,7 @@ class CoinSpend with ToBytesMixin {
     if (uncurriedPuzzleSource == p2DelegatedPuzzleOrHiddenPuzzleProgram.toSource()) {
       return SpendType.standard;
     }
-    if (uncurriedPuzzleSource == catProgram.toSource()) {
+    if (uncurriedPuzzleSource == CAT_MOD.toSource()) {
       return SpendType.cat;
     }
     if (uncurriedPuzzleSource == singletonTopLayerV1Program.toSource()) {
