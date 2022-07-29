@@ -5,6 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "offer cicle2",
+            "request": "launch",
+            "program": "test/offers/offer_life_cicle2_test.dart"
+        },
+        {
+            "name": "offer_parse",
+            "type": "dart",
+            "request": "launch",
+            "program": "test/offers/offer_parse_1.dart"
+        },
+        {
             "name": "DidPuzzleTest",
             "type": "dart",
             "request": "launch",

@@ -66,11 +66,11 @@ class Offer {
       } else {
         settlementPh = OFFER_MOD.hash();
       }
-
-      Bytes msg = Program.list([
+      final msgProgram = Program.list([
         Program.fromBytes(payments.first.nonce),
-        Program.list(payments.map((e) => e.toProgram()).toList()),
-      ]).hash();
+      ]..addAll(payments.map((e) => e.toProgram()).toList()));
+
+      Bytes msg = msgProgram.hash();
 
       result.add(Announcement(settlementPh, msg));
     });
@@ -139,6 +139,7 @@ class Offer {
       if (coinForThisSpend.isNotEmpty) {
         offeredCoins[assetId] ??= [];
         offeredCoins[assetId]!.addAll(coinForThisSpend);
+        offeredCoins[assetId] = offeredCoins[assetId]!.toSet().toList();
       }
     }
     return offeredCoins;
@@ -283,8 +284,8 @@ class Offer {
     SpendBundle totalBundle = SpendBundle.empty;
     final totalDriverDict = <Bytes?, PuzzleInfo>{};
     for (var offer in offers) {
-      final totalInputs = totalBundle.coinSpends.map((e) => e.coin).toSet();
-      final offerInputs = offer.bundle.coinSpends.map((e) => e.coin).toSet();
+      final totalInputs = totalBundle.coinSpends.map((e) => e.coin).toSet().toList();
+      final offerInputs = offer.bundle.coinSpends.map((e) => e.coin).toSet().toList();
       if (totalInputs.checkOverlay(offerInputs)) {
         throw Exception("The aggregated offers overlap inputs $offer");
       }
@@ -318,7 +319,8 @@ class Offer {
 
   /// Validity is defined by having enough funds within the offer to satisfy both sidess
   bool isValid() {
-    final arbitrageValues = arbitrage().values.toList();
+    final _arbitrage = arbitrage();
+    final arbitrageValues = _arbitrage.values.toList();
     final satisfaceds = arbitrageValues
         .where(
           (element) => (element >= 0),
@@ -348,14 +350,22 @@ class Offer {
       // Because of CAT supply laws, we must specify a place for the leftovers to go
       final int? arbitrageAmount = allArbitragePh[assetId];
       final allPayments = payments.toList();
-      if ((arbitrageAmount ?? 0) > 0) {
-        assert(arbitrageAmount == null,
+      if (arbitrageAmount == null) {
+        throw Exception(
             "Amount can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}");
-        assert(
-          arbitragePh == null,
-          "ArbitragePH can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}",
-        );
-        allPayments.add(NotarizedPayment(arbitrageAmount!, Puzzlehash(arbitragePh!)));
+      }
+
+      if (arbitrageAmount > 0) {
+        if (arbitragePh == null) {
+          throw Exception(
+            "ArbitragePH can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}",
+          );
+        }
+
+        allPayments.add(NotarizedPayment(
+          arbitrageAmount,
+          Puzzlehash(arbitragePh),
+        ));
       }
 
       // Some assets need to know about siblings so we need to collect all spends first to be able to use them
@@ -411,7 +421,7 @@ class Offer {
 
           final solver = Solver({
             "coin": coin.toBytes().toHexWithPrefix(),
-            "parent_spend": coinToSpendDict[coin]!.toProgramList().serialize().toHexWithPrefix(),
+            "parent_spend": coinToSpendDict[coin]!.toProgram().serialize().toHexWithPrefix(),
             "siblings": siblings,
             "sibling_spends": siblingsSpends,
             "sibling_puzzles": silblingsPuzzles,
@@ -433,15 +443,17 @@ class Offer {
                 innerPuzzle: OFFER_MOD,
               )
             : OFFER_MOD;
-        completionSpends.add(CoinSpend(
+        final coinSpend = CoinSpend(
           coin: coin,
           puzzleReveal: puzzleReveal,
           solution: solution,
-        ));
+        );
+        completionSpends.add(coinSpend);
       }
     });
+    final completionSpendBundle = SpendBundle(coinSpends: completionSpends);
 
-    return SpendBundle(coinSpends: completionSpends) + offer.bundle;
+    return completionSpendBundle + offer.bundle;
   }
 
   /// Before we serialze this as a SpendBundle, we need to serialze the `requested_payments` as dummy CoinSpends
@@ -552,12 +564,7 @@ class Offer {
   }
 
   static Offer try_offer_decompression(Bytes dataBytes) {
-    try {
-      return Offer.fromCompressed(dataBytes);
-    } catch (e) {
-      print(e);
-      return Offer.fromBytes(dataBytes);
-    }
+    return Offer.fromCompressed(dataBytes);
   }
 
   static Offer fromCompressed(Bytes compressedBytes) {

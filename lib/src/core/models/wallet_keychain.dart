@@ -192,7 +192,7 @@ class WalletKeychain with ToBytesMixin {
     final hardenedEntriesToAdd = <Puzzlehash, WalletVector>{};
     for (final walletVector in hardenedMap.values) {
       final outerPuzzleHash = WalletKeychain.makeOuterPuzzleHash(walletVector.puzzlehash, assetId);
-      //walletVector.assetIdtoOuterPuzzlehash[assetId] = outerPuzzleHash;
+
       hardenedEntriesToAdd[outerPuzzleHash] = walletVector;
     }
     hardenedMap.addAll(hardenedEntriesToAdd);
@@ -200,7 +200,7 @@ class WalletKeychain with ToBytesMixin {
 
   static Puzzlehash makeOuterPuzzleHash(Puzzlehash innerPuzzleHash, Puzzlehash assetId) {
     final solution = Program.list([
-      Program.fromBytes(catProgram.hash()),
+      Program.fromBytes(CAT_MOD.hash()),
       Program.fromBytes(assetId.byteList),
       Program.fromBytes(innerPuzzleHash.byteList)
     ]);

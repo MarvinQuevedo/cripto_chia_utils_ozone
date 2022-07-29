@@ -20,11 +20,11 @@ class TradeWalletService extends BaseWalletService {
 
     final feeLeftToPay = fee;
 
-    for (var coin in selectedCoins) {
-      if (coin.assetId == null) {
+    offeredAmounts.forEach((assetId, amount) {
+      if (assetId == null) {
         final standarBundle = StandardWalletService().createSpendBundle(
           payments: [
-            Payment(offeredAmounts[coin.assetId]!.abs(), Offer.ph),
+            Payment(offeredAmounts[assetId]!.abs(), Offer.ph),
           ],
           coinsInput: selectedCoins,
           keychain: keychain,
@@ -33,22 +33,31 @@ class TradeWalletService extends BaseWalletService {
           changePuzzlehash: changePuzzlehash,
         );
         transactions.add(standarBundle);
-      } else if (coin.assetId != null) {
+      } else {
+        final catPayments = [
+          Payment(offeredAmounts[assetId]!.abs(), Offer.ph, memos: <Bytes>[
+            Offer.ph.toBytes(),
+          ]),
+        ];
+        final catCoins =
+            selectedCoins.where((element) => element.isCatCoin).map((e) => e.toCatCoin()).toList();
+        final standardsCoins =
+            selectedCoins.where((element) => !element.isCatCoin).map((e) => e.coin).toList();
         final catBundle = CatWalletService().createSpendBundle(
-          payments: [
-            Payment(offeredAmounts[coin.assetId]!.abs(), Offer.ph),
-          ],
-          catCoinsInput: selectedCoins
-              .where((element) => element.isCatCoin)
-              .map((e) => e.toCatCoin())
-              .toList(),
+          payments: catPayments,
+          catCoinsInput: catCoins,
           keychain: keychain,
           fee: feeLeftToPay,
+          standardCoinsForFee: standardsCoins,
           puzzleAnnouncementsToAssert: announcements,
+          changePuzzlehash: changePuzzlehash,
         );
+        final catBytes = catBundle.toBytes();
+        final _ = SpendBundle.fromBytes(catBytes);
         transactions.add(catBundle);
       }
-    }
+    });
+
     final totalSpendBundle = transactions.fold<SpendBundle>(
       SpendBundle(coinSpends: []),
       (previousValue, spendBundle) => previousValue + spendBundle,

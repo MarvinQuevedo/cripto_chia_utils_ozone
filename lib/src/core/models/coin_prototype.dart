@@ -47,7 +47,7 @@ class CoinPrototype with ToBytesMixin {
 
   @override
   Bytes toBytes() {
-    return parentCoinInfo + puzzlehash + Bytes(intTo64Bits(amount));
+    return parentCoinInfo + puzzlehash + intTo64Bits(amount);
   }
 
   factory CoinPrototype.fromStream(Iterator<int> iterator) {

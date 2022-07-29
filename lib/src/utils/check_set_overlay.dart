@@ -1,5 +1,5 @@
-extension CheckSetOverLay on Set {
-  bool checkOverlay(Set<dynamic> other) {
+extension IterableCheckSetOverLay on Iterable {
+  bool checkOverlay(Iterable<dynamic> other) {
     for (var value in other) {
       if (this.contains(value)) {
         return true;

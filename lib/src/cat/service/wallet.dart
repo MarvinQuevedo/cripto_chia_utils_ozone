@@ -64,7 +64,7 @@ class CatWalletService extends BaseWalletService {
       // if first coin, make inner solution with output
       if (first) {
         first = false;
-        // see https://github.com/Chia-Network/chia-blockchain/blob/4bd5c53f48cb049eff36c87c00d21b1f2dd26b27/chia/wallet/cat_wallet/cat_wallet.py#L646
+        // see https://github.com/Chia-Network/chia-blockchain/blob/main/chia/wallet/cat_wallet/cat_wallet.py#L625
         //   announcement = Announcement(coin.name(), std_hash(b"".join([c.name() for c in cat_coins])), b"\xca")
         final message = catCoins
             .fold(
@@ -77,7 +77,7 @@ class CatWalletService extends BaseWalletService {
           catCoin.id,
           message,
           // https://chialisp.com/docs/puzzles/cats under "Design Choices"
-          morphBytes: Bytes.fromHex('ca'),
+          // morphBytes: Bytes.fromHex('ca'),
         );
 
         final conditions = <Condition>[];
@@ -89,8 +89,8 @@ class CatWalletService extends BaseWalletService {
               primaryAssertCoinAnnouncement.message,
             ),
           )
-          ..addAll(puzzleAnnouncementsToAssert)
-          ..addAll(coinAnnouncementsToAssert);
+          ..addAll(coinAnnouncementsToAssert)
+          ..addAll(puzzleAnnouncementsToAssert);
 
         for (final payment in payments) {
           final sendCreateCoinCondition = payment.toCreateCoinCondition();
@@ -273,8 +273,8 @@ class CatWalletService extends BaseWalletService {
       ]),
     );
 
-    final catPuzzle = catProgram.curry([
-      Program.fromBytes(catProgram.hash()),
+    final catPuzzle = CAT_MOD.curry([
+      Program.fromBytes(CAT_MOD.hash()),
       Program.fromBytes(tail.hash()),
       payToPuzzle,
     ]);
@@ -431,8 +431,8 @@ class CatWalletService extends BaseWalletService {
   }
 
   static Program makeCatPuzzle(Puzzlehash assetId, Program innerPuzzle) {
-    return catProgram
-        .curry([Program.fromBytes(catProgram.hash()), Program.fromBytes(assetId), innerPuzzle]);
+    return CAT_MOD
+        .curry([Program.fromBytes(CAT_MOD.hash()), Program.fromBytes(assetId), innerPuzzle]);
   }
 
   void validateSpendBundle(SpendBundle spendBundle) {
@@ -443,7 +443,7 @@ class CatWalletService extends BaseWalletService {
     final coinsToCreate = <CoinPrototype>[];
     final coinsBeingSpent = <CoinPrototype>[];
     Bytes? originId;
-    final catSpends = spendBundle.coinSpends.where((spend) => spend.type == SpendType.cat);
+    final catSpends = spendBundle.coinSpends.where((spend) => spend.type == SpendType.cat2);
     for (final catSpend in catSpends) {
       final outputConditions = catSpend.puzzleReveal.run(catSpend.solution).program.toList();
 
@@ -507,7 +507,7 @@ class CatWalletService extends BaseWalletService {
       final constructedAnnouncement = AssertCoinAnnouncementCondition(
         originId!,
         message,
-        morphBytes: Bytes.fromHex('ca'),
+        //morphBytes: Bytes.fromHex('ca'),
       );
 
       if (!actualAssertCoinAnnouncementIds!.contains(constructedAnnouncement.announcementId)) {
@@ -520,7 +520,7 @@ class CatWalletService extends BaseWalletService {
     final uncurried = catPuzzle.uncurry();
 
     final uncurriedPuzzle = uncurried.program;
-    if (uncurriedPuzzle != catProgram) {
+    if (uncurriedPuzzle != CAT_MOD) {
       return null;
     }
 
@@ -541,7 +541,7 @@ class DeconstructedCatPuzzle {
     required Program uncurriedPuzzle,
     required this.assetId,
     required this.innerPuzzle,
-  }) : uncurriedPuzzle = (uncurriedPuzzle == catProgram)
+  }) : uncurriedPuzzle = (uncurriedPuzzle == CAT_MOD)
             ? uncurriedPuzzle
             : throw ArgumentError('Supplied puzzle is not cat puzzle');
 }

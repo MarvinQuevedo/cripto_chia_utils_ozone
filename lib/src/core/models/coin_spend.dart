@@ -58,18 +58,26 @@ class CoinSpend with ToBytesMixin {
 
   @override
   Bytes toBytes() {
-    return coin.toBytes() + Bytes(puzzleReveal.serialize()) + Bytes(solution.serialize());
+    Bytes coinBytes = coin.toBytes();
+    if (coin is CatCoin) {
+      coinBytes = (coin as CatCoin).toCoinPrototype().toBytes();
+    }
+    return coinBytes + Bytes(puzzleReveal.serialize()) + Bytes(solution.serialize());
   }
 
-  Program toProgramList() {
+  Program toProgram() {
+    Bytes coinBytes = coin.toBytes();
+    if (coin is CatCoin) {
+      coinBytes = (coin as CatCoin).toCoinPrototype().toBytes();
+    }
     return Program.list([
-      Program.fromBytes(coin.toBytes()),
+      Program.fromBytes(coinBytes),
       Program.fromBytes(puzzleReveal.serialize()),
       Program.fromBytes(solution.serialize()),
     ]);
   }
 
-  static CoinSpend fromProgramList(Program program) {
+  static CoinSpend fromProgram(Program program) {
     final args = program.toList();
     final coin = CoinPrototype.fromBytes(args[0].atom);
     final puzzleReveal = Program.deserialize(args[1].atom);
@@ -90,8 +98,11 @@ class CoinSpend with ToBytesMixin {
     if (uncurriedPuzzleSource == p2DelegatedPuzzleOrHiddenPuzzleProgram.toSource()) {
       return SpendType.standard;
     }
-    if (uncurriedPuzzleSource == catProgram.toSource()) {
-      return SpendType.cat;
+    if (uncurriedPuzzleSource == CAT_MOD.toSource()) {
+      return SpendType.cat2;
+    }
+    if (uncurriedPuzzleSource == LEGACY_CAT_MOD.toSource()) {
+      return SpendType.cat1;
     }
     if (uncurriedPuzzleSource == singletonTopLayerV1Program.toSource()) {
       return SpendType.nft;
@@ -104,4 +115,4 @@ class CoinSpend with ToBytesMixin {
   String toString() => 'CoinSpend(coin: $coin, puzzleReveal: $puzzleReveal, solution: $solution)';
 }
 
-enum SpendType { unknown, standard, cat, nft }
+enum SpendType { unknown, standard, cat1, cat2, nft }
