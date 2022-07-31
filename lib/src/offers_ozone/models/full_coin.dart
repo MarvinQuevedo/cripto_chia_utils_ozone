@@ -1,6 +1,9 @@
-import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'dart:math';
 
-Puzzlehash? _getTailHash(CoinSpend? parentCoinSpend) {
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/utils/doubles_parse.dart';
+
+Puzzlehash? getTailHash(CoinSpend? parentCoinSpend) {
   try {
     final arguments = parentCoinSpend!.puzzleReveal.uncurry().arguments;
     if (arguments.length > 1) {
@@ -29,7 +32,7 @@ class FullCoin extends CoinPrototype {
   FullCoin({
     this.parentCoinSpend,
     required this.coin,
-  })  : assetId = _getTailHash(parentCoinSpend),
+  })  : assetId = getTailHash(parentCoinSpend),
         lineageProof = (parentCoinSpend?.puzzleReveal.uncurry().arguments.length ?? 0) > 2
             ? Program.list([
                 Program.fromBytes(
@@ -47,6 +50,18 @@ class FullCoin extends CoinPrototype {
           puzzlehash: coin.puzzlehash,
           amount: coin.amount,
         );
+
+  String toFormatedAmount(String symbol) {
+    switch (type) {
+      case SpendType.standard:
+        return (amount / pow(10, 12)).toRegionalString(decimals: 12, symbol: symbol);
+      case SpendType.cat1:
+      case SpendType.cat2:
+        return (amount / pow(10, 3)).toRegionalString(decimals: 3, symbol: symbol);
+      default:
+        return amount.toDouble().toRegionalString(decimals: 2, symbol: symbol);
+    }
+  }
 
   CatCoin toCatCoin() {
     return CatCoin(parentCoinSpend: parentCoinSpend!, coin: coin);
