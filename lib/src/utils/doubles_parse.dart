@@ -49,7 +49,12 @@ String removeTrailingZeros(double original, String n, String? symbol, int decima
 String get _getDefaultLocaleName {
   String locale = LocaleProvider.instance.locale ?? Platform.localeName;
   if (locale.contains("-")) {
-    locale = locale.split("-").last.toLowerCase();
+    final splitted = locale.split("-").toList();
+    if (NumberFormat.localeExists(splitted.last.toLowerCase())) {
+      locale = splitted.last.toLowerCase();
+    } else if (NumberFormat.localeExists(splitted.first.toLowerCase())) {
+      locale = locale.split("-").last.toLowerCase();
+    }
   }
 
   if (!NumberFormat.localeExists(locale)) {
