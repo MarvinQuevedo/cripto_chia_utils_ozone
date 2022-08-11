@@ -3,6 +3,14 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
 
+class LocaleProvider {
+  List? languages = [];
+  String? locale = "en";
+
+  LocaleProvider._internal();
+  static LocaleProvider instance = LocaleProvider._internal();
+}
+
 int decimalCount(double value) {
   var str = value.toString();
   var dot = str.indexOf(".");
@@ -39,7 +47,10 @@ String removeTrailingZeros(double original, String n, String? symbol, int decima
 }
 
 String get _getDefaultLocaleName {
-  final locale = Platform.localeName;
+  String locale = LocaleProvider.instance.locale ?? Platform.localeName;
+  if (locale.contains("-")) {
+    locale = locale.split("-").last.toLowerCase();
+  }
 
   if (!NumberFormat.localeExists(locale)) {
     if (locale.contains("es_")) {
