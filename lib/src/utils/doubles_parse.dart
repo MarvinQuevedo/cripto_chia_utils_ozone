@@ -52,9 +52,9 @@ String get _getDefaultLocaleName {
     final splitted = locale.split("-").toList();
     if (NumberFormat.localeExists(splitted.last.toLowerCase())) {
       locale = splitted.last.toLowerCase();
-    } else if (NumberFormat.localeExists(splitted.first.toLowerCase())) {
+    } /* else if (NumberFormat.localeExists(splitted.first.toLowerCase())) {
       locale = locale.split("-").last.toLowerCase();
-    }
+    } */
   }
 
   if (!NumberFormat.localeExists(locale)) {
