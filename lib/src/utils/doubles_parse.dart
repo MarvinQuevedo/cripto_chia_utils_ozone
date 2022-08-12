@@ -5,7 +5,7 @@ import 'dart:math' as math;
 
 class LocaleProvider {
   List? languages = [];
-  String? locale = "en";
+  String locale = "en";
 
   LocaleProvider._internal();
   static LocaleProvider instance = LocaleProvider._internal();
@@ -47,15 +47,7 @@ String removeTrailingZeros(double original, String n, String? symbol, int decima
 }
 
 String get _getDefaultLocaleName {
-  String locale = LocaleProvider.instance.locale ?? Platform.localeName;
-  if (locale.contains("-")) {
-    final splitted = locale.split("-").toList();
-    if (NumberFormat.localeExists(splitted.last.toLowerCase())) {
-      locale = splitted.last.toLowerCase();
-    } /* else if (NumberFormat.localeExists(splitted.first.toLowerCase())) {
-      locale = locale.split("-").last.toLowerCase();
-    } */
-  }
+  String locale = LocaleProvider.instance.locale;
 
   if (!NumberFormat.localeExists(locale)) {
     if (locale.contains("es_")) {
