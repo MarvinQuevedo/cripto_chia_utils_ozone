@@ -6,6 +6,10 @@ import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
+    if (constructor.also != null) {
+      innerPuzzle =
+          outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: innerPuzzle);
+    }
     return CatWalletService.makeCatPuzzle(createAssetId(constructor: constructor), innerPuzzle);
   }
 
