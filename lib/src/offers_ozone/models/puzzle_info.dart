@@ -14,4 +14,6 @@ class PuzzleInfo {
   String toString() {
     return "PuzzleInfo($info)";
   }
+
+  operator [](Object key) => info[key];
 }
