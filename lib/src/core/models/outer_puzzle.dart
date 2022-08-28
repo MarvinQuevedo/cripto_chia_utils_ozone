@@ -79,7 +79,7 @@ abstract class OuterPuzzle {
     required PuzzleInfo constructor,
     required Program innerPuzzle,
   });
-  Puzzlehash createAssetId({
+  Puzzlehash? createAssetId({
     required PuzzleInfo constructor,
   });
   PuzzleInfo? matchPuzzle(Program puzzle);
