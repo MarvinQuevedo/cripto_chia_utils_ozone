@@ -7,3 +7,4 @@ final singletonLauncherProgram = Program.deserializeHex(
 );
 
 final LAUNCHER_PUZZLE_HASH = singletonLauncherProgram.hash();
+final SINGLETON_LAUNCHER_HASH = LAUNCHER_PUZZLE_HASH;

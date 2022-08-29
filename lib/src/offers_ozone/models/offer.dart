@@ -103,8 +103,9 @@ class Offer {
           constructor: puzzleDriver,
           solution: parentSolution,
         );
-        //assert(innerSolution != null && innerPuzzle != null);
-        final conditionResult = innerPuzzle.run(innerSolution);
+        assert(innerSolution != null && innerPuzzle != null);
+
+        final conditionResult = innerPuzzle!.run(innerSolution!);
         final conditionResultIter = conditionResult.program.toList();
         for (var condition in conditionResultIter) {
           try {
@@ -494,7 +495,7 @@ class Offer {
 
   static Offer fromSpendBundle(SpendBundle bundle) {
     final requestedPayments = <Bytes?, List<NotarizedPayment>>{};
-    final driverDict = <Bytes, PuzzleInfo>{};
+    final driverDict = <Bytes?, PuzzleInfo>{};
     final leftoverCoinSpends = <CoinSpend>[];
     for (var coinSpend in bundle.coinSpends) {
       final driver = outerPuzzle.matchPuzzle(coinSpend.puzzleReveal);

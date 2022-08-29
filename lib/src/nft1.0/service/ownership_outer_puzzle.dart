@@ -43,7 +43,7 @@ Program solutionForOwnershipLayer({required Program innerSolution}) {
   return Program.list([innerSolution]);
 }
 
-class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
+class OwnershipOuterPuzzle extends outerPuzzle.OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     if (constructor.also != null) {
@@ -110,7 +110,7 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
   }
 
   @override
-  Program getInnerPuzzle({required PuzzleInfo constructor, required Program puzzleReveal}) {
+  Program? getInnerPuzzle({required PuzzleInfo constructor, required Program puzzleReveal}) {
     final matched = mathOwnershipLayerPuzzle(puzzleReveal);
     if (matched != null) {
       final innerPuzzle = matched.innerPuzzle;
@@ -128,7 +128,7 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
   }
 
   @override
-  Program getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
+  Program? getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
     final myInnerSolution = solution.first();
     if (constructor.also != null) {
       final deepInnerSolution =
