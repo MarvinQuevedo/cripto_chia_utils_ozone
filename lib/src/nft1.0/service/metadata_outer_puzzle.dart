@@ -67,7 +67,7 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
     final matched = mathMetadataLayerPuzzle(puzzle);
     if (matched != null) {
       final Map<String, dynamic> constructorDict = {
-        "type": "metadata",
+        "type": AssetType.METADATA,
         "metadata": matched.metadata.toSource(),
         "updater_hash": matched.metadataUpdaterHash.toHexWithPrefix(),
       };

@@ -79,7 +79,7 @@ class OwnershipOuterPuzzle extends outerPuzzle.OuterPuzzle {
     if (matched != null) {
       final tpMatch = outerPuzzle.matchPuzzle(matched.transferProgram);
       final Map<String, dynamic> constructorDict = {
-        "type": "ownership",
+        "type": AssetType.OWNERSHIP,
         "owner": matched.currentOwner.isEmpty ? "()" : matched.currentOwner.toHexWithPrefix(),
         "transfer_program": tpMatch == null ? matched.transferProgram.toSource() : tpMatch.info,
       };
