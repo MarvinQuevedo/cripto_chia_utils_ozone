@@ -1,13 +1,23 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-
-import '../../cat/service/cat_outer_puzzle.dart';
+import 'package:chia_crypto_utils/src/nft1.0/service/metadata_outer_puzzle.dart';
+import 'package:chia_crypto_utils/src/nft1.0/service/ownership_outer_puzzle.dart';
+import 'package:chia_crypto_utils/src/nft1.0/service/singleton_outer_puzzle.dart';
+import 'package:chia_crypto_utils/src/nft1.0/service/transfer_program_puzzle.dart';
 
 class AssetType {
   static String get CAT => 'CAT';
+  static String get SINGLETON => 'singleton';
+  static String get METADATA => 'metadata';
+  static String get OWNERSHIP => 'ownership';
+  static String get ROYALTY_TRANSFER_PROGRAM => 'royalty transfer program';
 }
 
 final Map<String, OuterPuzzle> _driverLookup = {
   AssetType.CAT: CATOuterPuzzle(),
+  AssetType.SINGLETON: SingletonOuterPuzzle(),
+  AssetType.METADATA: MetadataOurterPuzzle(),
+  AssetType.OWNERSHIP: OwnershipOuterPuzzle(),
+  AssetType.ROYALTY_TRANSFER_PROGRAM: TransferProgramOuterPuzzle()
 };
 
 Program constructPuzzle({
