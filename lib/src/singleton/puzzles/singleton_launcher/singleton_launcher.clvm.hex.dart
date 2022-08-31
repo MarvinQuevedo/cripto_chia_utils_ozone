@@ -7,5 +7,8 @@ final singletonLauncherProgram = Program.deserializeHex(
 );
 final SINGLETON_MOD = singletonLauncherProgram;
 
+/// SINGLETON_LAUNCHER_HASH
 final LAUNCHER_PUZZLE_HASH = SINGLETON_MOD.hash();
+
+/// LAUNCHER_PUZZLE_HASH
 final SINGLETON_LAUNCHER_HASH = LAUNCHER_PUZZLE_HASH;
