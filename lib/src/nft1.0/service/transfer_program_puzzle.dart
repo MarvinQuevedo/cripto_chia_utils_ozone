@@ -62,21 +62,6 @@ Program solutionForTransferProgram(
 class TransferProgramOuterPuzzle extends outerPuzzle.OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
-    if (constructor.also != null) {
-      innerPuzzle =
-          outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: innerPuzzle);
-    }
-    final transfer_program_info = constructor["transfer_program"];
-    Program transfer_program;
-    if (transfer_program_info is Program) {
-      transfer_program = transfer_program_info;
-    } else {
-      transfer_program = outerPuzzle.constructPuzzle(
-        constructor: transfer_program_info,
-        innerPuzzle: innerPuzzle,
-      );
-    }
-
     return puzzleForTransferProgram(
       launcherId: Puzzlehash.fromHex(constructor["launcher_id"]),
       royaltyAddress: Puzzlehash.fromHex(constructor["royalty_address"]),
