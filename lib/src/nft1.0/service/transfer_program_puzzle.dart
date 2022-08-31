@@ -78,7 +78,7 @@ class TransferProgramOuterPuzzle extends outerPuzzle.OuterPuzzle {
     final matched = mathTransferProgramPuzzle(puzzle);
     if (matched != null) {
       final Map<String, dynamic> constructorDict = {
-        "type": "ownership",
+        "type": AssetType.ROYALTY_TRANSFER_PROGRAM,
         "launcher_id": matched.singletonStruct.rest().first().atom.toHexWithPrefix(),
         "royalty_address": matched.royaltyAddressP.atom.toHexWithPrefix(),
         "royalty_percentage": matched.royaltyPercentage
