@@ -1,7 +1,6 @@
 import '../../../chia_crypto_utils.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 import '../models/deconstructed_singleton_puzzle.dart';
-import '../puzzles/index.dart';
 
 DeconstructedSingletonPuzzle? mathSingletonPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
