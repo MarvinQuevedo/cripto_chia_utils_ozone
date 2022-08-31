@@ -21,7 +21,6 @@ DeconstructedTransferProgramPuzzle? mathTransferProgramPuzzle(Program puzzle) {
   return null;
 }
 
-//launcher_id: bytes32, royalty_puzzle_hash: bytes32, percentage: uint16
 Program puzzleForTransferProgram(
     {required Bytes launcherId, required Puzzlehash royaltyAddress, required int percentage}) {
   final sinletonStruct = Program.cons(

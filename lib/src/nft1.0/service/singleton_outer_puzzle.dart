@@ -22,19 +22,6 @@ DeconstructedSingletonPuzzle? mathSingletonPuzzle(Program puzzle) {
   return null;
 }
 
-Program puzzleForTransferProgram(
-    {required Bytes launcherId, required Puzzlehash royaltyAddress, required int percentage}) {
-  final sinletonStruct = Program.cons(
-    Program.fromBytes(SINGLETON_MOD_HASH),
-    Program.cons(
-      Program.fromBytes(launcherId),
-      Program.fromBytes(SINGLETON_LAUNCHER_HASH),
-    ),
-  );
-  return TRANSFER_PROGRAM_MOD
-      .curry([sinletonStruct, Program.fromBytes(royaltyAddress), Program.fromInt(percentage)]);
-}
-
 Program solutionForSingleton({
   required LineageProof lineageProof,
   required int amount,
