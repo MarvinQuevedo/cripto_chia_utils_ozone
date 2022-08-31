@@ -37,7 +37,7 @@ Future<void> main() async {
     final puzzleMetadataLayer = puzzleForMetadataLayer(
       innerPuzzle: puzzle,
       metadata: metadata,
-      updaterHash: updaterHash,
+      metadataUpdaterHash: updaterHash,
     );
     print("puzzleMetadataLayer");
     expect(puzzleMetadataLayer.hash().toHex(), spectedMetadataPuzzleHash);

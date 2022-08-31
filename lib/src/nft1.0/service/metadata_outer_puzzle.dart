@@ -20,11 +20,11 @@ DeconstructedUpdateMetadataPuzzle? mathMetadataLayerPuzzle(Program puzzle) {
 }
 
 Program puzzleForMetadataLayer(
-    {required Program metadata, required Bytes updaterHash, required Program innerPuzzle}) {
-  return nftStateLayerProgram.curry([
+    {required Program metadata, required Bytes metadataUpdaterHash, required Program innerPuzzle}) {
+  return NFT_STATE_LAYER_MOD.curry([
     Program.fromBytes(NFT_STATE_LAYER_MOD_HASH),
     metadata,
-    Program.fromBytes(updaterHash),
+    Program.fromBytes(metadataUpdaterHash),
     innerPuzzle
   ]);
 }
@@ -46,7 +46,7 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
 
     return puzzleForMetadataLayer(
       metadata: constructor["metadata"],
-      updaterHash: constructor["updater_hash"],
+      metadataUpdaterHash: constructor["updater_hash"],
       innerPuzzle: innerPuzzle,
     );
   }
