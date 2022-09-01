@@ -53,7 +53,8 @@ class UncurriedNFT {
   final Program innerPuzzle;
 
   /// p2 puzzle of the owner, either for ownership layer or standard
-  final Program p2Puzzlehash;
+
+  final Program p2Puzzle;
 
   /// Owner's DID
   final Bytes? ownerDid;
@@ -78,7 +79,7 @@ class UncurriedNFT {
     required this.licenseHash,
     required this.seriesNumber,
     required this.seriesTotal,
-    required this.p2Puzzlehash,
+    required this.p2Puzzle,
     required this.supportDid,
     required this.nftInnerPuzzleHash,
     required this.transferProgram,
@@ -221,7 +222,7 @@ class UncurriedNFT {
           metadata: metadata,
           dataUris: dataUris,
           dataHash: dataHash,
-          p2Puzzlehash: p2Puzzle,
+          p2Puzzle: p2Puzzle,
           metaUris: metaUris,
           metaHash: metaHash,
           licenseUris: licenseUris,
@@ -240,6 +241,16 @@ class UncurriedNFT {
     } catch (e) {
       print(e);
       throw Exception("Cannot uncurry NFT state layer: Args ${curried_args}");
+    }
+  }
+
+  // get_innermost_solution
+  Program getInnermostSolution(Program solution) {
+    final stateLayerInnerSolution = solution.filterAt("rrff");
+    if (supportDid) {
+      return stateLayerInnerSolution.first();
+    } else {
+      return stateLayerInnerSolution;
     }
   }
 }
