@@ -89,9 +89,9 @@ Future<void> main() async {
     print("puzzleForTransferProgram");
     expect(_puzzleForTransferProgram.hash().toHex(), spectedPuzzleForTransferHash);
 
-/*     final solutionProgram = solutionForTransferProgram(conditions: Program.list([]), newDidInnerHash: puzzleHash, newDid: puzzleHash, tradePricesList: );
-    print("ownerSolution");
-    expect(solutionProgram.hash().toHex(), solutionOwterProgramHash); */
+    final negativeProgram = Program.fromInt(-10);
+    print("negativeProgram");
+    print(negativeProgram);
   });
   test('Program At rrf', () async {
     final p1 = Program.list([
