@@ -1,10 +1,6 @@
-import 'dart:typed_data';
-
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/nft1.0/service/metadata_outer_puzzle.dart';
-import 'package:chia_crypto_utils/src/nft1.0/service/ownership_outer_puzzle.dart';
-import 'package:chia_crypto_utils/src/nft1.0/service/singleton_outer_puzzle.dart';
-import 'package:chia_crypto_utils/src/nft1.0/service/transfer_program_puzzle.dart';
+import 'package:chia_crypto_utils/src/nft1.0/index.dart';
+
 import 'package:test/test.dart';
 
 const spectedMetadataPuzzleHash =
@@ -18,6 +14,8 @@ const solutionProgramHash = "0a8c55bdb3469e3cefbc32f44e0eb94bb9cc79b0b233f944622
 const solutionSingletonHash = "6f3366dde8f47e162b79cf95444158f44cdb5342e678f6df8277815c80c854d4";
 const solutionSingletonHash2 = "0926ea4d51965585194d8eee5693c65e384ae3820a88e6e644526f1ed0087c6c";
 const solutionOwterProgramHash = "8238fa19e27bb63cf6663356aeb04847bf7b79158b799b8c329493f46ce6c5a6";
+const ownershipLayerTransferSolutionHash =
+    "b8e85e13914851c8969030ced4dd64d4f2967dd2b6e70804523ae0d8d1f0e093";
 
 Future<void> main() async {
   final masterSk =
@@ -92,6 +90,17 @@ Future<void> main() async {
     final negativeProgram = Program.fromInt(-10);
     print("negativeProgram");
     print(negativeProgram);
+  });
+  test('OwnershipLayerTransferSolution', () async {
+    final solution = NftService.createOwnershipLayerTransferSolution(
+        newDid: puzzleHash,
+        newDidInnerHash: puzzleHash,
+        newPuzzleHash: puzzleHash,
+        tradePricesList: [
+          [105, 165]
+        ]);
+    print("puzzleForTransferProgram");
+    expect(solution.hash().toHex(), ownershipLayerTransferSolutionHash);
   });
   test('Program At rrf', () async {
     final p1 = Program.list([

@@ -176,11 +176,14 @@ class NftService {
   static Program createOwnershipLayerTransferSolution({
     required Bytes newDid,
     required Puzzlehash newDidInnerHash,
-    required List<int> tradePricesList,
+    required List<List<int>> tradePricesList,
     required Puzzlehash newPuzzleHash,
   }) {
     final tradePricesListP = Program.list(
-      tradePricesList.map((e) => Program.fromInt(e)).toList(),
+      tradePricesList.map((root) {
+        final innerList = root.map((e) => Program.fromInt(e)).toList();
+        return Program.list(innerList);
+      }).toList(),
     );
     final conditionList = Program.list([
       Program.list(
@@ -200,6 +203,7 @@ class NftService {
         Program.fromBytes(newDidInnerHash),
       ])
     ]);
+
     final solution = Program.list(
       [
         Program.list(

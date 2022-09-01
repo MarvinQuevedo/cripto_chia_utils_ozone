@@ -14,6 +14,7 @@ Program solution_for_delegated_puzzle(
 
 Program solutionForConditions(Program conditions) {
   final delegatedPuzzle = puzzleForConditions(conditions);
+
   return solution_for_delegated_puzzle(
     delegated_puzzle: delegatedPuzzle,
     solution: Program.fromInt(0),
