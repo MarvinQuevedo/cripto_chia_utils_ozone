@@ -29,6 +29,12 @@
             "program": "integration_test/nft1/nft_uncurried_test.dart"
         },
         {
+            "name": "NFT1 test",
+            "type": "dart",
+            "request": "launch",
+            "program": "test/nft1/nf1_puzzles_test.dart"
+        },
+        {
             "name": "CAT",
             "type": "dart",
             "request": "launch",
