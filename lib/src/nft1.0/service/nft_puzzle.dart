@@ -2,6 +2,7 @@ import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 import 'package:chia_crypto_utils/src/nft1.0/index.dart';
 import 'package:chia_crypto_utils/src/standard/puzzles/p2_delegated_puzzle_or_hidden_puzzle/p2_delegated_puzzle_or_hidden_puzzle.clvm.hex.dart';
+import 'package:tuple/tuple.dart';
 
 import '../../clvm.dart';
 import '../../singleton/index.dart';
@@ -214,5 +215,36 @@ class NftService {
       ],
     );
     return solution;
+  }
+
+  //get_metadata_and_phs
+  Tuple2<Program, Bytes> getMetadataAndPhs(UncurriedNFT unft, Program solution) {
+    final conditions = unft.p2Puzzle.run(unft.getInnermostSolution(solution));
+    Program metadata = unft.metadata;
+    Bytes? puzzlehashForDerivation;
+    for (var condition in solution.toList()) {
+      final conditionList = condition.toList();
+      if (conditionList.length < 2) {
+        // invalid condition
+        continue;
+      }
+      final conditionCode = condition.first().toInt();
+      if (conditionCode == -24) {
+        metadata = updateMetadata(metadata: metadata, updateCondition: condition);
+      } else if (conditionCode == 51 && condition.rest().rest().first().toInt() == 1) {
+        //destination puzhash
+        if (puzzlehashForDerivation != null) {
+          // ignore duplicated create coin conditions
+          continue;
+        }
+        final memo = conditionList.last.first().atom;
+        puzzlehashForDerivation = memo;
+        print("Got back puzhash from solution: ${puzzlehashForDerivation.toHex()}");
+      }
+    }
+    if (puzzlehashForDerivation == null) {
+      throw Exception("puzhash_for_derivation can't be null");
+    }
+    return Tuple2(metadata, puzzlehashForDerivation);
   }
 }
