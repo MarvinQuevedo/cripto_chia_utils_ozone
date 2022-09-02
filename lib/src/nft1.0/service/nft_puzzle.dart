@@ -219,10 +219,10 @@ class NftService {
 
   //get_metadata_and_phs
   Tuple2<Program, Bytes> getMetadataAndPhs(UncurriedNFT unft, Program solution) {
-    final conditions = unft.p2Puzzle.run(unft.getInnermostSolution(solution));
+    final conditions = unft.p2Puzzle.run(unft.getInnermostSolution(solution)).program;
     Program metadata = unft.metadata;
     Bytes? puzzlehashForDerivation;
-    for (var condition in solution.toList()) {
+    for (var condition in conditions.toList()) {
       final conditionList = condition.toList();
       if (conditionList.length < 2) {
         // invalid condition
