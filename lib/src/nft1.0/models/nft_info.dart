@@ -160,7 +160,7 @@ class NFTInfo {
     }
     return NFTInfo(
         launcherId: Puzzlehash(uncurriedNFT.launcherPuzhash.atom),
-        p2Puzzlehash: uncurriedNFT.p2Puzzlehash.hash(),
+        p2Puzzlehash: uncurriedNFT.p2Puzzle.hash(),
         nftCoinId: currentCoin.id,
         didOwner: uncurriedNFT.ownerDid,
         royaltyPercentage: uncurriedNFT.tradePricePercentage,
