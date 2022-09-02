@@ -247,4 +247,51 @@ class NftService {
     }
     return Tuple2(metadata, puzzlehashForDerivation);
   }
+
+  Program recurryNftPuzzle(
+      {required UncurriedNFT unft, required Program solution, required Program newInnerPuzzle}) {
+    print("Generating NFT puzzle with ownership support: ${solution.toSource()}");
+
+    final conditions = unft.p2Puzzle.run(unft.getInnermostSolution(solution)).program;
+    Bytes? newDidId = unft.ownerDid;
+    Bytes? newPuzhash;
+
+    for (var condition in conditions.toList()) {
+      if (condition.first().toInt() == -10) {
+        // this is the change owner magic condition
+        newDidId = condition.filterAt("rf").atom;
+      } else if (condition.first().toInt() == 51) {
+        newPuzhash = condition.filterAt("rf").atom;
+      }
+    }
+    print(
+      "Found NFT puzzle details: ${newDidId?.toHexWithPrefix()} ${newPuzhash?.toHexWithPrefix()}",
+    );
+
+    if (unft.transferProgram == null) {
+      throw Exception("TransferProgram in uncurriedNFT can't be null");
+    }
+
+    final newOwnershipPuzzle = constructOwnershipLayer(
+      currentOwner: newDidId,
+      transferProgram: unft.transferProgram!,
+      innerPuzzle: newInnerPuzzle,
+    );
+
+    return newOwnershipPuzzle;
+  }
+
+  Bytes? getnewOwnerDid({required UncurriedNFT unft, required Program solution}) {
+    final conditions = unft.p2Puzzle.run(unft.getInnermostSolution(solution)).program;
+    Bytes? newDidId = unft.ownerDid;
+
+    for (var condition in conditions.toList()) {
+      if (condition.first().toInt() == -10) {
+        // this is the change owner magic condition
+
+        newDidId = condition.filterAt("rf").atom;
+      }
+    }
+    return newDidId;
+  }
 }
