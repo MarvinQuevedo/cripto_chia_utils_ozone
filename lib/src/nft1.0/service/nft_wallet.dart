@@ -1,18 +1,16 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
-import 'package:tuple/tuple.dart';
 
-import '../../core/exceptions/change_puzzlehash_needed_exception.dart';
 import '../index.dart';
 
 class Nft1Wallet extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
-  Tuple2<SpendBundle, SpendBundle?> generateUnsignedSpendBundle({
+
+  SpendBundle generateSignedSpendBundle({
     required List<Payment> payments,
     required List<CoinPrototype> coins,
     required WalletKeychain keychain,
     Puzzlehash? changePuzzlehash,
-    List<Coin> standardCoinsForFee = const [],
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
     List<AssertPuzzleAnnouncementCondition> puzzleAnnouncementsToAssert = const [],
     int fee = 0,
@@ -21,78 +19,31 @@ class Nft1Wallet extends BaseWalletService {
     Program? tradePricesList,
     Map<String, String>? metadataUpdate,
     required NFTCoinInfo nftCoin,
+    List<SpendBundle>? additionalBundles,
   }) {
     // copy coins input since coins list is modified in this function
 
-    final totalCoinValue = coins.fold(0, (int previousValue, coin) => previousValue + coin.amount);
-
-    final totalPaymentAmount = payments.fold(
-      0,
-      (int previousValue, payment) => previousValue + payment.amount,
-    );
-    final change = totalCoinValue - totalPaymentAmount - fee;
-
-    if (changePuzzlehash == null && change > 0) {
-      throw ChangePuzzlehashNeededException();
-    }
-
-    final coin = coins.first;
-
-    AssertCoinAnnouncementCondition? primaryAssertCoinAnnouncement;
-    SpendBundle? feeStandardSpendBundle;
-    final conditions = <Condition>[];
-    final createdCoins = <CoinPrototype>[];
-
-    for (final payment in payments) {
-      final sendCreateCoinCondition = payment.toCreateCoinCondition();
-      conditions.add(sendCreateCoinCondition);
-      createdCoins.add(
-        CoinPrototype(
-          parentCoinInfo: nftCoin.coin.id,
-          puzzlehash: payment.puzzlehash,
-          amount: payment.amount,
-        ),
-      );
-    }
-
-    if (change > 0) {
-      conditions.add(CreateCoinCondition(changePuzzlehash!, change));
-      createdCoins.add(
-        CoinPrototype(
-          parentCoinInfo: coin.id,
-          puzzlehash: changePuzzlehash,
-          amount: change,
-        ),
-      );
-    }
-
     if (fee > 0) {
-      feeStandardSpendBundle = _makeStandardSpendBundleForFee(
-        fee: fee,
-        standardCoins: standardCoinsForFee,
+      final announcementMessage = nftCoin.coin.id;
+
+      final assertCoinAnnouncement = AssertCoinAnnouncementCondition(
+        nftCoin.coin.id,
+        announcementMessage,
+      );
+      coinAnnouncementsToAssert.add(assertCoinAnnouncement);
+    }
+
+    final createLauncherSpendBundle = standardWalletService.createSpendBundle(
+        payments: payments,
+        coinsInput: coins,
         keychain: keychain,
         changePuzzlehash: changePuzzlehash,
-      );
-    }
+        originId: nftCoin.nftId,
+        fee: fee,
+        coinAnnouncementsToAssert: coinAnnouncementsToAssert,
+        puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert);
 
-    conditions
-      ..addAll(coinAnnouncementsToAssert)
-      ..addAll(puzzleAnnouncementsToAssert);
-
-    final existingCoinsMessage = coins.fold(
-      Bytes.empty,
-      (Bytes previousValue, coin) => previousValue + coin.id,
-    );
-    final createdCoinsMessage = createdCoins.fold(
-      Bytes.empty,
-      (Bytes previousValue, coin) => previousValue + coin.id,
-    );
-    final message = (existingCoinsMessage + createdCoinsMessage).sha256Hash();
-    conditions.add(CreateCoinAnnouncementCondition(message));
-
-    //primaryAssertCoinAnnouncement = AssertCoinAnnouncementCondition(coin.id, message);
-
-    Program innerSol = BaseWalletService.makeSolutionFromConditions(conditions);
+    Program innerSol = createLauncherSpendBundle.coinSpends.first.solution;
     final unft = UncurriedNFT.uncurry(nftCoin.fullPuzzle);
     Program? magicCondition;
 
@@ -157,11 +108,11 @@ class Nft1Wallet extends BaseWalletService {
       puzzleReveal: nftCoin.fullPuzzle,
       solution: singletonSolution,
     );
-    final nftSpendBundle = SpendBundle(
+    SpendBundle nftSpendBundle = SpendBundle(
       coinSpends: [coinSpend],
     );
 
-    return Tuple2(nftSpendBundle, feeStandardSpendBundle);
+    return nftSpendBundle;
   }
 
   SpendBundle _makeStandardSpendBundleForFee({
