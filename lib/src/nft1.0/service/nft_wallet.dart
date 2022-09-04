@@ -6,9 +6,35 @@ import '../index.dart';
 class Nft1Wallet extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
 
+  SpendBundle createTransferSpendBundle({
+    required NFTCoinInfo nftCoin,
+    required WalletKeychain keychain,
+    required Puzzlehash targetPuzzleHash,
+    Puzzlehash? changePuzzlehash,
+    int fee = 0,
+    List<Coin>? standardCoinsForFee,
+  }) {
+    return generateSignedSpendBundle(
+        payments: [
+          Payment(
+            nftCoin.coin.amount,
+            targetPuzzleHash,
+          )
+        ],
+        coins: [
+          nftCoin.coin
+        ],
+        keychain: keychain,
+        nftCoin: nftCoin,
+        standardCoinsForFee: standardCoinsForFee,
+        newOwner: null,
+        newDidInnerhash: null);
+  }
+
   SpendBundle generateSignedSpendBundle({
     required List<Payment> payments,
     required List<CoinPrototype> coins,
+    List<Coin>? standardCoinsForFee,
     required WalletKeychain keychain,
     Puzzlehash? changePuzzlehash,
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
@@ -22,7 +48,7 @@ class Nft1Wallet extends BaseWalletService {
     List<SpendBundle>? additionalBundles,
   }) {
     // copy coins input since coins list is modified in this function
-
+    SpendBundle? feeSpendBundle;
     if (fee > 0) {
       final announcementMessage = nftCoin.coin.id;
 
@@ -31,6 +57,13 @@ class Nft1Wallet extends BaseWalletService {
         announcementMessage,
       );
       coinAnnouncementsToAssert.add(assertCoinAnnouncement);
+      feeSpendBundle = _makeStandardSpendBundleForFee(
+        fee: fee,
+        standardCoins: standardCoinsForFee!,
+        keychain: keychain,
+        changePuzzlehash: changePuzzlehash,
+        coinAnnouncementsToAsset: [assertCoinAnnouncement],
+      );
     }
 
     final createLauncherSpendBundle = standardWalletService.createSpendBundle(
@@ -111,6 +144,10 @@ class Nft1Wallet extends BaseWalletService {
     SpendBundle nftSpendBundle = SpendBundle(
       coinSpends: [coinSpend],
     );
+
+    if (feeSpendBundle != null) {
+      nftSpendBundle = nftSpendBundle + feeSpendBundle;
+    }
 
     return nftSpendBundle;
   }
