@@ -3,8 +3,6 @@ import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 import 'package:tuple/tuple.dart';
 
 import '../../core/exceptions/change_puzzlehash_needed_exception.dart';
-import '../../standard/exceptions/origin_id_not_in_coins_exception.dart';
-import '../index.dart';
 
 class NftWallet extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
@@ -61,12 +59,17 @@ class NftWallet extends BaseWalletService {
         fee: fee,
         coinAnnouncementsToAssert: coinAnnouncementsToAssert,
         puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert);
+
     final unsignedSpendBundle = generateSpendsTuple.item1;
     final chiaSpendBundle = generateSpendsTuple.item2;
+
     SpendBundle spendBundle = _sign(
       unsignedSpendBundle: unsignedSpendBundle,
       keychain: keychain,
     );
+
+    standardWalletService.validateSpendBundle(spendBundle);
+    standardWalletService.validateSpendBundleSignature(spendBundle);
 
     if (chiaSpendBundle != null) {
       spendBundle = spendBundle + chiaSpendBundle;
@@ -241,6 +244,7 @@ class NftWallet extends BaseWalletService {
       final signature = makeSignature(coinPrivateKey, coinSpend);
       signatures.add(signature);
     }
+
     final aggregatedSignature = AugSchemeMPL.aggregate(signatures);
 
     return unsignedSpendBundle.addSignature(aggregatedSignature);
