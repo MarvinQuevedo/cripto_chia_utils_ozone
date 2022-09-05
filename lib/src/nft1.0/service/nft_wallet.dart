@@ -15,7 +15,7 @@ class NftWallet extends BaseWalletService {
     required Puzzlehash targetPuzzleHash,
     Puzzlehash? changePuzzlehash,
     int fee = 0,
-    List<Coin>? standardCoinsForFee,
+    List<CoinPrototype>? standardCoinsForFee,
   }) {
     return generateSignedSpendBundle(
         payments: [
@@ -37,7 +37,7 @@ class NftWallet extends BaseWalletService {
   SpendBundle generateSignedSpendBundle({
     required List<Payment> payments,
     required List<CoinPrototype> coins,
-    List<Coin>? standardCoinsForFee,
+    List<CoinPrototype>? standardCoinsForFee,
     required WalletKeychain keychain,
     Puzzlehash? changePuzzlehash,
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
@@ -76,7 +76,7 @@ class NftWallet extends BaseWalletService {
 
   SpendBundle _makeStandardSpendBundleForFee({
     required int fee,
-    required List<Coin> standardCoins,
+    required List<CoinPrototype> standardCoins,
     required WalletKeychain keychain,
     required Puzzlehash? changePuzzlehash,
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAsset = const [],
@@ -115,7 +115,7 @@ class NftWallet extends BaseWalletService {
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
     List<AssertPuzzleCondition> puzzleAnnouncementsToAssert = const [],
     required NFTCoinInfo nftCoin,
-    required List<Coin> standardCoinsForFee,
+    required List<CoinPrototype> standardCoinsForFee,
     Map<String, String>? metadataUpdate,
   }) {
     // copy coins input since coins list is modified in this function
