@@ -52,7 +52,7 @@ class NftWallet extends BaseWalletService {
         payments: payments,
         coinsInput: coins,
         keychain: keychain,
-        standardCoinsForFee: standardCoinsForFee!,
+        standardCoinsForFee: standardCoinsForFee,
         changePuzzlehash: changePuzzlehash,
         originId: nftCoin.nftId,
         nftCoin: nftCoin,
@@ -118,7 +118,7 @@ class NftWallet extends BaseWalletService {
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
     List<AssertPuzzleCondition> puzzleAnnouncementsToAssert = const [],
     required NFTCoinInfo nftCoin,
-    required List<CoinPrototype> standardCoinsForFee,
+    List<CoinPrototype>? standardCoinsForFee,
     Map<String, String>? metadataUpdate,
   }) {
     // copy coins input since coins list is modified in this function
@@ -141,12 +141,12 @@ class NftWallet extends BaseWalletService {
       announcementsToMake = {nftCoin.coin.id};
       feeSpendBundle = _makeStandardSpendBundleForFee(
           fee: fee,
-          standardCoins: standardCoinsForFee,
+          standardCoins: standardCoinsForFee!,
           keychain: keychain,
           changePuzzlehash: changePuzzlehash);
     }
 
-    Program innerSol = standardWalletService.makeSolution(
+    Program innerSol = BaseWalletService.makeSolution(
       primaries: payments,
       coinAnnouncements: announcementsToMake,
       coinAnnouncementsToAssert: coinAnnouncementsToAssert,
@@ -203,13 +203,15 @@ class NftWallet extends BaseWalletService {
     }
 
     final nftLayerSolution = Program.list([innerSol]);
-    if (!(nftCoin.lineageProof is LineageProof)) {
+    final lineageProof = nftCoin.lineageProof;
+    if (lineageProof == null) {
       throw Exception("nftCoin.lineageProo can't be null");
     }
+
     final singletonSolution = Program.list([
-      nftCoin.lineageProof!.toProgram(),
+      lineageProof.toProgram(),
       Program.fromInt(nftCoin.coin.amount),
-      nftLayerSolution
+      nftLayerSolution,
     ]);
 
     final coinSpend = CoinSpend(
@@ -218,7 +220,9 @@ class NftWallet extends BaseWalletService {
       solution: singletonSolution,
     );
     SpendBundle nftSpendBundle = SpendBundle(
-      coinSpends: [coinSpend],
+      coinSpends: [
+        coinSpend,
+      ],
     );
 
     return Tuple2(nftSpendBundle, feeSpendBundle);
