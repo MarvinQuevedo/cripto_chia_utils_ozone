@@ -2,8 +2,7 @@
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
-import 'package:chia_crypto_utils/src/standard/puzzles/p2_delegated_puzzle_or_hidden_puzzle/p2_delegated_puzzle_or_hidden_puzzle.clvm.hex.dart';
-import 'package:hex/hex.dart';
+
 import '../../offers_ozone/models/full_coin.dart' as fullCoin;
 
 class CoinSpend with ToBytesMixin {
