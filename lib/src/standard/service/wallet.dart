@@ -206,32 +206,4 @@ class StandardWalletService extends BaseWalletService {
       }
     }
   }
-
-  Program makeSolution({
-    required List<Payment> primaries,
-    List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
-    List<AssertPuzzleCondition> puzzleAnnouncementsToAssert = const [],
-    Set<Bytes> coinAnnouncements = const {},
-    Set<Bytes> puzzleAnnouncements = const {},
-  }) {
-    final conditions = <Condition>[];
-    if (primaries.isNotEmpty) {
-      for (final payment in primaries) {
-        final createCondition = payment.toCreateCoinCondition();
-        conditions.add(createCondition);
-      }
-    }
-
-    conditions.addAll(coinAnnouncements.map(
-      (coinAnnouncement) => CreateCoinAnnouncementCondition(coinAnnouncement),
-    ));
-    conditions.addAll(coinAnnouncementsToAssert);
-
-    conditions.addAll(coinAnnouncements.map(
-      (coinAnnouncement) => CreatePuzzleAnnouncementCondition(coinAnnouncement),
-    ));
-    conditions.addAll(puzzleAnnouncementsToAssert);
-
-    return BaseWalletService.makeSolutionFromConditions(conditions);
-  }
 }
