@@ -42,7 +42,7 @@ class SpendBundle with ToBytesMixin {
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'coin_spends': coinSpends.map((e) => e.toJson()).toList(),
-        'aggregated_signature': aggregatedSignature?.toHex(),
+        'aggregated_signature': aggregatedSignature?.toHexWithPrefix(),
       };
   SpendBundle.fromJson(Map<String, dynamic> json)
       : coinSpends = (json['coin_solutions'] as Iterable)
@@ -63,7 +63,6 @@ class SpendBundle with ToBytesMixin {
       aggregatedSignature: (signatures.isNotEmpty) ? AugSchemeMPL.aggregate(signatures) : null,
     );
   }
-  
 
   @override
   bool operator ==(Object other) {

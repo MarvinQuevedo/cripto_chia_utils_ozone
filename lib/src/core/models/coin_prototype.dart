@@ -35,8 +35,8 @@ class CoinPrototype with ToBytesMixin {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'parent_coin_info': parentCoinInfo.toHex(),
-        'puzzle_hash': puzzlehash.toHex(),
+        'parent_coin_info': parentCoinInfo.toHexWithPrefix(),
+        'puzzle_hash': puzzlehash.toHexWithPrefix(),
         'amount': amount
       };
 
