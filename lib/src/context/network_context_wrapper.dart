@@ -20,8 +20,9 @@ class ChiaNetworkContextWrapper extends NetworkContext {
         setLoader(loader);
         break;
       case Environment.flutter:
+        loader = (_) => blockchainNetworks[network]!;
         setBlockchainNetwork(blockchainNetworks[network]!);
-        setLoader((_) => blockchainNetworks[network]!);
+      //  setLoader(loader);
     }
   }
 }
