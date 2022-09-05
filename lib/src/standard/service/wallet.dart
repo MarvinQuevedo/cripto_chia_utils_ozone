@@ -16,7 +16,7 @@ class StandardWalletService extends BaseWalletService {
     int fee = 0,
     Bytes? originId,
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
-    List<AssertPuzzleAnnouncementCondition> puzzleAnnouncementsToAssert = const [],
+    List<AssertPuzzleCondition> puzzleAnnouncementsToAssert = const [],
   }) {
     // copy coins input since coins list is modified in this function
     final coins = List<CoinPrototype>.from(coinsInput);
@@ -205,5 +205,33 @@ class StandardWalletService extends BaseWalletService {
         throw IncorrectAnnouncementIdException();
       }
     }
+  }
+
+  Program makeSolution({
+    required List<Payment> primaries,
+    List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
+    List<AssertPuzzleCondition> puzzleAnnouncementsToAssert = const [],
+    Set<Bytes> coinAnnouncements = const {},
+    Set<Bytes> puzzleAnnouncements = const {},
+  }) {
+    final conditions = <Condition>[];
+    if (primaries.isNotEmpty) {
+      for (final payment in primaries) {
+        final createCondition = payment.toCreateCoinCondition();
+        conditions.add(createCondition);
+      }
+    }
+
+    conditions.addAll(coinAnnouncements.map(
+      (coinAnnouncement) => CreateCoinAnnouncementCondition(coinAnnouncement),
+    ));
+    conditions.addAll(coinAnnouncementsToAssert);
+
+    conditions.addAll(coinAnnouncements.map(
+      (coinAnnouncement) => CreatePuzzleAnnouncementCondition(coinAnnouncement),
+    ));
+    conditions.addAll(puzzleAnnouncementsToAssert);
+
+    return BaseWalletService.makeSolutionFromConditions(conditions);
   }
 }

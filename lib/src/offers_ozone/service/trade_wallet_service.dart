@@ -9,7 +9,7 @@ class TradeWalletService extends BaseWalletService {
   /// but doesn't bother with non-offer announcements
   Offer createOfferBundle(
       {required List<FullCoin> selectedCoins,
-      required List<AssertPuzzleAnnouncementCondition> announcements,
+      required List<AssertPuzzleCondition> announcements,
       required Map<Bytes?, int> offeredAmounts,
       required WalletKeychain keychain,
       required int fee,

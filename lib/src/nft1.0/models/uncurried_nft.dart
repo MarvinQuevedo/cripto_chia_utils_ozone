@@ -100,6 +100,15 @@ class UncurriedNFT {
     required this.innerPuzzle,
   });
 
+  static UncurriedNFT? tryUncurry(Program puzzle) {
+    try {
+      return UncurriedNFT.uncurry(puzzle);
+    } catch (e) {
+      print(e);
+      return null;
+    }
+  }
+
   static UncurriedNFT uncurry(Program puzzle) {
     late Program singletonStruct;
     late Program nftStateLayer;

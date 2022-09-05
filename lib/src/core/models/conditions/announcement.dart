@@ -1,6 +1,6 @@
 import '../../../../chia_crypto_utils.dart';
 
-class Announcement extends AssertPuzzleAnnouncementCondition {
+class Announcement extends AssertPuzzleCondition {
   Announcement(
     Bytes settlementPh,
     Bytes message,

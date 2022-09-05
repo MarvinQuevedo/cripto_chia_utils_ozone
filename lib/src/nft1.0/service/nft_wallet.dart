@@ -1,9 +1,12 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
+import 'package:tuple/tuple.dart';
 
+import '../../core/exceptions/change_puzzlehash_needed_exception.dart';
+import '../../standard/exceptions/origin_id_not_in_coins_exception.dart';
 import '../index.dart';
 
-class Nft1Wallet extends BaseWalletService {
+class NftWallet extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
 
   SpendBundle createTransferSpendBundle({
@@ -38,7 +41,7 @@ class Nft1Wallet extends BaseWalletService {
     required WalletKeychain keychain,
     Puzzlehash? changePuzzlehash,
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
-    List<AssertPuzzleAnnouncementCondition> puzzleAnnouncementsToAssert = const [],
+    List<AssertPuzzleCondition> puzzleAnnouncementsToAssert = const [],
     int fee = 0,
     Bytes? newOwner,
     Bytes? newDidInnerhash,
@@ -47,36 +50,106 @@ class Nft1Wallet extends BaseWalletService {
     required NFTCoinInfo nftCoin,
     List<SpendBundle>? additionalBundles,
   }) {
-    // copy coins input since coins list is modified in this function
-    SpendBundle? feeSpendBundle;
-    if (fee > 0) {
-      final announcementMessage = nftCoin.coin.id;
-
-      final assertCoinAnnouncement = AssertCoinAnnouncementCondition(
-        nftCoin.coin.id,
-        announcementMessage,
-      );
-      coinAnnouncementsToAssert.add(assertCoinAnnouncement);
-      feeSpendBundle = _makeStandardSpendBundleForFee(
-        fee: fee,
-        standardCoins: standardCoinsForFee!,
-        keychain: keychain,
-        changePuzzlehash: changePuzzlehash,
-        coinAnnouncementsToAsset: [assertCoinAnnouncement],
-      );
-    }
-
-    final createLauncherSpendBundle = standardWalletService.createSpendBundle(
+    final generateSpendsTuple = generateUnsignedSpendbundle(
         payments: payments,
         coinsInput: coins,
         keychain: keychain,
+        standardCoinsForFee: standardCoinsForFee!,
         changePuzzlehash: changePuzzlehash,
         originId: nftCoin.nftId,
+        nftCoin: nftCoin,
         fee: fee,
         coinAnnouncementsToAssert: coinAnnouncementsToAssert,
         puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert);
+    final unsignedSpendBundle = generateSpendsTuple.item1;
+    final chiaSpendBundle = generateSpendsTuple.item2;
+    SpendBundle spendBundle = _sign(
+      unsignedSpendBundle: unsignedSpendBundle,
+      keychain: keychain,
+    );
 
-    Program innerSol = createLauncherSpendBundle.coinSpends.first.solution;
+    if (chiaSpendBundle != null) {
+      spendBundle = spendBundle + chiaSpendBundle;
+    }
+    return spendBundle;
+  }
+
+  SpendBundle _makeStandardSpendBundleForFee({
+    required int fee,
+    required List<Coin> standardCoins,
+    required WalletKeychain keychain,
+    required Puzzlehash? changePuzzlehash,
+    List<AssertCoinAnnouncementCondition> coinAnnouncementsToAsset = const [],
+  }) {
+    assert(
+      standardCoins.isNotEmpty,
+      'If passing in a fee, you must also pass in standard coins to use for that fee.',
+    );
+
+    final totalStandardCoinsValue = standardCoins.fold(
+      0,
+      (int previousValue, standardCoin) => previousValue + standardCoin.amount,
+    );
+    assert(
+      totalStandardCoinsValue >= fee,
+      'Total value of passed in standad coins is not enough to cover fee.',
+    );
+
+    return standardWalletService.createSpendBundle(
+      payments: [],
+      coinsInput: standardCoins,
+      changePuzzlehash: changePuzzlehash,
+      keychain: keychain,
+      fee: fee,
+      coinAnnouncementsToAssert: coinAnnouncementsToAsset,
+    );
+  }
+
+  Tuple2<SpendBundle, SpendBundle?> generateUnsignedSpendbundle({
+    required List<Payment> payments,
+    required List<CoinPrototype> coinsInput,
+    required WalletKeychain keychain,
+    Puzzlehash? changePuzzlehash,
+    int fee = 0,
+    Bytes? originId,
+    List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
+    List<AssertPuzzleCondition> puzzleAnnouncementsToAssert = const [],
+    required NFTCoinInfo nftCoin,
+    required List<Coin> standardCoinsForFee,
+    Map<String, String>? metadataUpdate,
+  }) {
+    // copy coins input since coins list is modified in this function
+    final coins = List<CoinPrototype>.from(coinsInput);
+    final totalCoinValue = coins.fold(0, (int previousValue, coin) => previousValue + coin.amount);
+
+    final totalPaymentAmount = payments.fold(
+      0,
+      (int previousValue, payment) => previousValue + payment.amount,
+    );
+    final change = totalCoinValue - totalPaymentAmount - fee;
+
+    if (changePuzzlehash == null && change > 0) {
+      throw ChangePuzzlehashNeededException();
+    }
+
+    Set<Bytes> announcementsToMake = {};
+    SpendBundle? feeSpendBundle;
+    if (fee > 0) {
+      announcementsToMake = {nftCoin.coin.id};
+      feeSpendBundle = _makeStandardSpendBundleForFee(
+          fee: fee,
+          standardCoins: standardCoinsForFee,
+          keychain: keychain,
+          changePuzzlehash: changePuzzlehash);
+    }
+
+    Program innerSol = standardWalletService.makeSolution(
+      primaries: payments,
+      coinAnnouncements: announcementsToMake,
+      coinAnnouncementsToAssert: coinAnnouncementsToAssert,
+      puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
+    );
+
     final unft = UncurriedNFT.uncurry(nftCoin.fullPuzzle);
     Program? magicCondition;
 
@@ -145,41 +218,31 @@ class Nft1Wallet extends BaseWalletService {
       coinSpends: [coinSpend],
     );
 
-    if (feeSpendBundle != null) {
-      nftSpendBundle = nftSpendBundle + feeSpendBundle;
-    }
-
-    return nftSpendBundle;
+    return Tuple2(nftSpendBundle, feeSpendBundle);
   }
 
-  SpendBundle _makeStandardSpendBundleForFee({
-    required int fee,
-    required List<Coin> standardCoins,
-    required WalletKeychain keychain,
-    required Puzzlehash? changePuzzlehash,
-    List<AssertCoinAnnouncementCondition> coinAnnouncementsToAsset = const [],
-  }) {
-    assert(
-      standardCoins.isNotEmpty,
-      'If passing in a fee, you must also pass in standard coins to use for that fee.',
-    );
+  SpendBundle _sign(
+      {required SpendBundle unsignedSpendBundle,
+      required WalletKeychain keychain,
+      Puzzlehash? puzzleHash}) {
+    final signatures = <JacobianPoint>[];
 
-    final totalStandardCoinsValue = standardCoins.fold(
-      0,
-      (int previousValue, standardCoin) => previousValue + standardCoin.amount,
-    );
-    assert(
-      totalStandardCoinsValue >= fee,
-      'Total value of passed in standad coins is not enough to cover fee.',
-    );
+    for (final coinSpend in unsignedSpendBundle.coinSpends) {
+      if (puzzleHash == null) {
+        final uncurried_nft = UncurriedNFT.tryUncurry(coinSpend.puzzleReveal);
+        if (uncurried_nft != null) {
+          print("Found a NFT state layer to sign");
+          puzzleHash = (uncurried_nft.p2Puzzle.hash());
+        }
+      }
 
-    return standardWalletService.createSpendBundle(
-      payments: [],
-      coinsInput: standardCoins,
-      changePuzzlehash: changePuzzlehash,
-      keychain: keychain,
-      fee: fee,
-      coinAnnouncementsToAssert: coinAnnouncementsToAsset,
-    );
+      final coinWalletVector = keychain.getWalletVector(puzzleHash!);
+      final coinPrivateKey = coinWalletVector!.childPrivateKey;
+      final signature = makeSignature(coinPrivateKey, coinSpend);
+      signatures.add(signature);
+    }
+    final aggregatedSignature = AugSchemeMPL.aggregate(signatures);
+
+    return unsignedSpendBundle.addSignature(aggregatedSignature);
   }
 }

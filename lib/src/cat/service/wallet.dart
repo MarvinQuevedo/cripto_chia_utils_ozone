@@ -19,7 +19,7 @@ class CatWalletService extends BaseWalletService {
     Puzzlehash? changePuzzlehash,
     List<Coin> standardCoinsForFee = const [],
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
-    List<AssertPuzzleAnnouncementCondition> puzzleAnnouncementsToAssert = const [],
+    List<AssertPuzzleCondition> puzzleAnnouncementsToAssert = const [],
     int fee = 0,
   }) {
     final distinctAssetIds = catCoinsInput.map((c) => c.assetId).toSet();
