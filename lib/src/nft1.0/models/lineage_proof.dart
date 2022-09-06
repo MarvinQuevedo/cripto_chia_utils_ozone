@@ -9,7 +9,7 @@ class LineageProof {
 
   LineageProof({
     required this.parentName,
-    required this.innerPuzzleHash,
+    this.innerPuzzleHash,
     required this.amount,
   });
 
@@ -31,6 +31,5 @@ class LineageProof {
     return Program.list(list);
   }
 
-  bool isNone() =>
-      parentName == null && innerPuzzleHash == null && amount == null;
+  bool isNone() => parentName == null && innerPuzzleHash == null && amount == null;
 }

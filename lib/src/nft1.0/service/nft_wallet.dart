@@ -1,4 +1,5 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/core/models/conditions/announcement.dart';
 import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 import 'package:tuple/tuple.dart';
 
@@ -26,6 +27,8 @@ class NftWallet extends BaseWalletService {
         coins: [
           nftCoin.coin
         ],
+        fee: fee,
+        changePuzzlehash: changePuzzlehash,
         keychain: keychain,
         nftCoin: nftCoin,
         standardCoinsForFee: standardCoinsForFee,
@@ -75,7 +78,14 @@ class NftWallet extends BaseWalletService {
     if (chiaSpendBundle != null) {
       spendBundle = spendBundle + chiaSpendBundle;
     }
-    return spendBundle;
+    final spendBundleList = [spendBundle];
+
+    spendBundleList.addAll(additionalBundles ?? []);
+
+    return spendBundleList.fold<SpendBundle>(
+      SpendBundle(coinSpends: []),
+      (previousValue, element) => previousValue + element,
+    );
   }
 
   SpendBundle _makeStandardSpendBundleForFee({
@@ -145,6 +155,8 @@ class NftWallet extends BaseWalletService {
           standardCoins: standardCoinsForFee!,
           keychain: keychain,
           changePuzzlehash: changePuzzlehash);
+
+      // validateSpendBundleSignature(feeSpendBundle);
     }
 
     Program innerSol = BaseWalletService.makeSolution(
@@ -264,13 +276,12 @@ class NftWallet extends BaseWalletService {
       final conditionsResult = conditionsDictForSolution(
           puzzleReveal: coinSpend.puzzleReveal, solution: coinSpend.solution);
       if (conditionsResult.item2 != null) {
-        print(conditionsResult);
         final pairs = pkmPairsForConditionsDict(
           conditionsDict: conditionsResult.item2!,
           additionalData: Bytes.fromHex(this.blockchainNetwork.aggSigMeExtraData),
           coinName: coinSpend.coin.id,
         );
-        print(pairs);
+
         for (final pair in pairs) {
           final pk = pair.item1;
           final msg = pair.item2;
@@ -292,5 +303,123 @@ class NftWallet extends BaseWalletService {
     final aggregatedSignature = AugSchemeMPL.aggregate(signatures);
 
     return unsignedSpendBundle.addSignature(aggregatedSignature);
+  }
+
+// generate_new_nft
+
+  SpendBundle generateNewNft(
+      {required List<CoinPrototype> coins,
+      required WalletKeychain keychain,
+      Puzzlehash? changePuzzlehash,
+      required Program metadata,
+      required Puzzlehash targetPuzzleHash,
+      Puzzlehash? royaltyPuzzleHash,
+      int percentage = 0,
+      Puzzlehash? didId,
+      int fee = 0}) {
+    final amount = 1;
+    final origin = coins.toList().first;
+    // final genesisLauncherPuzz = LAUNCHER_PUZZLE;
+
+    final launcherCoin = CoinPrototype(
+      parentCoinInfo: origin.id,
+      puzzlehash: LAUNCHER_PUZZLE_HASH,
+      amount: amount,
+    );
+
+    print("Generating NFT with launcher coin %s and metadata:  ${launcherCoin}, ${metadata}");
+
+    late Program innerPuzzle;
+
+    final targetWalletVector = keychain.getWalletVector(targetPuzzleHash);
+    final p2InnerPuzzle = getPuzzleFromPk(targetWalletVector!.childPublicKey);
+    print("Attempt to generate a new NFT to ${targetPuzzleHash.toHex()}");
+    if (didId != null) {
+      innerPuzzle = NftService.createOwnwershipLayerPuzzle(
+        nftId: origin.id,
+        didId: didId,
+        p2Puzzle: p2InnerPuzzle,
+        percentage: percentage,
+        royaltyPuzzleHash: royaltyPuzzleHash,
+      );
+    } else {
+      innerPuzzle = p2InnerPuzzle;
+    }
+
+    final eveFullPuz = NftService.createFullPuzzle(
+      singletonId: origin.id,
+      metadata: metadata,
+      metadataUpdaterHash: NFT_METADATA_UPDATER_HAHS,
+      innerPuzzle: innerPuzzle,
+    );
+
+    final announcementMessage = Program.list([
+      Program.fromBytes(eveFullPuz.hash()),
+      Program.fromInt(amount),
+      Program.list([]),
+    ]).hash();
+    final assertCoinAnnouncement =
+        AssertCoinAnnouncementCondition(launcherCoin.id, announcementMessage);
+
+    final createLauncherSpendBundle = standardWalletService.createSpendBundle(
+      payments: [Payment(launcherCoin.amount, launcherCoin.puzzlehash)],
+      coinsInput: coins,
+      keychain: keychain,
+      changePuzzlehash: changePuzzlehash,
+      originId: origin.id,
+      fee: fee,
+      coinAnnouncementsToAssert: [assertCoinAnnouncement],
+    );
+
+    final genesisLauncherSolution = Program.list([
+      Program.fromBytes(eveFullPuz.hash()),
+      Program.fromInt(launcherCoin.amount),
+      Program.list([]),
+    ]);
+    final launcherCoinSpend = CoinSpend(
+      coin: launcherCoin,
+      puzzleReveal: LAUNCHER_PUZZLE,
+      solution: genesisLauncherSolution,
+    );
+
+    final launcherSpendBundle = SpendBundle(coinSpends: [launcherCoinSpend]);
+    final eveCoin = CoinPrototype(
+      amount: amount,
+      parentCoinInfo: launcherCoin.id,
+      puzzlehash: eveFullPuz.hash(),
+    );
+
+    final bundlesToAgg = createLauncherSpendBundle + launcherSpendBundle;
+
+    Bytes? didInnerHash;
+
+    if (didId != null && didId.isNotEmpty) {
+      // did_inner_hash, did_bundle = await self.get_did_approval_info(launcher_coin.name())
+      //bundles_to_agg.append(did_bundle)
+      // TODO: implement DID
+    }
+
+    final nftCoin = NFTCoinInfo(
+      nftId: launcherCoin.id,
+      coin: eveCoin,
+      fullPuzzle: eveFullPuz,
+      mintHeight: 0,
+      latestHeight: 0,
+      lineageProof: LineageProof(parentName: launcherCoin.id, amount: launcherCoin.amount),
+      pendingTransaction: true,
+    );
+
+    final signedSpendBundle = generateSignedSpendBundle(
+      payments: [
+        Payment(eveCoin.amount, targetPuzzleHash, memos: [targetPuzzleHash])
+      ],
+      coins: coins,
+      keychain: keychain,
+      nftCoin: nftCoin,
+      newOwner: didId,
+      additionalBundles: [bundlesToAgg],
+      newDidInnerhash: didInnerHash,
+    );
+    return signedSpendBundle;
   }
 }
