@@ -248,8 +248,10 @@ class NftWallet extends BaseWalletService {
       }
       for (final ph in puzzleHashList) {
         final coinWalletVector = keychain.getWalletVector(ph);
+
         final coinPrivateKey = coinWalletVector!.childPrivateKey;
         keys[coinPrivateKey.getG1().toBytes()] = coinPrivateKey;
+
         final synthSecretKey = calculateSyntheticPrivateKey(coinPrivateKey);
         keys[synthSecretKey.getG1().toBytes()] = synthSecretKey;
       }
@@ -275,7 +277,8 @@ class NftWallet extends BaseWalletService {
           try {
             final sk = keys[pk];
             if (sk != null) {
-              signatures.add(AugSchemeMPL.sign(sk, msg));
+              final signature = AugSchemeMPL.sign(sk, msg);
+              signatures.add(signature);
             } else {
               print("Cant foun sk for ${pk}");
             }
