@@ -3,6 +3,7 @@ import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 import 'package:tuple/tuple.dart';
 
 import '../../core/exceptions/change_puzzlehash_needed_exception.dart';
+import '../../core/service/conditions_utils.dart';
 
 class NftWallet extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
@@ -231,22 +232,58 @@ class NftWallet extends BaseWalletService {
   SpendBundle _sign(
       {required SpendBundle unsignedSpendBundle,
       required WalletKeychain keychain,
-      Puzzlehash? puzzleHash}) {
+      List<Puzzlehash>? puzzleHash}) {
     final signatures = <JacobianPoint>[];
 
+    final puzzleHashList = puzzleHash ?? [];
+    final keys = <Bytes, PrivateKey>{};
+
     for (final coinSpend in unsignedSpendBundle.coinSpends) {
-      if (puzzleHash == null) {
+      if (puzzleHashList.isEmpty) {
         final uncurried_nft = UncurriedNFT.tryUncurry(coinSpend.puzzleReveal);
         if (uncurried_nft != null) {
           print("Found a NFT state layer to sign");
-          puzzleHash = (uncurried_nft.p2Puzzle.hash());
+          puzzleHashList.add(uncurried_nft.p2Puzzle.hash());
         }
       }
+      for (final ph in puzzleHashList) {
+        final coinWalletVector = keychain.getWalletVector(ph);
+        final coinPrivateKey = coinWalletVector!.childPrivateKey;
+        keys[coinPrivateKey.getG1().toBytes()] = coinPrivateKey;
+        final synthSecretKey = calculateSyntheticPrivateKey(coinPrivateKey);
+        keys[synthSecretKey.getG1().toBytes()] = synthSecretKey;
+      }
 
-      final coinWalletVector = keychain.getWalletVector(puzzleHash!);
+      /*    final coinWalletVector = keychain.getWalletVector(puzzleHashList.first);
       final coinPrivateKey = coinWalletVector!.childPrivateKey;
       final signature = makeSignature(coinPrivateKey, coinSpend);
-      signatures.add(signature);
+      signatures.add(signature); */
+
+      final conditionsResult = conditionsDictForSolution(
+          puzzleReveal: coinSpend.puzzleReveal, solution: coinSpend.solution);
+      if (conditionsResult.item2 != null) {
+        print(conditionsResult);
+        final pairs = pkmPairsForConditionsDict(
+          conditionsDict: conditionsResult.item2!,
+          additionalData: Bytes.fromHex(this.blockchainNetwork.aggSigMeExtraData),
+          coinName: coinSpend.coin.id,
+        );
+        print(pairs);
+        for (final pair in pairs) {
+          final pk = pair.item1;
+          final msg = pair.item2;
+          try {
+            final sk = keys[pk];
+            if (sk != null) {
+              signatures.add(AugSchemeMPL.sign(sk, msg));
+            } else {
+              print("Cant foun sk for ${pk}");
+            }
+          } catch (e) {
+            throw Exception("This spend bundle cannot be signed by the NFT wallet");
+          }
+        }
+      }
     }
 
     final aggregatedSignature = AugSchemeMPL.aggregate(signatures);

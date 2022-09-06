@@ -5,6 +5,9 @@ import 'package:chia_crypto_utils/src/clvm/keywords.dart';
 import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validation/duplicate_coin_exception.dart';
 import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validation/failed_signature_verification.dart';
 import 'package:get_it/get_it.dart';
+import 'package:tuple/tuple.dart';
+
+import '../models/contidions_args.dart';
 
 class BaseWalletService {
   BlockchainNetwork get blockchainNetwork => GetIt.I.get<BlockchainNetwork>();
@@ -30,6 +33,83 @@ class BaseWalletService {
         Bytes.fromHex(
           blockchainNetwork.aggSigMeExtraData,
         );
+  }
+
+  Tuple3<Exception?, Map<ConditionOpcode, List<ConditionWithArgs>>?, BigInt>
+      conditionsDictForSolution({
+    required Program puzzleReveal,
+    required Program solution,
+    int maxCost = Program.cost,
+  }) {
+    final result =
+        conditionsForSolution(puzzleReveal: puzzleReveal, solution: solution, maxCost: maxCost);
+    if (result.item1 != null || result.item2 == null) {
+      return Tuple3(result.item1, null, result.item3);
+    }
+    final dictResult = conditionsByOpcode(conditions: result.item2!);
+    return Tuple3(null, dictResult, result.item3);
+  }
+
+  Map<ConditionOpcode, List<ConditionWithArgs>> conditionsByOpcode(
+      {required List<ConditionWithArgs> conditions}) {
+    final dict = <ConditionOpcode, List<ConditionWithArgs>>{};
+
+    for (final condition in conditions) {
+      if (dict[condition.conditionOpcode] == null) {
+        dict[condition.conditionOpcode] = <ConditionWithArgs>[];
+      }
+      dict[condition.conditionOpcode]!.add(condition);
+    }
+    return dict;
+  }
+
+  Tuple3<Exception?, List<ConditionWithArgs>?, BigInt> conditionsForSolution(
+      {required Program puzzleReveal, required Program solution, int maxCost = Program.cost}) {
+    try {
+      final result = puzzleReveal.run(solution);
+      final parsed = parseSexpToConditions(result.program);
+      return Tuple3(parsed.item1, parsed.item2, result.cost);
+    } on Exception catch (e) {
+      return Tuple3(e, null, BigInt.from(0));
+    }
+  }
+
+  //parse_sexp_to_condition
+
+  /// Takes a ChiaLisp sexp (list) and returns the list of ConditionWithArgss
+  /// If it fails, returns as Error
+  Tuple2<Exception?, ConditionWithArgs?> parseSexpToCondition(Program sexp) {
+    final atoms = sexp.toAtomList();
+    if (atoms.length < 1) {
+      return Tuple2(Exception("INVALID_CONDITION"), null);
+    }
+    final opCode = ConditionOpcode(atoms.first.atom);
+    return Tuple2(
+        null,
+        ConditionWithArgs(
+          conditionOpcode: opCode,
+          vars: atoms.sublist(1).map((e) => e.atom).toList(),
+        ));
+  }
+
+  ///   Takes a ChiaLisp sexp (list) and returns the list of ConditionWithArgss
+  /// If it fails, returns as Error
+  Tuple2<Exception?, List<ConditionWithArgs>?> parseSexpToConditions(
+    Program sexp,
+  ) {
+    final results = <ConditionWithArgs>[];
+    try {
+      for (final item in sexp.toList()) {
+        final result = parseSexpToCondition(item);
+        if (result.item1 != null) {
+          return Tuple2(result.item1, null);
+        }
+        results.add(result.item2!);
+      }
+      return Tuple2(null, results);
+    } on Exception catch (e) {
+      return Tuple2(e, null);
+    }
   }
 
   static Program makeSolutionFromConditions(List<Condition> conditions) {
