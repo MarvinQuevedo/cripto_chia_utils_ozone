@@ -139,5 +139,6 @@ Future<void> main() async {
           Program.fromInt(40),
           Program.fromInt(50)
         ]).filterAt("rrrfrf"));
+    expect(Program.fromInt(0), Program.list([]));
   });
 }

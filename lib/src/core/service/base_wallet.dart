@@ -67,9 +67,12 @@ class BaseWalletService {
       {required Program puzzleReveal, required Program solution, int maxCost = Program.cost}) {
     try {
       final result = puzzleReveal.run(solution);
+      print(result.program.hash().toHex());
       final parsed = parseSexpToConditions(result.program);
       return Tuple3(parsed.item1, parsed.item2, result.cost);
-    } on Exception catch (e) {
+    } on Exception catch (e, stackTrace) {
+      print(stackTrace);
+      print(solution);
       return Tuple3(e, null, BigInt.from(0));
     }
   }
@@ -79,17 +82,36 @@ class BaseWalletService {
   /// Takes a ChiaLisp sexp (list) and returns the list of ConditionWithArgss
   /// If it fails, returns as Error
   Tuple2<Exception?, ConditionWithArgs?> parseSexpToCondition(Program sexp) {
-    final atoms = sexp.toAtomList();
-    if (atoms.length < 1) {
+    try {
+      print(sexp.toSource());
+      final atoms = sexp.toList();
+      if (atoms.length < 1) {
+        return Tuple2(Exception("INVALID_CONDITION"), null);
+      }
+      final opCode = ConditionOpcode(atoms.first.atom);
+      return Tuple2(
+          null,
+          ConditionWithArgs(
+            conditionOpcode: opCode,
+            vars: atoms
+                .sublist(1)
+                .where((e) {
+                  try {
+                    final _ = e.atom;
+                    return true;
+                  } catch (e) {
+                    return false;
+                  }
+                })
+                .map((e) => e.atom)
+                .toList(),
+          ));
+    } catch (e, stackTrace) {
+      print(stackTrace);
+      print(e);
+      print(sexp.toSource());
       return Tuple2(Exception("INVALID_CONDITION"), null);
     }
-    final opCode = ConditionOpcode(atoms.first.atom);
-    return Tuple2(
-        null,
-        ConditionWithArgs(
-          conditionOpcode: opCode,
-          vars: atoms.sublist(1).map((e) => e.atom).toList(),
-        ));
   }
 
   ///   Takes a ChiaLisp sexp (list) and returns the list of ConditionWithArgss
@@ -99,6 +121,7 @@ class BaseWalletService {
   ) {
     final results = <ConditionWithArgs>[];
     try {
+      final sexpList = sexp.toList();
       for (final item in sexp.toList()) {
         final result = parseSexpToCondition(item);
         if (result.item1 != null) {

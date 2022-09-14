@@ -21,6 +21,9 @@ class NftWallet extends BaseWalletService {
           Payment(
             nftCoin.coin.amount,
             targetPuzzleHash,
+            memos: <Bytes>[
+              targetPuzzleHash,
+            ],
           )
         ],
         coins: [
@@ -70,31 +73,8 @@ class NftWallet extends BaseWalletService {
       unsignedSpendBundle: unsignedSpendBundle,
       keychain: keychain,
     );
-    print("removals");
-
-    print(spendBundle.removals.first.id);
-    print("additions");
-    print(spendBundle.additions.first.id);
 
     standardWalletService.validateSpendBundle(spendBundle);
-
-    final spend1 = spendBundle.coinSpends.first;
-
-    final nftUncurried1 = UncurriedNFT.uncurry(spend1.puzzleReveal);
-
-    print("chia p2");
-    print(Address.fromPuzzlehash(nftUncurried1.p2Puzzle.hash(), "txch"));
-
-    final puz1 = spend1.puzzleReveal;
-
-    print("spend bundles");
-    print(spend1.toBytes().sha256Hash().toHex());
-
-    print("puzzle reveal");
-    print(puz1.toBytes().sha256Hash().toHex());
-
-    print("puzzle solutions");
-    print(spend1.solution.toBytes().sha256Hash().toHex());
 
     standardWalletService.validateSpendBundleSignature(spendBundle);
 
@@ -275,10 +255,11 @@ class NftWallet extends BaseWalletService {
 
     for (final coinSpend in unsignedSpendBundle.coinSpends) {
       if (puzzleHashList.isEmpty) {
-        final uncurried_nft = UncurriedNFT.tryUncurry(coinSpend.puzzleReveal);
-        if (uncurried_nft != null) {
+        final uncurriedNft = UncurriedNFT.tryUncurry(coinSpend.puzzleReveal);
+        if (uncurriedNft != null) {
           print("Found a NFT state layer to sign");
-          puzzleHashList.add(uncurried_nft.p2Puzzle.hash());
+          puzzleHashList.add(uncurriedNft.p2Puzzle.hash());
+          print(Address.fromPuzzlehash(uncurriedNft.p2Puzzle.hash(), "txch").address);
         }
       }
       for (final ph in puzzleHashList) {
@@ -291,11 +272,15 @@ class NftWallet extends BaseWalletService {
         keys[synthSecretKey.getG1().toBytes()] = synthSecretKey;
       }
 
-      /*      final coinWalletVector = keychain.getWalletVector(puzzleHashList.first);
+      final coinWalletVector = keychain.getWalletVector(puzzleHashList.first);
       final coinPrivateKey = coinWalletVector!.childPrivateKey;
       final signature1 = makeSignature(coinPrivateKey, coinSpend);
-      signatures.add(signature1);
- */
+      //signatures.add(signature1);
+
+      final puzzleReveal = coinSpend.puzzleReveal.serializeHex();
+      final solution = coinSpend.solution.serializeHex();
+      print(coinSpend.puzzleReveal);
+      print(coinSpend.solution);
       final conditionsResult = conditionsDictForSolution(
         puzzleReveal: coinSpend.puzzleReveal,
         solution: coinSpend.solution,
@@ -325,10 +310,13 @@ class NftWallet extends BaseWalletService {
             throw Exception("This spend bundle cannot be signed by the NFT wallet");
           }
         }
+      } else {
+        throw Exception(conditionsResult.item1);
       }
     }
 
     final aggregatedSignature = AugSchemeMPL.aggregate(signatures);
+    print(aggregatedSignature.toHex());
 
     return unsignedSpendBundle.addSignature(aggregatedSignature);
   }
