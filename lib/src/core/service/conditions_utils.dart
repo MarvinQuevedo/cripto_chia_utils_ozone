@@ -20,8 +20,9 @@ List<Tuple2<Bytes, Bytes>> pkmPairsForConditionsDict({
           throw Exception(
               "${cwa.vars[0].length} is different to 48 OR ${cwa.vars[1].length} is greather than 1024");
         }
+        final msg = cwa.vars[1] + coinName + additionalData;
 
-        ret.add(Tuple2(cwa.vars[0], (cwa.vars[1]) + coinName + additionalData));
+        ret.add(Tuple2(cwa.vars[0], msg));
       }
     } else if (ConditionOpcode.AGG_SIG_UNSAFE == condition) {
       for (var cwa in values) {
