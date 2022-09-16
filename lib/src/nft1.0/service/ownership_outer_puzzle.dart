@@ -28,6 +28,8 @@ Program puzzleForOwnershipLayer(
     _currentOwner = currentOwner;
   } else if (currentOwner is Bytes) {
     _currentOwner = Program.fromBytes(currentOwner);
+  } else if (currentOwner == null) {
+    _currentOwner = Program.fromInt(0);
   } else {
     if ((currentOwner as String).contains("0x")) {
       _currentOwner = Program.fromHex(currentOwner);
