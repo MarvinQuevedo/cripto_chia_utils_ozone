@@ -56,6 +56,8 @@ class UncurriedNFT {
 
   final Program p2Puzzle;
 
+  Puzzlehash get p2PuzzleHash => p2Puzzle.hash();
+
   /// Owner's DID
   final Bytes? ownerDid;
 
