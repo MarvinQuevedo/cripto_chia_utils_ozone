@@ -1,12 +1,80 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 import 'package:tuple/tuple.dart';
+import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/exceptions/change_puzzlehash_needed_exception.dart';
 import '../../core/service/conditions_utils.dart';
 
 class NftWallet extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
+
+  Offer makeNftOffer({
+    required WalletKeychain keychain,
+    required Map<Bytes?, int> offerDict,
+    required Map<Bytes, PuzzleInfo> driverDict,
+    required Puzzlehash targetPuzzleHash,
+    int fee = 0,
+    int? minCoinAmount,
+    Puzzlehash? changePuzzlehash,
+    List<CoinPrototype>? standardCoinsForFee,
+    NFTCoinInfo? nftCoin,
+  }) {
+    final amounts = offerDict.values.toList();
+    if (offerDict.length != 2 || ((amounts[0] > 0) == (amounts[1] > 0))) {
+      throw Exception(
+          "Royalty enabled NFTs only support offering/requesting one NFT for one currency");
+    }
+    bool offerringNft = false;
+    Bytes? offeredAssetId;
+    Bytes? requestedAssetId;
+
+    offerDict.forEach((Bytes? assetId, int amount) {
+      if (amount < 0) {
+        offeredAssetId = assetId;
+        if (assetId != null) {
+          // check if asset is an NFT
+          offerringNft = driverDict[assetId]!.checkType(types: [
+            AssetType.SINGLETON,
+            AssetType.METADATA,
+            AssetType.OWNERSHIP,
+          ]);
+        }
+      } else {
+        requestedAssetId = assetId;
+      }
+    });
+
+    if (offerringNft) {
+      return _makeOfferingNftOffer(
+          keychain: keychain,
+          offerDict: offerDict,
+          driverDict: driverDict,
+          fee: fee,
+          standardCoinsForFee: standardCoinsForFee,
+          minCoinAmount: minCoinAmount,
+          requestedAssetId: requestedAssetId,
+          offeredAssetId: offeredAssetId,
+          nftCoin: nftCoin,
+          targetPuzzleHash: targetPuzzleHash);
+    } else if (requestedAssetId != null) {
+      return _makeRequestingNftOffer(
+          keychain: keychain,
+          offerDict: offerDict,
+          driverDict: driverDict,
+          fee: fee,
+          nftCoin: nftCoin,
+          standardCoinsForFee: standardCoinsForFee,
+          minCoinAmount: minCoinAmount,
+          requestedAssetId: requestedAssetId,
+          targetPuzzleHash: targetPuzzleHash,
+          offeredAssetId: offeredAssetId);
+    } else {
+      Exception("No NFT in offer!");
+    }
+
+    throw Exception("");
+  }
 
   SpendBundle createTransferSpendBundle({
     required NFTCoinInfo nftCoin,
@@ -464,14 +532,95 @@ class NftWallet extends BaseWalletService {
     return signedSpendBundle;
   }
 
-  Offer makeNft1Offer({
-    required NFTCoinInfo nftCoin,
-    required WalletKeychain keychain,
-    required Puzzlehash targetPuzzleHash,
-    Puzzlehash? changePuzzlehash,
-    int fee = 0,
-    List<CoinPrototype>? standardCoinsForFee,
-  }) {
+  Offer _makeOfferingNftOffer(
+      {required WalletKeychain keychain,
+      required Map<Bytes?, int> offerDict,
+      required Map<Bytes, PuzzleInfo> driverDict,
+      required int fee,
+      int? minCoinAmount,
+      Bytes? requestedAssetId,
+      Bytes? offeredAssetId,
+      required Puzzlehash targetPuzzleHash,
+      NFTCoinInfo? nftCoin,
+      List<CoinPrototype>? standardCoinsForFee}) {
+    if (offeredAssetId == null) {
+      throw Exception("offered Asset Id not can be null");
+    }
+    driverDict[offeredAssetId]!.info["also"]["also"]['owner'] = '()';
+    final Puzzlehash p2Ph = targetPuzzleHash;
+    final int offerredAmount = offerDict[offeredAssetId]!.abs();
+    final NFTCoinInfo offeredCoinInfo = nftCoin!;
+    final int requestedAmount = offerDict[requestedAssetId]!;
+
+    late final Program tradePrices;
+    // If we are jus asking for xch
+    if (requestedAssetId == null) {
+      tradePrices =
+          Program.list([Program.fromInt(requestedAmount), Program.fromBytes(OFFER_MOD_HASH)]);
+    } else {
+      tradePrices = Program.list([
+        Program.list([
+          Program.fromInt(requestedAmount),
+          Program.fromBytes(
+            outerPuzzle
+                .constructPuzzle(
+                  constructor: driverDict[requestedAssetId]!,
+                  innerPuzzle: OFFER_MOD,
+                )
+                .hash(),
+          )
+        ]),
+      ]);
+    }
+
+    final notarizedPayments = Offer.notarizePayments(requestedPayments: {
+      requestedAssetId: <Payment>[
+        Payment(requestedAmount, p2Ph, memos: [
+          p2Ph,
+        ])
+      ]
+    }, coins: [
+      offeredCoinInfo.coin,
+    ]);
+
+    final announcements = Offer.calculateAnnouncements(
+      notarizedPayment: notarizedPayments,
+      driverDict: driverDict,
+    );
+    List<SpendBundle> spendBundles = [];
+
+    final nftSpBundle = generateSignedSpendBundle(
+      payments: [Payment(offerredAmount, Offer.ph)],
+      coins: [offeredCoinInfo.coin],
+      keychain: keychain,
+      nftCoin: nftCoin,
+      fee: fee,
+      puzzleAnnouncementsToAssert: announcements,
+      tradePricesList: tradePrices,
+    );
+
+    spendBundles.add(nftSpBundle);
+
+    final totalSpendBundle = SpendBundle.aggregate(spendBundles);
+
+    return Offer(
+      requestedPayments: notarizedPayments,
+      bundle: totalSpendBundle,
+      driverDict: driverDict,
+    );
+  }
+
+  Offer _makeRequestingNftOffer(
+      {required WalletKeychain keychain,
+      required Map<Bytes?, int> offerDict,
+      required Map<Bytes, PuzzleInfo> driverDict,
+      required int fee,
+      int? minCoinAmount,
+      Bytes? requestedAssetId,
+      Bytes? offeredAssetId,
+      required Puzzlehash targetPuzzleHash,
+      NFTCoinInfo? nftCoin,
+      List<CoinPrototype>? standardCoinsForFee}) {
     throw Exception("");
   }
 }
