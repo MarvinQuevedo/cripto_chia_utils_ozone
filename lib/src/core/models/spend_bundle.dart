@@ -154,4 +154,11 @@ class SpendBundle with ToBytesMixin {
     }
     return hc;
   }
+
+  static SpendBundle aggregate(List<SpendBundle> bundleList) {
+    final aggregatedSpendBundle = bundleList.fold<SpendBundle>(
+        SpendBundle(coinSpends: []), (previousValue, element) => previousValue + element);
+
+    return aggregatedSpendBundle;
+  }
 }
