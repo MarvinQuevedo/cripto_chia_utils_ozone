@@ -1,10 +1,7 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/nft1.0/service/metadata_outer_puzzle.dart';
-import 'package:chia_crypto_utils/src/nft1.0/service/ownership_outer_puzzle.dart';
-import 'package:chia_crypto_utils/src/nft1.0/service/singleton_outer_puzzle.dart';
-import 'package:chia_crypto_utils/src/nft1.0/service/transfer_program_puzzle.dart';
 
 class AssetType {
+  AssetType._();
   static String get CAT => 'CAT';
   static String get SINGLETON => 'singleton';
   static String get METADATA => 'metadata';
