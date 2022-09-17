@@ -15,5 +15,26 @@ class PuzzleInfo {
     return "PuzzleInfo($info)";
   }
 
+  bool checkType({required List<String> types}) {
+    if (types.isEmpty) {
+      if (also == null) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      if (type == types.first) {
+        types.removeAt(0);
+        if (also != null) {
+          return also!.checkType(types: types);
+        } else {
+          return checkType(types: types);
+        }
+      } else {
+        return false;
+      }
+    }
+  }
+
   operator [](Object key) => info[key];
 }
