@@ -91,9 +91,6 @@ class NftWallet extends BaseWalletService {
 
     standardWalletService.validateSpendBundleSignature(spendBundle);
 
-    //final espected1 = espectedSpb;
-    final espected2 = spendBundle;
-
     print(
       "p2puzzleNew = ${UncurriedNFT.uncurry(generateSpendsTuple.item1.coinSpends.first.puzzleReveal).p2PuzzleHash.toHex()} ",
     );
@@ -210,12 +207,10 @@ class NftWallet extends BaseWalletService {
       }
 
       magicCondition = Program.list([
-        Program.list([
-          Program.fromInt(-10),
-          newOwner != null ? Program.fromBytes(newOwner) : Program.list([]),
-          tradePricesList != null ? tradePricesList : Program.list([]),
-          newDidInnerhash != null ? Program.fromBytes(newDidInnerhash) : Program.list([]),
-        ])
+        Program.fromInt(-10),
+        newOwner != null ? Program.fromBytes(newOwner) : Program.list([]),
+        tradePricesList != null ? tradePricesList : Program.list([]),
+        newDidInnerhash != null ? Program.fromBytes(newDidInnerhash) : Program.list([]),
       ]);
     }
 
@@ -238,7 +233,7 @@ class NftWallet extends BaseWalletService {
         Program.cons(
           Program.fromInt(1),
           Program.cons(
-            magicCondition.first(),
+            magicCondition,
             innerSol.filterAt("rfr"),
           ),
         ),
@@ -467,5 +462,16 @@ class NftWallet extends BaseWalletService {
       changePuzzlehash: changePuzzlehash,
     );
     return signedSpendBundle;
+  }
+
+  Offer makeNft1Offer({
+    required NFTCoinInfo nftCoin,
+    required WalletKeychain keychain,
+    required Puzzlehash targetPuzzleHash,
+    Puzzlehash? changePuzzlehash,
+    int fee = 0,
+    List<CoinPrototype>? standardCoinsForFee,
+  }) {
+    throw Exception("");
   }
 }
