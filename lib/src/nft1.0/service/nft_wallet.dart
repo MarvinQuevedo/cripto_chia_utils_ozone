@@ -14,6 +14,7 @@ class NftWallet extends BaseWalletService {
     required Map<Bytes?, int> offerDict,
     required Map<Bytes, PuzzleInfo> driverDict,
     required Puzzlehash targetPuzzleHash,
+    required List<FullCoin> selectedCoins,
     int fee = 0,
     int? minCoinAmount,
     Puzzlehash? changePuzzlehash,
@@ -55,7 +56,9 @@ class NftWallet extends BaseWalletService {
           minCoinAmount: minCoinAmount,
           requestedAssetId: requestedAssetId,
           offeredAssetId: offeredAssetId,
+          selectedCoins: selectedCoins,
           nftCoin: nftCoin,
+          changePuzzlehash: changePuzzlehash,
           targetPuzzleHash: targetPuzzleHash);
     } else if (requestedAssetId != null) {
       return _makeRequestingNftOffer(
@@ -66,7 +69,9 @@ class NftWallet extends BaseWalletService {
           nftCoin: nftCoin,
           standardCoinsForFee: standardCoinsForFee,
           minCoinAmount: minCoinAmount,
-          requestedAssetId: requestedAssetId,
+          requestedAssetId: requestedAssetId!,
+          selectedCoins: selectedCoins,
+          changePuzzlehash: changePuzzlehash,
           targetPuzzleHash: targetPuzzleHash,
           offeredAssetId: offeredAssetId);
     } else {
@@ -537,11 +542,13 @@ class NftWallet extends BaseWalletService {
       required Map<Bytes?, int> offerDict,
       required Map<Bytes, PuzzleInfo> driverDict,
       required int fee,
+      required Puzzlehash? changePuzzlehash,
       int? minCoinAmount,
       Bytes? requestedAssetId,
       Bytes? offeredAssetId,
       required Puzzlehash targetPuzzleHash,
       NFTCoinInfo? nftCoin,
+      required List<FullCoin> selectedCoins,
       List<CoinPrototype>? standardCoinsForFee}) {
     if (offeredAssetId == null) {
       throw Exception("offered Asset Id not can be null");
@@ -597,6 +604,8 @@ class NftWallet extends BaseWalletService {
       fee: fee,
       puzzleAnnouncementsToAssert: announcements,
       tradePricesList: tradePrices,
+      standardCoinsForFee: standardCoinsForFee,
+      changePuzzlehash: changePuzzlehash,
     );
 
     spendBundles.add(nftSpBundle);
@@ -610,17 +619,209 @@ class NftWallet extends BaseWalletService {
     );
   }
 
-  Offer _makeRequestingNftOffer(
-      {required WalletKeychain keychain,
-      required Map<Bytes?, int> offerDict,
-      required Map<Bytes, PuzzleInfo> driverDict,
-      required int fee,
-      int? minCoinAmount,
-      Bytes? requestedAssetId,
-      Bytes? offeredAssetId,
-      required Puzzlehash targetPuzzleHash,
-      NFTCoinInfo? nftCoin,
-      List<CoinPrototype>? standardCoinsForFee}) {
-    throw Exception("");
+  Offer _makeRequestingNftOffer({
+    required WalletKeychain keychain,
+    required Map<Bytes?, int> offerDict,
+    required Map<Bytes, PuzzleInfo> driverDict,
+    required int fee,
+    required Puzzlehash? changePuzzlehash,
+    int? minCoinAmount,
+    required Bytes requestedAssetId,
+    Bytes? offeredAssetId,
+    required Puzzlehash targetPuzzleHash,
+    NFTCoinInfo? nftCoin,
+    required List<FullCoin> selectedCoins,
+    List<CoinPrototype>? standardCoinsForFee,
+  }) {
+    driverDict[offeredAssetId]!.info["also"]["also"]['owner'] = '()';
+    final requestedInfo = driverDict[requestedAssetId];
+    final transfertInfo = requestedInfo?.also?.also;
+    if (transfertInfo == null) {
+      throw Exception("Transfer info cand be null");
+    }
+    final royaltyPercentage = transfertInfo["transfer_program"]["royalty_percentage"] as int;
+    final royaltyAddress = Puzzlehash.fromHex(
+      transfertInfo["transfer_program"]["royalty_address"] as String,
+    );
+
+    final p2Ph = targetPuzzleHash;
+
+    final requestedPayments = <Bytes?, List<Payment>>{
+      requestedAssetId: [
+        Payment(
+          offerDict[requestedAssetId]!,
+          p2Ph,
+        ),
+      ]
+    };
+
+    final offeredAmount = offerDict[offeredAssetId]!.abs();
+    final royaltyAmount = (offeredAmount * (royaltyPercentage / 10000)).floor();
+
+    if (offeredAmount == royaltyAmount) {
+      throw Exception("Amount offered and amount paid in royalties are equal");
+    }
+
+    int coinAmountNeeded = 0;
+    late final wallet;
+
+    // Check is XCH offer
+    if (offeredAssetId == null) {
+      wallet = StandardWalletService();
+      coinAmountNeeded = offeredAmount + royaltyAmount + fee;
+    } else {
+      wallet = CatWalletService();
+      coinAmountNeeded = offeredAmount + royaltyAmount;
+    }
+    final catCoins =
+        selectedCoins.where((element) => element.isCatCoin).map((e) => e.toCatCoin()).toList();
+    final standardsCoins =
+        selectedCoins.where((element) => !element.isCatCoin).map((e) => e.coin).toList();
+
+    final pmtCoins = wallet is StandardWalletService ? standardsCoins : catCoins;
+    final notarizedPayments =
+        Offer.notarizePayments(requestedPayments: requestedPayments, coins: pmtCoins);
+    final announcementsToAssert = Offer.calculateAnnouncements(
+      notarizedPayment: notarizedPayments,
+      driverDict: driverDict,
+    );
+
+    announcementsToAssert.addAll(
+      Offer.calculateAnnouncements(
+        notarizedPayment: {
+          offeredAssetId: [
+            NotarizedPayment(
+              royaltyAmount,
+              royaltyAddress,
+              memos: [royaltyAddress],
+              nonce: requestedAssetId,
+            ),
+          ]
+        },
+        driverDict: driverDict,
+      ),
+    );
+
+    late final SpendBundle spendBundle;
+
+    if (wallet is StandardWalletService) {
+      final standarBundle = StandardWalletService().createSpendBundle(
+        payments: [
+          Payment(offeredAmount, Offer.ph),
+        ],
+        coinsInput: selectedCoins,
+        keychain: keychain,
+        fee: fee,
+        puzzleAnnouncementsToAssert: announcementsToAssert,
+        changePuzzlehash: changePuzzlehash,
+      );
+
+      spendBundle = standarBundle;
+    } else {
+      final catPayments = [
+        Payment(offeredAmount, Offer.ph),
+        Payment(royaltyAmount, Offer.ph),
+      ];
+
+      final catBundle = CatWalletService().createSpendBundle(
+        payments: catPayments,
+        catCoinsInput: catCoins,
+        keychain: keychain,
+        fee: fee,
+        standardCoinsForFee: standardsCoins,
+        puzzleAnnouncementsToAssert: announcementsToAssert,
+        changePuzzlehash: changePuzzlehash,
+      );
+
+      spendBundle = catBundle;
+    }
+
+    /*
+      
+      Create a spend bundle for the royalty payout from OFFER MOD
+      make the royalty payment solution
+      ((nft_launcher_id . ((ROYALTY_ADDRESS, royalty_amount, (ROYALTY_ADDRESS)))))
+      we are basically just recreating the royalty announcement above.
+
+     */
+    late final Program offerPuzzle;
+    late final Program royaltySol;
+    CoinPrototype? royaltyCoin = null;
+    late final CoinSpend parentSpend;
+    late final Puzzlehash royaltyPh;
+
+    final innerRoyaltySol = Program.list(
+      [
+        Program.list([
+          Program.fromBytes(requestedAssetId),
+          Program.list([
+            Program.fromBytes(royaltyAddress),
+            Program.fromInt(royaltyAmount),
+          ])
+        ]),
+      ],
+    );
+    if (offeredAssetId == null) {
+      offerPuzzle = OFFER_MOD;
+      royaltySol = innerRoyaltySol;
+    } else {
+      offerPuzzle = outerPuzzle.constructPuzzle(
+        constructor: driverDict[offeredAssetId]!,
+        innerPuzzle: OFFER_MOD,
+      );
+    }
+
+    royaltyPh = offerPuzzle.hash();
+    for (final coin in spendBundle.additions) {
+      if (coin.amount == royaltyAmount && coin.puzzlehash == royaltyPh) {
+        royaltyCoin = coin;
+        parentSpend = spendBundle.coinSpends.first;
+      }
+    }
+
+    if (royaltyCoin == null) {
+      throw Exception("Royalty Coin is not found in the spend bundles");
+    }
+
+    if (offeredAssetId != null) {
+      final royaltyCoinHex = royaltyCoin.toBytes().toHexWithPrefix();
+      final parendSpendHex = parentSpend.toHexWithPrefix();
+      final solver = Solver({
+        "coin": royaltyCoinHex,
+        "parent_spend": parendSpendHex,
+        "siblings": "(" + royaltyCoinHex + ")",
+        "sibling_spends": "(" + parendSpendHex + ")",
+        "sibling_puzzles": "()",
+        "sibling_solutions": "()",
+      });
+      royaltySol = outerPuzzle.solvePuzzle(
+        constructor: driverDict[offeredAssetId]!,
+        solver: solver,
+        innerPuzzle: OFFER_MOD,
+        innerSolution: innerRoyaltySol,
+      );
+    }
+
+    final royaltySpend = SpendBundle(
+      coinSpends: [
+        CoinSpend(
+          coin: royaltyCoin,
+          puzzleReveal: offerPuzzle,
+          solution: royaltySol,
+        ),
+      ],
+    );
+    final totalSpendBundle = SpendBundle.aggregate(
+      [
+        spendBundle,
+        royaltySpend,
+      ],
+    );
+    final offer = Offer(
+      requestedPayments: notarizedPayments,
+      bundle: totalSpendBundle,
+      driverDict: driverDict,
+    );
+    return offer;
   }
 }
