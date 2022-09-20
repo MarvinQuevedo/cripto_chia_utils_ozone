@@ -7,4 +7,4 @@ final nftMetadataUpdaterProgram = Program.deserializeHex(
 );
 
 final NFT_METADATA_UPDATER = nftMetadataUpdaterProgram;
-final NFT_METADATA_UPDATER_HAHS = NFT_METADATA_UPDATER.hash();
+final NFT_METADATA_UPDATER_HASH = NFT_METADATA_UPDATER.hash();

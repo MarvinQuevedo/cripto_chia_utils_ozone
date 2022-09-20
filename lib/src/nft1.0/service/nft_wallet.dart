@@ -461,7 +461,7 @@ class NftWallet extends BaseWalletService {
     final eveFullPuz = NftService.createFullPuzzle(
       singletonId: origin.id,
       metadata: metadata.toProgram(),
-      metadataUpdaterHash: NFT_METADATA_UPDATER_HAHS,
+      metadataUpdaterHash: NFT_METADATA_UPDATER_HASH,
       innerPuzzle: innerPuzzle,
     );
 
@@ -470,11 +470,18 @@ class NftWallet extends BaseWalletService {
       Program.fromInt(amount),
       Program.list([]),
     ]).hash();
-    final assertCoinAnnouncement =
-        AssertCoinAnnouncementCondition(launcherCoin.id, announcementMessage);
+    final assertCoinAnnouncement = AssertCoinAnnouncementCondition(
+      launcherCoin.id,
+      announcementMessage,
+    );
 
     final createLauncherSpendBundle = standardWalletService.createSpendBundle(
-      payments: [Payment(launcherCoin.amount, launcherCoin.puzzlehash)],
+      payments: [
+        Payment(
+          launcherCoin.amount,
+          launcherCoin.puzzlehash,
+        ),
+      ],
       coinsInput: coins,
       keychain: keychain,
       changePuzzlehash: changePuzzlehash,
@@ -488,6 +495,7 @@ class NftWallet extends BaseWalletService {
       Program.fromInt(launcherCoin.amount),
       Program.list([]),
     ]);
+
     final launcherCoinSpend = CoinSpend(
       coin: launcherCoin,
       puzzleReveal: LAUNCHER_PUZZLE,
