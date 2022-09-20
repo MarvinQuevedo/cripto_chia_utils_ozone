@@ -268,6 +268,7 @@ class NftWallet extends BaseWalletService {
     if (unft.supportDid) {
       if (newOwner == null) {
         //TODO Check is for DID support
+
         /**
          *  derivation_record: Optional[
                     DerivationRecord
@@ -507,6 +508,7 @@ class NftWallet extends BaseWalletService {
     if (didId != null && didId.isNotEmpty) {
       // did_inner_hash, did_bundle = await self.get_did_approval_info(launcher_coin.name())
       //bundles_to_agg.append(did_bundle)
+
       // TODO: implement DID
     }
 
@@ -662,25 +664,31 @@ class NftWallet extends BaseWalletService {
       throw Exception("Amount offered and amount paid in royalties are equal");
     }
 
-    int coinAmountNeeded = 0;
+    //int coinAmountNeeded = 0;
     late final wallet;
 
     // Check is XCH offer
     if (offeredAssetId == null) {
       wallet = StandardWalletService();
-      coinAmountNeeded = offeredAmount + royaltyAmount + fee;
+      //coinAmountNeeded = offeredAmount + royaltyAmount + fee;
     } else {
       wallet = CatWalletService();
-      coinAmountNeeded = offeredAmount + royaltyAmount;
+      //coinAmountNeeded = offeredAmount + royaltyAmount;
     }
+
     final catCoins =
         selectedCoins.where((element) => element.isCatCoin).map((e) => e.toCatCoin()).toList();
+
     final standardsCoins =
         selectedCoins.where((element) => !element.isCatCoin).map((e) => e.coin).toList();
 
     final pmtCoins = wallet is StandardWalletService ? standardsCoins : catCoins;
-    final notarizedPayments =
-        Offer.notarizePayments(requestedPayments: requestedPayments, coins: pmtCoins);
+
+    final notarizedPayments = Offer.notarizePayments(
+      requestedPayments: requestedPayments,
+      coins: pmtCoins,
+    );
+
     final announcementsToAssert = Offer.calculateAnnouncements(
       notarizedPayment: notarizedPayments,
       driverDict: driverDict,
