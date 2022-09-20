@@ -1,11 +1,10 @@
 import '../../../chia_crypto_utils.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 import '../models/deconstructed_transfer_program_puzzle.dart';
-import '../puzzles/index.dart';
 
 DeconstructedTransferProgramPuzzle? mathTransferProgramPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
-  if (uncurried.program == nftOwnershipLayer) {
+  if (uncurried.program.hash() == OWNERSHIP_LAYER_MOD_HASH) {
     final nftArgs = uncurried.arguments;
 
     final singletonStruct = nftArgs[0];

@@ -520,7 +520,7 @@ class CatWalletService extends BaseWalletService {
     final uncurried = catPuzzle.uncurry();
 
     final uncurriedPuzzle = uncurried.program;
-    if (uncurriedPuzzle != CAT_MOD) {
+    if (uncurriedPuzzle.hash() != CAT_MOD_HASH) {
       return null;
     }
 

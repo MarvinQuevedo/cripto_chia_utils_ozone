@@ -3,7 +3,7 @@ import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 DeconstructedUpdateMetadataPuzzle? mathMetadataLayerPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
-  if (uncurried.program == NFT_STATE_LAYER_MOD) {
+  if (uncurried.program.hash() == NFT_STATE_LAYER_MOD_HASH) {
     final nftArgs = uncurried.arguments;
 
     final metadata = nftArgs[1];
