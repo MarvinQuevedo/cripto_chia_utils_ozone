@@ -24,7 +24,7 @@ void main() {
     expect(blockchainNetwork.addressPrefix, 'txch');
     expect(
       blockchainNetwork.aggSigMeExtraData,
-      'eb8c4d20b322be8d9fddbf9412016bdffe9a2901d7edb0e364e94266d0e095f7',
+      'ccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb',
     );
   });
 
@@ -51,7 +51,7 @@ void main() {
     expect(blockchainNetwork.addressPrefix, 'txch');
     expect(
       blockchainNetwork.aggSigMeExtraData,
-      'eb8c4d20b322be8d9fddbf9412016bdffe9a2901d7edb0e364e94266d0e095f7',
+      'ccd5bb71183532bff220ba46c268991a3ff07eb358e8255a65c30a2dce0e5fbb',
     );
   });
 }
