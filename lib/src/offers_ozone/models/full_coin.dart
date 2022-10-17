@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/utils/doubles_parse.dart';
 
 Puzzlehash? getTailHash(CoinSpend? parentCoinSpend) {
   try {
