@@ -39,10 +39,14 @@ class TradeWalletService extends BaseWalletService {
             Offer.ph.toBytes(),
           ]),
         ];
-        final catCoins =
-            selectedCoins.where((element) => element.isCatCoin).map((e) => e.toCatCoin()).toList();
-        final standardsCoins =
-            selectedCoins.where((element) => !element.isCatCoin).map((e) => e.coin).toList();
+        final catCoins = selectedCoins
+            .where((element) => element.isCatCoin)
+            .map((e) => e.toCatCoin())
+            .toList();
+        final standardsCoins = selectedCoins
+            .where((element) => !element.isCatCoin)
+            .map((e) => e.coin)
+            .toList();
         final catBundle = CatWalletService().createSpendBundle(
           payments: catPayments,
           catCoinsInput: catCoins,
@@ -93,7 +97,7 @@ class TradeWalletService extends BaseWalletService {
       announcements: chiaAnnouncements,
       offeredAmounts: offeredAmounts,
       selectedCoins: coins,
-      fee: 0,
+      fee: fee,
       changePuzzlehash: changePuzzlehash,
       keychain: keychain,
       notarizedPayments: chiaNotariedPayments,
