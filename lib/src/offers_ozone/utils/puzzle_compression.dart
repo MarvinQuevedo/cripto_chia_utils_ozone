@@ -16,7 +16,7 @@ final ZDICT = [
       nftMetadataUpdaterProgram.toBytes() +
       nftTransferProgram.toBytes(),
   CAT_MOD.toBytes(),
-  OFFER_MOD.toBytes(),
+  OFFER_MOD_V2.toBytes(),
   // more dictionaries go here
 ];
 

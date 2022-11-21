@@ -422,6 +422,7 @@ class Offer {
                   )
                   .hash() ==
               coin.puzzlehash) {
+            print("Using OFFER V1 ${OFFER_MOD_V1.hash().toHex()}");
             offerMod = OFFER_MOD_V1;
           }
           String siblings = "(";
@@ -461,6 +462,7 @@ class Offer {
         } else {
           if (coin.puzzlehash == OFFER_MOD_V1) {
             offerMod = OFFER_MOD_V1;
+            print("2 Using OFFER V1 ${OFFER_MOD_V1.hash().toHex()}");
           }
           solution = coinToSolutionDict[coin]!;
         }
