@@ -80,7 +80,6 @@ class Offer {
   Map<Bytes?, List<CoinPrototype>> getOfferedCoins() {
     final offeredCoins = <Bytes?, List<CoinPrototype>>{};
 
-    
     final OFFERS_HASHES = {OFFER_MOD_HASH, OFFER_MOD_V1_HASH};
     for (var parentSpend in bundle.coinSpends) {
       final coinForThisSpend = <CoinPrototype>[];
