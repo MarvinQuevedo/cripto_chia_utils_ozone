@@ -7,6 +7,8 @@ import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 import '../../core/models/conditions/announcement.dart';
 import '../../utils/from_bench32.dart';
 
+final OFFERS_HASHES = {OFFER_MOD_HASH, OFFER_MOD_V1_HASH};
+
 class Offer {
   /// The key is the asset id of the asset being requested, if is null then request XCH
   final Map<Bytes?, List<NotarizedPayment>> requestedPayments;
@@ -21,7 +23,7 @@ class Offer {
     required this.driverDict,
   });
 
-  static Puzzlehash get ph => OFFER_MOD.hash();
+  static Puzzlehash get ph => OFFER_MOD_HASH;
 
   /// calc the coins hash [nonce]
   static Map<Bytes?, List<NotarizedPayment>> notarizePayments({
@@ -38,8 +40,14 @@ class Offer {
     requestedPayments.forEach((assetId, payments) {
       result[assetId] = [];
       payments.forEach((payment) {
-        result[assetId]!.add(NotarizedPayment(payment.amount, payment.puzzlehash,
-            memos: payment.memos, nonce: nonce));
+        result[assetId]!.add(
+          NotarizedPayment(
+            payment.amount,
+            payment.puzzlehash,
+            memos: payment.memos,
+            nonce: nonce,
+          ),
+        );
       });
     });
     return result;
@@ -64,7 +72,7 @@ class Offer {
             )
             .hash();
       } else {
-        settlementPh = OFFER_MOD.hash();
+        settlementPh = OFFER_MOD_HASH;
       }
       final msgProgram = Program.list([
         Program.fromBytes(payments.first.nonce),
@@ -80,7 +88,6 @@ class Offer {
   Map<Bytes?, List<CoinPrototype>> getOfferedCoins() {
     final offeredCoins = <Bytes?, List<CoinPrototype>>{};
 
-    final OFFERS_HASHES = {OFFER_MOD_HASH, OFFER_MOD_V1_HASH};
     for (var parentSpend in bundle.coinSpends) {
       final coinForThisSpend = <CoinPrototype>[];
 
@@ -334,6 +341,7 @@ class Offer {
         )
         .length;
     final valid = satisfaceds == arbitrageValues.length;
+
     return valid;
   }
 
@@ -410,7 +418,7 @@ class Offer {
           if (outerPuzzle
                   .constructPuzzle(
                     constructor: offer.driverDict[assetId]!,
-                    innerPuzzle: OFFER_MOD,
+                    innerPuzzle: OFFER_MOD_V1,
                   )
                   .hash() ==
               coin.puzzlehash) {
