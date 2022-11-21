@@ -80,7 +80,8 @@ class Offer {
   Map<Bytes?, List<CoinPrototype>> getOfferedCoins() {
     final offeredCoins = <Bytes?, List<CoinPrototype>>{};
 
-    final OFFER_HASH = OFFER_MOD.hash();
+    
+    final OFFERS_HASHES = {OFFER_MOD_HASH, OFFER_MOD_V1_HASH};
     for (var parentSpend in bundle.coinSpends) {
       final coinForThisSpend = <CoinPrototype>[];
 
@@ -108,21 +109,28 @@ class Offer {
         final conditionResultIter = conditionResult.program.toList();
         for (var condition in conditionResultIter) {
           try {
-            if (condition.first().toInt() == 51 && condition.rest().first().atom == OFFER_HASH) {
+            if (condition.first().toInt() == 51 &&
+                OFFERS_HASHES.contains(condition.rest().first().atom)) {
               final additionsWAmount = additions
                   .where((element) => element.amount == condition.rest().rest().first().toInt())
                   .toList();
               if (additionsWAmount.length == 1) {
                 coinForThisSpend.add(additionsWAmount.first);
               } else {
-                final additionsWAmountAndPuzzlehashes = additionsWAmount.where((element) =>
-                    element.puzzlehash ==
-                    outerPuzzle
-                        .constructPuzzle(
-                          constructor: puzzleDriver,
-                          innerPuzzle: OFFER_MOD,
-                        )
-                        .hash());
+                final additionsWAmountAndPuzzlehashes = additionsWAmount.where((element) => [
+                      outerPuzzle
+                          .constructPuzzle(
+                            constructor: puzzleDriver,
+                            innerPuzzle: OFFER_MOD,
+                          )
+                          .hash(),
+                      outerPuzzle
+                          .constructPuzzle(
+                            constructor: puzzleDriver,
+                            innerPuzzle: OFFER_MOD_V1,
+                          )
+                          .hash()
+                    ].contains(element.puzzlehash));
 
                 if (additionsWAmountAndPuzzlehashes.length == 1) {
                   coinForThisSpend.add(additionsWAmountAndPuzzlehashes.first);
@@ -133,8 +141,8 @@ class Offer {
         }
       } else {
         assetId = null;
-        coinForThisSpend
-            .addAll(additions.where((element) => element.puzzlehash == OFFER_HASH).toList());
+        coinForThisSpend.addAll(
+            additions.where((element) => OFFERS_HASHES.contains(element.puzzlehash)).toList());
       }
       if (coinForThisSpend.isNotEmpty) {
         offeredCoins[assetId] ??= [];
@@ -398,13 +406,22 @@ class Offer {
 
       for (var coin in offerredCoins) {
         Program? solution;
-
+        Program offerMod = OFFER_MOD;
         if (assetId != null) {
+          if (outerPuzzle
+                  .constructPuzzle(
+                    constructor: offer.driverDict[assetId]!,
+                    innerPuzzle: OFFER_MOD,
+                  )
+                  .hash() ==
+              coin.puzzlehash) {
+            offerMod = OFFER_MOD_V1;
+          }
           String siblings = "(";
           String siblingsSpends = "(";
           String silblingsPuzzles = "(";
           String silblingsSolutions = "(";
-          String disassembledOfferMod = OFFER_MOD.toSource();
+          String disassembledOfferMod = offerMod.toSource();
           for (var siblingCoin in offerredCoins) {
             if (siblingCoin != coin) {
               siblings += siblingCoin.toBytes().toHexWithPrefix();
@@ -431,18 +448,21 @@ class Offer {
           solution = outerPuzzle.solvePuzzle(
             constructor: offer.driverDict[assetId]!,
             solver: solver,
-            innerPuzzle: OFFER_MOD,
+            innerPuzzle: offerMod,
             innerSolution: coinToSolutionDict[coin]!,
           );
         } else {
+          if (coin.puzzlehash == OFFER_MOD_V1) {
+            offerMod = OFFER_MOD_V1;
+          }
           solution = coinToSolutionDict[coin]!;
         }
         final puzzleReveal = (assetId != null)
             ? outerPuzzle.constructPuzzle(
                 constructor: offer.driverDict[assetId]!,
-                innerPuzzle: OFFER_MOD,
+                innerPuzzle: offerMod,
               )
-            : OFFER_MOD;
+            : offerMod;
         final coinSpend = CoinSpend(
           coin: coin,
           puzzleReveal: puzzleReveal,
@@ -538,7 +558,7 @@ class Offer {
     if (version == null) {
       final mods =
           asSpendBundle.coinSpends.map((e) => e.puzzleReveal.uncurry().program.toBytes()).toList();
-      version = max([lowestBestVersion(mods), 2])!;
+      version = max([lowestBestVersion(mods), 5])!;
     }
 
     return compressObjectWithPuzzles(asSpendBundle.toBytes(), version);
