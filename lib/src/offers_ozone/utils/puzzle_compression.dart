@@ -9,13 +9,14 @@ import '../../standard/puzzles/p2_delegated_puzzle_or_hidden_puzzle/p2_delegated
 
 final ZDICT = [
   p2DelegatedPuzzleOrHiddenPuzzleProgram.toBytes() + LEGACY_CAT_MOD.toBytes(),
-  OFFER_MOD.toBytes(),
+  OFFER_MOD_V1.toBytes(),
   singletonTopLayerV1Program.toBytes() +
       nftStateLayerProgram.toBytes() +
       nftOwnershipLayer.toBytes() +
       nftMetadataUpdaterProgram.toBytes() +
       nftTransferProgram.toBytes(),
-  CAT_MOD.toBytes()
+  CAT_MOD.toBytes(),
+  OFFER_MOD_V2.toBytes(),
   // more dictionaries go here
 ];
 

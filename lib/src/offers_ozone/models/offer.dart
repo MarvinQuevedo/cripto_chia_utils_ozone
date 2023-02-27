@@ -7,6 +7,8 @@ import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 import '../../core/models/conditions/announcement.dart';
 import '../../utils/from_bench32.dart';
 
+final OFFERS_HASHES = {OFFER_MOD_HASH, OFFER_MOD_V1_HASH};
+
 class Offer {
   /// The key is the asset id of the asset being requested, if is null then request XCH
   final Map<Bytes?, List<NotarizedPayment>> requestedPayments;
@@ -21,7 +23,7 @@ class Offer {
     required this.driverDict,
   });
 
-  static Puzzlehash get ph => OFFER_MOD.hash();
+  static Puzzlehash get ph => OFFER_MOD_HASH;
 
   /// calc the coins hash [nonce]
   static Map<Bytes?, List<NotarizedPayment>> notarizePayments({
@@ -38,8 +40,14 @@ class Offer {
     requestedPayments.forEach((assetId, payments) {
       result[assetId] = [];
       payments.forEach((payment) {
-        result[assetId]!.add(NotarizedPayment(payment.amount, payment.puzzlehash,
-            memos: payment.memos, nonce: nonce));
+        result[assetId]!.add(
+          NotarizedPayment(
+            payment.amount,
+            payment.puzzlehash,
+            memos: payment.memos,
+            nonce: nonce,
+          ),
+        );
       });
     });
     return result;
@@ -64,7 +72,7 @@ class Offer {
             )
             .hash();
       } else {
-        settlementPh = OFFER_MOD.hash();
+        settlementPh = OFFER_MOD_HASH;
       }
       final msgProgram = Program.list([
         Program.fromBytes(payments.first.nonce),
@@ -80,7 +88,6 @@ class Offer {
   Map<Bytes?, List<CoinPrototype>> getOfferedCoins() {
     final offeredCoins = <Bytes?, List<CoinPrototype>>{};
 
-    final OFFER_HASH = OFFER_MOD.hash();
     for (var parentSpend in bundle.coinSpends) {
       final coinForThisSpend = <CoinPrototype>[];
 
@@ -109,21 +116,28 @@ class Offer {
         final conditionResultIter = conditionResult.program.toList();
         for (var condition in conditionResultIter) {
           try {
-            if (condition.first().toInt() == 51 && condition.rest().first().atom == OFFER_HASH) {
+            if (condition.first().toInt() == 51 &&
+                OFFERS_HASHES.contains(condition.rest().first().atom)) {
               final additionsWAmount = additions
                   .where((element) => element.amount == condition.rest().rest().first().toInt())
                   .toList();
               if (additionsWAmount.length == 1) {
                 coinForThisSpend.add(additionsWAmount.first);
               } else {
-                final additionsWAmountAndPuzzlehashes = additionsWAmount.where((element) =>
-                    element.puzzlehash ==
-                    outerPuzzle
-                        .constructPuzzle(
-                          constructor: puzzleDriver,
-                          innerPuzzle: OFFER_MOD,
-                        )
-                        .hash());
+                final additionsWAmountAndPuzzlehashes = additionsWAmount.where((element) => [
+                      outerPuzzle
+                          .constructPuzzle(
+                            constructor: puzzleDriver,
+                            innerPuzzle: OFFER_MOD,
+                          )
+                          .hash(),
+                      outerPuzzle
+                          .constructPuzzle(
+                            constructor: puzzleDriver,
+                            innerPuzzle: OFFER_MOD_V1,
+                          )
+                          .hash()
+                    ].contains(element.puzzlehash));
 
                 if (additionsWAmountAndPuzzlehashes.length == 1) {
                   coinForThisSpend.add(additionsWAmountAndPuzzlehashes.first);
@@ -134,8 +148,8 @@ class Offer {
         }
       } else {
         assetId = null;
-        coinForThisSpend
-            .addAll(additions.where((element) => element.puzzlehash == OFFER_HASH).toList());
+        coinForThisSpend.addAll(
+            additions.where((element) => OFFERS_HASHES.contains(element.puzzlehash)).toList());
       }
       if (coinForThisSpend.isNotEmpty) {
         offeredCoins[assetId] ??= [];
@@ -328,6 +342,7 @@ class Offer {
         )
         .length;
     final valid = satisfaceds == arbitrageValues.length;
+
     return valid;
   }
 
@@ -399,13 +414,23 @@ class Offer {
 
       for (var coin in offerredCoins) {
         Program? solution;
-
+        Program offerMod = OFFER_MOD;
         if (assetId != null) {
+          if (outerPuzzle
+                  .constructPuzzle(
+                    constructor: offer.driverDict[assetId]!,
+                    innerPuzzle: OFFER_MOD_V1,
+                  )
+                  .hash() ==
+              coin.puzzlehash) {
+            print("Using OFFER V1 ${OFFER_MOD_V1.hash().toHex()}");
+            offerMod = OFFER_MOD_V1;
+          }
           String siblings = "(";
           String siblingsSpends = "(";
           String silblingsPuzzles = "(";
           String silblingsSolutions = "(";
-          String disassembledOfferMod = OFFER_MOD.toSource();
+          String disassembledOfferMod = offerMod.toSource();
           for (var siblingCoin in offerredCoins) {
             if (siblingCoin != coin) {
               siblings += siblingCoin.toBytes().toHexWithPrefix();
@@ -432,18 +457,22 @@ class Offer {
           solution = outerPuzzle.solvePuzzle(
             constructor: offer.driverDict[assetId]!,
             solver: solver,
-            innerPuzzle: OFFER_MOD,
+            innerPuzzle: offerMod,
             innerSolution: coinToSolutionDict[coin]!,
           );
         } else {
+          if (coin.puzzlehash == OFFER_MOD_V1) {
+            offerMod = OFFER_MOD_V1;
+            print("2 Using OFFER V1 ${OFFER_MOD_V1.hash().toHex()}");
+          }
           solution = coinToSolutionDict[coin]!;
         }
         final puzzleReveal = (assetId != null)
             ? outerPuzzle.constructPuzzle(
                 constructor: offer.driverDict[assetId]!,
-                innerPuzzle: OFFER_MOD,
+                innerPuzzle: offerMod,
               )
-            : OFFER_MOD;
+            : offerMod;
         final coinSpend = CoinSpend(
           coin: coin,
           puzzleReveal: puzzleReveal,
@@ -539,7 +568,7 @@ class Offer {
     if (version == null) {
       final mods =
           asSpendBundle.coinSpends.map((e) => e.puzzleReveal.uncurry().program.toBytes()).toList();
-      version = max([lowestBestVersion(mods), 2])!;
+      version = max([lowestBestVersion(mods), 5])!;
     }
 
     return compressObjectWithPuzzles(asSpendBundle.toBytes(), version);
