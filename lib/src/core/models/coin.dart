@@ -11,21 +11,21 @@ class Coin extends CoinPrototype with ToBytesMixin {
   final bool coinbase;
   final int timestamp;
 
+  DateTime get dateConfirmed => DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+
   bool get isSpent => spentBlockIndex != 0;
+
+  double get amountXch => amount / mojosPerXch;
 
   const Coin({
     required this.confirmedBlockIndex,
     required this.spentBlockIndex,
     required this.coinbase,
     required this.timestamp,
-    required Bytes parentCoinInfo,
-    required Puzzlehash puzzlehash,
-    required int amount,
-  }) : super(
-          puzzlehash: puzzlehash,
-          amount: amount,
-          parentCoinInfo: parentCoinInfo,
-        );
+    required super.parentCoinInfo,
+    required super.puzzlehash,
+    required super.amount,
+  });
 
   factory Coin.fromChiaCoinRecordJson(Map<String, dynamic> json) {
     final coinPrototype = CoinPrototype.fromJson(json['coin'] as Map<String, dynamic>);

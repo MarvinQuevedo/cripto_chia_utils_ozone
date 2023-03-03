@@ -28,17 +28,63 @@ class WalletKeychain with ToBytesMixin {
     );
   }
 
+  static Map<String, dynamic> _walletKeychainFromCoreSecretTask(
+    WalletKeychainFromCoreSecretIsolateArguments arguments,
+    void Function(double progress) onProgressUpdate,
+  ) {
+    final keychain = WalletKeychain.fromCoreSecret(
+      arguments.coreSecret,
+      walletSize: arguments.walletSize,
+      plotNftWalletSize: arguments.plotNftWalletSize,
+      onProgressUpdate: onProgressUpdate,
+    );
+    return <String, dynamic>{
+      'keychain': keychain.toHex(),
+    };
+  }
+
+  static Future<WalletKeychain> fromCoreSecretAsync(
+    KeychainCoreSecret coreSecret, {
+    int walletSize = 5,
+    int plotNftWalletSize = 2,
+    void Function(double progress)? onProgressUpdate,
+  }) async {
+    return spawnAndWaitForIsolateWithProgressUpdates(
+      taskArgument: WalletKeychainFromCoreSecretIsolateArguments(
+        coreSecret: coreSecret,
+        walletSize: walletSize,
+        plotNftWalletSize: plotNftWalletSize,
+      ),
+      onProgressUpdate: onProgressUpdate ?? (_) {},
+      isolateTask: _walletKeychainFromCoreSecretTask,
+      handleTaskCompletion: (taskResultJson) =>
+          WalletKeychain.fromHex(taskResultJson['keychain'] as String),
+    );
+  }
+
   factory WalletKeychain.fromCoreSecret(
     KeychainCoreSecret coreSecret, {
     int walletSize = 5,
     int plotNftWalletSize = 2,
+    void Function(double progress)? onProgressUpdate,
   }) {
+    final totalWalletVectorsToGenerate = (walletSize * 2) + plotNftWalletSize;
+    var totalWalletVectorsGenerated = 0;
+
+    void incrementAndCallUpdate() {
+      totalWalletVectorsGenerated++;
+      onProgressUpdate?.call(totalWalletVectorsGenerated / totalWalletVectorsToGenerate);
+    }
+
     final masterPrivateKey = coreSecret.masterPrivateKey;
     final walletVectors = LinkedHashMap<Puzzlehash, WalletVector>();
     final unhardenedWalletVectors = LinkedHashMap<Puzzlehash, UnhardenedWalletVector>();
     for (var i = 0; i < walletSize; i++) {
       final walletVector = WalletVector.fromPrivateKey(masterPrivateKey, i);
+      incrementAndCallUpdate();
+
       final unhardenedWalletVector = UnhardenedWalletVector.fromPrivateKey(masterPrivateKey, i);
+      incrementAndCallUpdate();
 
       walletVectors[walletVector.puzzlehash] = walletVector;
       unhardenedWalletVectors[unhardenedWalletVector.puzzlehash] = unhardenedWalletVector;
@@ -47,6 +93,8 @@ class WalletKeychain with ToBytesMixin {
     final singletonVectors = <JacobianPoint, SingletonWalletVector>{};
     for (var i = 0; i < plotNftWalletSize; i++) {
       final singletonWalletVector = SingletonWalletVector.fromMasterPrivateKey(masterPrivateKey, i);
+      incrementAndCallUpdate();
+
       singletonVectors[singletonWalletVector.singletonOwnerPublicKey] = singletonWalletVector;
     }
 
@@ -136,6 +184,55 @@ class WalletKeychain with ToBytesMixin {
     return newSingletonWalletVector;
   }
 
+  Map<String, dynamic> _getSingletonWalletVectorForSingletonOwnerPublicKeyTask(
+    AddsSingletonWalletVectorArguments args,
+  ) {
+    final masterPrivateKey = args.masterPrivateKey;
+    final singletonOwnerPublicKey = args.singletonOwnerPublicKey;
+    const maxIndexToCheck = 1000;
+    for (var i = 0; i < maxIndexToCheck; i++) {
+      final singletonOwnerSecretKey = masterSkToSingletonOwnerSk(masterPrivateKey, i);
+      if (singletonOwnerSecretKey.getG1() == singletonOwnerPublicKey) {
+        final newSingletonWalletVector =
+            SingletonWalletVector.fromMasterPrivateKey(masterPrivateKey, i);
+
+        return <String, dynamic>{
+          'singleton_wallet_vector': newSingletonWalletVector.toHex(),
+        };
+      }
+    }
+
+    return <String, dynamic>{
+      'singleton_wallet_vector': null,
+    };
+  }
+
+  Future<SingletonWalletVector> addSingletonWalletVectorForSingletonOwnerPublicKeyAsync(
+    JacobianPoint singletonOwnerPublicKey,
+    PrivateKey masterPrivateKey,
+  ) async {
+    final newSingletonWalletVector = await spawnAndWaitForIsolate(
+      taskArgument: AddsSingletonWalletVectorArguments(singletonOwnerPublicKey, masterPrivateKey),
+      isolateTask: _getSingletonWalletVectorForSingletonOwnerPublicKeyTask,
+      handleTaskCompletion: (taskResultJson) {
+        final result = taskResultJson['singleton_wallet_vector'] as String?;
+        if (result == null) {
+          return null;
+        }
+        return SingletonWalletVector.fromHex(result);
+      },
+    );
+
+    if (newSingletonWalletVector == null) {
+      throw Exception(
+        'Given singletonOwnerPublicKey does not match mnemonic up',
+      );
+    }
+
+    singletonWalletVectorsMap[singletonOwnerPublicKey] = newSingletonWalletVector;
+    return newSingletonWalletVector;
+  }
+
   SingletonWalletVector addSingletonWalletVectorForSingletonOwnerPublicKey(
     JacobianPoint singletonOwnerPublicKey,
     PrivateKey masterPrivateKey,
@@ -150,7 +247,7 @@ class WalletKeychain with ToBytesMixin {
         return newSingletonWalletVector;
       }
     }
-    throw ArgumentError(
+    throw Exception(
       'Given singletonOwnerPublicKey does not match mnemonic up to derivation index $maxIndexToCheck',
     );
   }
@@ -173,8 +270,16 @@ class WalletKeychain with ToBytesMixin {
         unhardenedMap.values.map<Puzzlehash>((wv) => wv.puzzlehash),
       ).toList();
 
+  List<Puzzlehash> get puzzlehashesHardened => LinkedHashSet<Puzzlehash>.from(
+        hardenedMap.values.map<Puzzlehash>((wv) => wv.puzzlehash),
+      ).toList();
+
   List<WalletPuzzlehash> get walletPuzzlehashes => LinkedHashSet<WalletPuzzlehash>.from(
         unhardenedMap.values.map<WalletPuzzlehash>((wv) => wv.walletPuzzlehash),
+      ).toList();
+
+  List<WalletPuzzlehash> get walletPuzzlehashesHardened => LinkedHashSet<WalletPuzzlehash>.from(
+        hardenedMap.values.map<WalletPuzzlehash>((wv) => wv.walletPuzzlehash),
       ).toList();
 
   List<Puzzlehash> getOuterPuzzleHashesForAssetId(Puzzlehash assetId) {
@@ -257,7 +362,7 @@ class HardenedAndUnhardenedPuzzleHashes {
 }
 
 class WalletPuzzlehash extends Puzzlehash {
-  WalletPuzzlehash(List<int> bytesList, this.derivationIndex) : super(bytesList);
+  WalletPuzzlehash(super.bytesList, this.derivationIndex);
 
   WalletPuzzlehash.fromPuzzlehash(Puzzlehash puzzlehash, this.derivationIndex)
       : super(puzzlehash.byteList);
@@ -266,10 +371,58 @@ class WalletPuzzlehash extends Puzzlehash {
       : derivationIndex = json['derivation_index'] as int,
         super(Bytes.fromHex(json['puzzlehash'] as String));
 
+  @override
+  WalletAddress toAddressWithContext() => WalletAddress.fromContext(this, derivationIndex);
+  @override
+  WalletAddress toAddress(String ticker) =>
+      WalletAddress.fromPuzzlehash(this, ticker, derivationIndex);
+
   final int derivationIndex;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'puzzlehash': toHex(),
         'derivation_index': derivationIndex,
       };
+}
+
+class WalletKeychainFromCoreSecretIsolateArguments {
+  WalletKeychainFromCoreSecretIsolateArguments({
+    required this.coreSecret,
+    required this.walletSize,
+    required this.plotNftWalletSize,
+  });
+
+  final KeychainCoreSecret coreSecret;
+  final int walletSize;
+  final int plotNftWalletSize;
+}
+
+class AddsSingletonWalletVectorArguments {
+  AddsSingletonWalletVectorArguments(this.singletonOwnerPublicKey, this.masterPrivateKey);
+
+  final JacobianPoint singletonOwnerPublicKey;
+  final PrivateKey masterPrivateKey;
+}
+
+class WalletAddress extends Address {
+  const WalletAddress(
+    super.address, {
+    required this.derivationIndex,
+  });
+
+  factory WalletAddress.fromContext(Puzzlehash puzzlehash, int derivationIndex) {
+    final addressPrefix = NetworkContext().blockchainNetwork.addressPrefix;
+    return WalletAddress.fromPuzzlehash(puzzlehash, addressPrefix, derivationIndex);
+  }
+
+  final int derivationIndex;
+
+  factory WalletAddress.fromPuzzlehash(
+    Puzzlehash puzzlehash,
+    String addressPrefix,
+    int derivationIndex,
+  ) {
+    final address = Address.fromPuzzlehash(puzzlehash, addressPrefix);
+    return WalletAddress(address.address, derivationIndex: derivationIndex);
+  }
 }

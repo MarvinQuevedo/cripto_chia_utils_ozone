@@ -10,7 +10,12 @@ import 'package:meta/meta.dart';
 
 @immutable
 class FullNodeHttpRpc implements FullNode {
-  const FullNodeHttpRpc(this.baseURL, {this.certBytes, this.keyBytes});
+  const FullNodeHttpRpc(
+    this.baseURL, {
+    this.certBytes,
+    this.keyBytes,
+    this.timeout = const Duration(seconds: 15),
+  });
 
   factory FullNodeHttpRpc.fromContext() {
     final fullNodeContext = FullNodeContext();
@@ -26,7 +31,14 @@ class FullNodeHttpRpc implements FullNode {
   final Bytes? certBytes;
   final Bytes? keyBytes;
 
-  Client get client => Client(baseURL, certBytes: certBytes, keyBytes: keyBytes);
+  final Duration timeout;
+
+  Client get client => Client(
+        baseURL,
+        certBytes: certBytes,
+        keyBytes: keyBytes,
+        timeout: timeout,
+      );
 
   @override
   Future<CoinRecordsResponse> getCoinRecordsByPuzzleHashes(
@@ -232,6 +244,18 @@ class FullNodeHttpRpc implements FullNode {
     mapResponseToError(response);
 
     return GetBlockRecordsResponse.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+  }
+
+  @override
+  Future<MempoolItemsResponse> getAllMempoolItems() async {
+    final response = await client.post(
+      Uri.parse('get_all_mempool_items'),
+      <String, dynamic>{},
+    );
+    mapResponseToError(response);
+    return MempoolItemsResponse.fromJson(
       jsonDecode(response.body) as Map<String, dynamic>,
     );
   }
