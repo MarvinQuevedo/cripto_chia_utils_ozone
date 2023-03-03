@@ -33,7 +33,7 @@ Offer generate_secure_bundle(
   for (var coin in selectedCoins) {
     if (coin.assetId == null) {
       final standarBundle = StandardWalletService().createSpendBundle(
-          payments: [Payment(offeredAmounts[coin.assetId]!, Offer.ph)],
+          payments: [Payment(offeredAmounts[coin.assetId]!, Offer.ph(false))],
           coinsInput: selectedCoins,
           keychain: keychain,
           fee: feeLeftToPay,
@@ -41,7 +41,7 @@ Offer generate_secure_bundle(
       transactions.add(standarBundle);
     } else if (coin.assetId != null) {
       final catBundle = CatWalletService().createSpendBundle(
-        payments: [Payment(offeredAmounts[coin.assetId]!, Offer.ph)],
+        payments: [Payment(offeredAmounts[coin.assetId]!, Offer.ph(false))],
         catCoinsInput:
             selectedCoins.where((element) => element.isCatCoin).map((e) => e.toCatCoin()).toList(),
         keychain: keychain,
@@ -55,10 +55,10 @@ Offer generate_secure_bundle(
       SpendBundle.empty, (previousValue, spendBundle) => previousValue + spendBundle);
 
   return Offer(
-    requestedPayments: notarizedPayments,
-    bundle: totalSpendBundle,
-    driverDict: driverDict,
-  );
+      requestedPayments: notarizedPayments,
+      bundle: totalSpendBundle,
+      driverDict: driverDict,
+      old: false);
 }
 
 Future<void> main() async {
@@ -243,7 +243,7 @@ Future<void> main() async {
       print("");
     });
     final chiaAnnouncements = Offer.calculateAnnouncements(
-        notarizedPayment: chiaNotariedPayments, driverDict: driverDict);
+        notarizedPayment: chiaNotariedPayments, driverDict: driverDict, old: false);
 
     for (var ann in chiaAnnouncements) {
       final mesasge = ann.announcementHash.toHex();
