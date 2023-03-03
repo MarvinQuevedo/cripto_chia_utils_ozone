@@ -476,7 +476,7 @@ class Offer {
             innerSolution: coinToSolutionDict[coin]!,
           );
         } else {
-          if (coin.puzzlehash == OFFER_MOD_V1) {
+          if (coin.puzzlehash == OFFER_MOD_V1_HASH) {
             offerMod = OFFER_MOD_V1;
             print("2 Using OFFER V1 ${OFFER_MOD_V1.hash().toHex()}");
           } else {
