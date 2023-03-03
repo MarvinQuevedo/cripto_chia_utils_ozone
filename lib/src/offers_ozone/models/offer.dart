@@ -551,7 +551,7 @@ class Offer {
     bool old = false;
 
     for (var coinSpend in bundle.coinSpends) {
-      if (!old && coinSpend.toBytes().contains(OFFER_MOD_V1)) {
+      if (!old && coinSpend.toBytes().toHex().contains(OFFER_MOD_V1.toBytes().toHex())) {
         old = true;
       }
       final driver = outerPuzzle.matchPuzzle(coinSpend.puzzleReveal);
