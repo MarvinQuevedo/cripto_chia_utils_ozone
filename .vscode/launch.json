@@ -10,6 +10,11 @@
             "program": "test/offers/offer_life_cicle2_test.dart"
         },
         {
+            "name": "offer v1 v2 test",
+            "request": "launch",
+            "program": "test/offers/offer_versions_test.dart"
+        },
+        {
             "name": "offer_parse",
             "type": "dart",
             "request": "launch",
