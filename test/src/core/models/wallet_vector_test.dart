@@ -1,7 +1,6 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/core/models/singleton_wallet_vector.dart';
 import 'package:test/test.dart';
 
 const testMnemonic = [
@@ -43,7 +42,7 @@ void main() {
 
       final bytes = wv.toBytes();
 
-      final wv2 = WalletVector.fromBytes(bytes);
+      final wv2 = WalletVector.fromBytes(bytes, 0);
 
       expect(wv, equals(wv2));
       expect(bytes, equals(wv2.toBytes()));
@@ -70,7 +69,7 @@ void main() {
       final wv = keychain.unhardenedMap.values.first;
       final bytes = wv.toBytes();
 
-      final deserializedWv = UnhardenedWalletVector.fromBytes(bytes);
+      final deserializedWv = UnhardenedWalletVector.fromBytes(bytes, 0);
 
       expect(wv, equals(deserializedWv));
       expect(bytes, equals(deserializedWv.toBytes()));

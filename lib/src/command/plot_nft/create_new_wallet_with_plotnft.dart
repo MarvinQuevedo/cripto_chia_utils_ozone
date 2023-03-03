@@ -1,8 +1,18 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/api/pool/models/pool_error_response_code.dart';
-import 'package:chia_crypto_utils/src/core/models/singleton_wallet_vector.dart';
 
-Future<void> createNewWalletWithPlotNFT(
+class PlotNFTDetails {
+  const PlotNFTDetails({
+    required this.contractAddress,
+    required this.payoutAddress,
+    required this.launcherId,
+  });
+
+  final Address contractAddress;
+  final Address payoutAddress;
+  final Bytes launcherId;
+}
+
+Future<PlotNFTDetails> createNewWalletWithPlotNFT(
   KeychainCoreSecret keychainSecret,
   WalletKeychain keychain,
   PoolService poolService,
@@ -13,16 +23,15 @@ Future<void> createNewWalletWithPlotNFT(
   );
 
   final delayPh = keychain.puzzlehashes[4];
-  final singletonWalletVector = SingletonWalletVector.fromMasterPrivateKey(
-    keychainSecret.masterPrivateKey,
-    20,
-  );
+  final singletonWalletVector =
+      keychain.getNextSingletonWalletVector(keychainSecret.masterPrivateKey);
 
   final launcherId = await poolService.createPlotNftForPool(
     p2SingletonDelayedPuzzlehash: delayPh,
     singletonWalletVector: singletonWalletVector,
     coins: coins,
     keychain: keychain,
+    fee: 50,
     changePuzzlehash: keychain.puzzlehashes[3],
   );
 
@@ -55,8 +64,8 @@ Future<void> createNewWalletWithPlotNFT(
     ChiaNetworkContextWrapper().blockchainNetwork.addressPrefix,
   );
 
-  print('Contract Address: $contractAddress');
-  print('Payout Address: $payoutAddress');
+  print('Contract Address: ${contractAddress.address}');
+  print('Payout Address: ${payoutAddress.address}');
 
   final addFarmerResponse = await poolService.registerAsFarmerWithPool(
     plotNft: newPlotNft!,
@@ -89,4 +98,10 @@ Future<void> createNewWalletWithPlotNFT(
   if (farmerInfo != null) {
     print(farmerInfo);
   }
+
+  return PlotNFTDetails(
+    contractAddress: contractAddress,
+    payoutAddress: payoutAddress,
+    launcherId: launcherId,
+  );
 }

@@ -1,5 +1,4 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 import 'package:chia_crypto_utils/src/plot_nft/models/exceptions/invalid_pool_singleton_exception.dart';
 
 class PlotNftWalletService extends BaseWalletService {
@@ -186,6 +185,19 @@ class PlotNftWalletService extends BaseWalletService {
       secondsDelay: secondsDelay,
       delayedPuzzlehash: delayedPuzzlehash,
     ).hash();
+  }
+
+  static Future<Puzzlehash> launcherIdToP2PuzzlehashAsync(
+    Bytes launcherId,
+    int secondsDelay,
+    Puzzlehash delayedPuzzlehash,
+  ) async {
+    return SingletonService.createP2SingletonPuzzleAsync(
+      singletonModHash: singletonTopLayerProgram.hash(),
+      launcherId: launcherId,
+      secondsDelay: secondsDelay,
+      delayedPuzzlehash: delayedPuzzlehash,
+    ).then((value) => value.hash());
   }
 
   void validateSingletonPuzzlehash({
