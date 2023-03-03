@@ -9,18 +9,18 @@ import '../../core/service/conditions_utils.dart';
 class NftWallet extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
 
-  Offer makeNftOffer({
-    required WalletKeychain keychain,
-    required Map<Bytes?, int> offerDict,
-    required Map<Bytes, PuzzleInfo> driverDict,
-    required Puzzlehash targetPuzzleHash,
-    required List<FullCoin> selectedCoins,
-    int fee = 0,
-    int? minCoinAmount,
-    Puzzlehash? changePuzzlehash,
-    List<CoinPrototype>? standardCoinsForFee,
-    NFTCoinInfo? nftCoin,
-  }) {
+  Offer makeNftOffer(
+      {required WalletKeychain keychain,
+      required Map<Bytes?, int> offerDict,
+      required Map<Bytes, PuzzleInfo> driverDict,
+      required Puzzlehash targetPuzzleHash,
+      required List<FullCoin> selectedCoins,
+      int fee = 0,
+      int? minCoinAmount,
+      Puzzlehash? changePuzzlehash,
+      List<CoinPrototype>? standardCoinsForFee,
+      NFTCoinInfo? nftCoin,
+      required bool old}) {
     final amounts = offerDict.values.toList();
     if (offerDict.length != 2 || ((amounts[0] > 0) == (amounts[1] > 0))) {
       throw Exception(
@@ -48,32 +48,36 @@ class NftWallet extends BaseWalletService {
 
     if (offerringNft) {
       return _makeOfferingNftOffer(
-          keychain: keychain,
-          offerDict: offerDict,
-          driverDict: driverDict,
-          fee: fee,
-          standardCoinsForFee: standardCoinsForFee,
-          minCoinAmount: minCoinAmount,
-          requestedAssetId: requestedAssetId,
-          offeredAssetId: offeredAssetId,
-          selectedCoins: selectedCoins,
-          nftCoin: nftCoin,
-          changePuzzlehash: changePuzzlehash,
-          targetPuzzleHash: targetPuzzleHash);
+        keychain: keychain,
+        offerDict: offerDict,
+        driverDict: driverDict,
+        fee: fee,
+        standardCoinsForFee: standardCoinsForFee,
+        minCoinAmount: minCoinAmount,
+        requestedAssetId: requestedAssetId,
+        offeredAssetId: offeredAssetId,
+        selectedCoins: selectedCoins,
+        nftCoin: nftCoin,
+        changePuzzlehash: changePuzzlehash,
+        targetPuzzleHash: targetPuzzleHash,
+        old: old,
+      );
     } else if (requestedAssetId != null) {
       return _makeRequestingNftOffer(
-          keychain: keychain,
-          offerDict: offerDict,
-          driverDict: driverDict,
-          fee: fee,
-          nftCoin: nftCoin,
-          standardCoinsForFee: standardCoinsForFee,
-          minCoinAmount: minCoinAmount,
-          requestedAssetId: requestedAssetId!,
-          selectedCoins: selectedCoins,
-          changePuzzlehash: changePuzzlehash,
-          targetPuzzleHash: targetPuzzleHash,
-          offeredAssetId: offeredAssetId);
+        keychain: keychain,
+        offerDict: offerDict,
+        driverDict: driverDict,
+        fee: fee,
+        nftCoin: nftCoin,
+        standardCoinsForFee: standardCoinsForFee,
+        minCoinAmount: minCoinAmount,
+        requestedAssetId: requestedAssetId!,
+        selectedCoins: selectedCoins,
+        changePuzzlehash: changePuzzlehash,
+        targetPuzzleHash: targetPuzzleHash,
+        offeredAssetId: offeredAssetId,
+        old: old,
+      );
     } else {
       Exception("No NFT in offer!");
     }
@@ -547,19 +551,21 @@ class NftWallet extends BaseWalletService {
     return signedSpendBundle;
   }
 
-  Offer _makeOfferingNftOffer(
-      {required WalletKeychain keychain,
-      required Map<Bytes?, int> offerDict,
-      required Map<Bytes, PuzzleInfo> driverDict,
-      required int fee,
-      required Puzzlehash? changePuzzlehash,
-      int? minCoinAmount,
-      Bytes? requestedAssetId,
-      Bytes? offeredAssetId,
-      required Puzzlehash targetPuzzleHash,
-      NFTCoinInfo? nftCoin,
-      required List<FullCoin> selectedCoins,
-      List<CoinPrototype>? standardCoinsForFee}) {
+  Offer _makeOfferingNftOffer({
+    required WalletKeychain keychain,
+    required Map<Bytes?, int> offerDict,
+    required Map<Bytes, PuzzleInfo> driverDict,
+    required int fee,
+    required Puzzlehash? changePuzzlehash,
+    int? minCoinAmount,
+    Bytes? requestedAssetId,
+    Bytes? offeredAssetId,
+    required Puzzlehash targetPuzzleHash,
+    NFTCoinInfo? nftCoin,
+    required List<FullCoin> selectedCoins,
+    List<CoinPrototype>? standardCoinsForFee,
+    required bool old,
+  }) {
     if (offeredAssetId == null) {
       throw Exception("offered Asset Id not can be null");
     }
@@ -603,11 +609,12 @@ class NftWallet extends BaseWalletService {
     final announcements = Offer.calculateAnnouncements(
       notarizedPayment: notarizedPayments,
       driverDict: driverDict,
+      old: old,
     );
     List<SpendBundle> spendBundles = [];
 
     final nftSpBundle = generateSignedSpendBundle(
-      payments: [Payment(offerredAmount, Offer.ph)],
+      payments: [Payment(offerredAmount, Offer.ph(old))],
       coins: [offeredCoinInfo.coin],
       keychain: keychain,
       nftCoin: nftCoin,
@@ -626,6 +633,7 @@ class NftWallet extends BaseWalletService {
       requestedPayments: notarizedPayments,
       bundle: totalSpendBundle,
       driverDict: driverDict,
+      old: old,
     );
   }
 
@@ -642,6 +650,7 @@ class NftWallet extends BaseWalletService {
     NFTCoinInfo? nftCoin,
     required List<FullCoin> selectedCoins,
     List<CoinPrototype>? standardCoinsForFee,
+    required bool old,
   }) {
     driverDict[offeredAssetId]!.info["also"]["also"]['owner'] = '()';
     final requestedInfo = driverDict[requestedAssetId];
@@ -700,6 +709,7 @@ class NftWallet extends BaseWalletService {
     final announcementsToAssert = Offer.calculateAnnouncements(
       notarizedPayment: notarizedPayments,
       driverDict: driverDict,
+      old: old,
     );
 
     announcementsToAssert.addAll(
@@ -715,6 +725,7 @@ class NftWallet extends BaseWalletService {
           ]
         },
         driverDict: driverDict,
+        old: old,
       ),
     );
 
@@ -723,7 +734,7 @@ class NftWallet extends BaseWalletService {
     if (wallet is StandardWalletService) {
       final standarBundle = StandardWalletService().createSpendBundle(
         payments: [
-          Payment(offeredAmount, Offer.ph),
+          Payment(offeredAmount, Offer.ph(old)),
         ],
         coinsInput: selectedCoins,
         keychain: keychain,
@@ -735,8 +746,8 @@ class NftWallet extends BaseWalletService {
       spendBundle = standarBundle;
     } else {
       final catPayments = [
-        Payment(offeredAmount, Offer.ph),
-        Payment(royaltyAmount, Offer.ph),
+        Payment(offeredAmount, Offer.ph(old)),
+        Payment(royaltyAmount, Offer.ph(old)),
       ];
 
       final catBundle = CatWalletService().createSpendBundle(
@@ -834,10 +845,10 @@ class NftWallet extends BaseWalletService {
       ],
     );
     final offer = Offer(
-      requestedPayments: notarizedPayments,
-      bundle: totalSpendBundle,
-      driverDict: driverDict,
-    );
+        requestedPayments: notarizedPayments,
+        bundle: totalSpendBundle,
+        driverDict: driverDict,
+        old: old);
     return offer;
   }
 }
