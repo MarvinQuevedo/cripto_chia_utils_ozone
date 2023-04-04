@@ -137,7 +137,8 @@ class NFTInfo {
   static NFTInfo fromUncurried(
       {required UncurriedNFT uncurriedNFT,
       required CoinPrototype currentCoin,
-      required Coin genesisCoin,
+      int? mintHeight,
+      Coin? genesisCoin,
       String addressPrefix = 'xch'}) {
     final dataUris = <String>[];
     final metaUris = <String>[];
@@ -153,9 +154,13 @@ class NFTInfo {
       licenceUris.add(utf8.decode(uri.atom));
     }
     print(dataUris);
+
+    if (mintHeight == null) {
+      mintHeight = genesisCoin!.spentBlockIndex;
+    }
     return NFTInfo(
         launcherId: Puzzlehash(uncurriedNFT.launcherPuzhash.atom),
-        p2Puzzlehash: uncurriedNFT.p2Puzzlehash.hash(),
+        p2Puzzlehash: uncurriedNFT.p2Puzzle.hash(),
         nftCoinId: currentCoin.id,
         didOwner: uncurriedNFT.ownerDid,
         royaltyPercentage: uncurriedNFT.tradePricePercentage,
@@ -166,7 +171,7 @@ class NFTInfo {
         metadataHash: uncurriedNFT.metaHash.atom.toHex(),
         licenseHash: uncurriedNFT.licenseHash.atom.toHex(),
         chainInfo: uncurriedNFT.metadata.toSource(),
-        mintHeight: genesisCoin.spentBlockIndex,
+        mintHeight: mintHeight,
         pendingTransaction: false,
         royaltyAddress: uncurriedNFT.royaltyPuzzlehash != null
             ? Address.fromPuzzlehash(uncurriedNFT.royaltyPuzzlehash!, addressPrefix)

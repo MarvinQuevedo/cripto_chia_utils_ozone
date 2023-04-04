@@ -8,6 +8,8 @@ import 'package:meta/meta.dart';
 
 @immutable
 class SpendBundle with ToBytesMixin {
+  Bytes get id => toBytes().sha256Hash();
+
   final List<CoinSpend> coinSpends;
   final JacobianPoint? aggregatedSignature;
 
@@ -29,6 +31,14 @@ class SpendBundle with ToBytesMixin {
     );
   }
 
+  Future<List<CoinPrototype>> get additionsAsync async {
+    final additions = <CoinPrototype>[];
+    for (final coinSpend in coinSpends) {
+      additions.addAll(await coinSpend.additionsAsync);
+    }
+    return additions;
+  }
+
   List<CoinPrototype> get coins => coinSpends.map((cs) => cs.coin).toList();
   List<CoinPrototype> get removals => coins;
 
@@ -42,10 +52,10 @@ class SpendBundle with ToBytesMixin {
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'coin_spends': coinSpends.map((e) => e.toJson()).toList(),
-        'aggregated_signature': aggregatedSignature?.toHex(),
+        'aggregated_signature': aggregatedSignature?.toHexWithPrefix(),
       };
   SpendBundle.fromJson(Map<String, dynamic> json)
-      : coinSpends = (json['coin_solutions'] as Iterable)
+      : coinSpends = (json['coin_spends'] as Iterable)
             .map((dynamic e) => CoinSpend.fromJson(e as Map<String, dynamic>))
             .toList(),
         aggregatedSignature = JacobianPoint.fromHexG2(json['aggregated_signature'] as String);
@@ -63,7 +73,6 @@ class SpendBundle with ToBytesMixin {
       aggregatedSignature: (signatures.isNotEmpty) ? AugSchemeMPL.aggregate(signatures) : null,
     );
   }
-  
 
   @override
   bool operator ==(Object other) {
@@ -154,5 +163,12 @@ class SpendBundle with ToBytesMixin {
       hc = hc ^ aggregatedSignature.hashCode;
     }
     return hc;
+  }
+
+  static SpendBundle aggregate(List<SpendBundle> bundleList) {
+    final aggregatedSpendBundle = bundleList.fold<SpendBundle>(
+        SpendBundle(coinSpends: []), (previousValue, element) => previousValue + element);
+
+    return aggregatedSpendBundle;
   }
 }

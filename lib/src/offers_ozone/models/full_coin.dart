@@ -1,14 +1,17 @@
 import 'dart:math';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/utils/doubles_parse.dart';
 
 Puzzlehash? getTailHash(CoinSpend? parentCoinSpend) {
   try {
-    final arguments = parentCoinSpend!.puzzleReveal.uncurry().arguments;
-    if (arguments.length > 1) {
-      return Puzzlehash(parentCoinSpend.puzzleReveal.uncurry().arguments[1].atom);
+    final uncurried = parentCoinSpend!.puzzleReveal.uncurry();
+    final arguments = uncurried.arguments;
+    if (uncurried.program.hash() == CAT_MOD_HASH) {
+      if (arguments.length > 1) {
+        return Puzzlehash(parentCoinSpend.puzzleReveal.uncurry().arguments[1].atom);
+      }
     }
+
     return null;
   } catch (e) {
     return null;

@@ -17,13 +17,16 @@ class Offer {
   ///  asset_id -> asset driver
   final Map<Bytes?, PuzzleInfo> driverDict;
 
+  final bool old;
+
   Offer({
     required this.requestedPayments,
     required this.bundle,
     required this.driverDict,
+    required this.old,
   });
 
-  static Puzzlehash get ph => OFFER_MOD_HASH;
+  static Puzzlehash ph(bool old) => old ? OFFER_MOD_V1_HASH : OFFER_MOD_HASH;
 
   /// calc the coins hash [nonce]
   static Map<Bytes?, List<NotarizedPayment>> notarizePayments({
@@ -56,6 +59,7 @@ class Offer {
   static List<Announcement> calculateAnnouncements({
     required Map<Bytes?, List<NotarizedPayment>> notarizedPayment,
     required Map<Bytes?, PuzzleInfo> driverDict,
+    required bool old,
   }) {
     final result = <Announcement>[];
     notarizedPayment.forEach((assetId, payments) {
@@ -68,11 +72,11 @@ class Offer {
         settlementPh = outerPuzzle
             .constructPuzzle(
               constructor: driverDict[assetId]!,
-              innerPuzzle: OFFER_MOD,
+              innerPuzzle: old ? OFFER_MOD_V1 : OFFER_MOD,
             )
             .hash();
       } else {
-        settlementPh = OFFER_MOD_HASH;
+        settlementPh = (old) ? OFFER_MOD_V1_HASH : OFFER_MOD_HASH;
       }
       final msgProgram = Program.list([
         Program.fromBytes(payments.first.nonce),
@@ -110,8 +114,9 @@ class Offer {
           constructor: puzzleDriver,
           solution: parentSolution,
         );
-        //assert(innerSolution != null && innerPuzzle != null);
-        final conditionResult = innerPuzzle.run(innerSolution);
+        assert(innerSolution != null && innerPuzzle != null);
+
+        final conditionResult = innerPuzzle!.run(innerSolution!);
         final conditionResultIter = conditionResult.program.toList();
         for (var condition in conditionResultIter) {
           try {
@@ -127,15 +132,15 @@ class Offer {
                       outerPuzzle
                           .constructPuzzle(
                             constructor: puzzleDriver,
-                            innerPuzzle: OFFER_MOD,
+                            innerPuzzle: OFFER_MOD_V1,
                           )
                           .hash(),
                       outerPuzzle
                           .constructPuzzle(
                             constructor: puzzleDriver,
-                            innerPuzzle: OFFER_MOD_V1,
+                            innerPuzzle: OFFER_MOD,
                           )
-                          .hash()
+                          .hash(),
                     ].contains(element.puzzlehash));
 
                 if (additionsWAmountAndPuzzlehashes.length == 1) {
@@ -294,6 +299,13 @@ class Offer {
   }
 
   static Offer aggreate(List<Offer> offers) {
+    final allAreSameOlder = offers.fold<bool>(true, (previousValue, element) {
+      return previousValue && element.old == offers.first.old;
+    });
+    if (!allAreSameOlder) {
+      throw Exception("The offers are not all for the same older type");
+    }
+
     final totalRequestedPayments = <Bytes?, List<NotarizedPayment>>{};
     SpendBundle totalBundle = SpendBundle.empty;
     final totalDriverDict = <Bytes?, PuzzleInfo>{};
@@ -328,7 +340,8 @@ class Offer {
     return Offer(
         requestedPayments: totalRequestedPayments,
         bundle: totalBundle,
-        driverDict: totalDriverDict);
+        driverDict: totalDriverDict,
+        old: offers.first.old);
   }
 
   /// Validity is defined by having enough funds within the offer to satisfy both sidess
@@ -424,6 +437,9 @@ class Offer {
               coin.puzzlehash) {
             print("Using OFFER V1 ${OFFER_MOD_V1.hash().toHex()}");
             offerMod = OFFER_MOD_V1;
+          } else {
+            // for default offermod is equal to OFFER_MOD
+            //offerMod = OFFER_MOD;
           }
           String siblings = "(";
           String siblingsSpends = "(";
@@ -460,9 +476,12 @@ class Offer {
             innerSolution: coinToSolutionDict[coin]!,
           );
         } else {
-          if (coin.puzzlehash == OFFER_MOD_V1) {
+          if (coin.puzzlehash == OFFER_MOD_V1_HASH) {
             offerMod = OFFER_MOD_V1;
             print("2 Using OFFER V1 ${OFFER_MOD_V1.hash().toHex()}");
+          } else {
+            // for default offermod is equal to OFFER_MOD
+            //offerMod = OFFER_MOD;
           }
           solution = coinToSolutionDict[coin]!;
         }
@@ -485,15 +504,19 @@ class Offer {
     return completionSpendBundle + offer.bundle;
   }
 
+  Program get _OFFER_PROGRAM {
+    return old ? OFFER_MOD_V1 : OFFER_MOD;
+  }
+
   /// Before we serialze this as a SpendBundle, we need to serialze the `requested_payments` as dummy CoinSpends
   SpendBundle toSpendBundle() {
     final aditionalCoinSpends = <CoinSpend>[];
     requestedPayments.forEach((assetId, payments) {
       final puzzleReveal = (assetId == null)
-          ? OFFER_MOD
+          ? _OFFER_PROGRAM
           : outerPuzzle.constructPuzzle(
               constructor: driverDict[assetId]!,
-              innerPuzzle: OFFER_MOD,
+              innerPuzzle: _OFFER_PROGRAM,
             );
 
       List<Program> innerSolutions = [];
@@ -523,9 +546,14 @@ class Offer {
 
   static Offer fromSpendBundle(SpendBundle bundle) {
     final requestedPayments = <Bytes?, List<NotarizedPayment>>{};
-    final driverDict = <Bytes, PuzzleInfo>{};
+    final driverDict = <Bytes?, PuzzleInfo>{};
     final leftoverCoinSpends = <CoinSpend>[];
+    bool old = false;
+
     for (var coinSpend in bundle.coinSpends) {
+      if (!old && coinSpend.toBytes().toHex().contains(OFFER_MOD_V1.toBytes().toHex())) {
+        old = true;
+      }
       final driver = outerPuzzle.matchPuzzle(coinSpend.puzzleReveal);
       Bytes? assetId;
       if (driver != null) {
@@ -559,6 +587,7 @@ class Offer {
           coinSpends: leftoverCoinSpends,
           aggregatedSignature: bundle.aggregatedSignature,
         ),
+        old: old,
         driverDict: driverDict);
   }
 

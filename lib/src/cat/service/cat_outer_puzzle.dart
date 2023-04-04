@@ -6,6 +6,10 @@ import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
+    if (constructor.also != null) {
+      innerPuzzle =
+          outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: innerPuzzle);
+    }
     return CatWalletService.makeCatPuzzle(createAssetId(constructor: constructor), innerPuzzle);
   }
 
@@ -114,7 +118,7 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
   }
 
   @override
-  Program getInnerPuzzle({required PuzzleInfo constructor, required Program puzzleReveal}) {
+  Program? getInnerPuzzle({required PuzzleInfo constructor, required Program puzzleReveal}) {
     final matched = CatWalletService.matchCatPuzzle(puzzleReveal);
     if (matched != null) {
       final innerPuzzle = matched.innerPuzzle;
@@ -132,7 +136,7 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
   }
 
   @override
-  Program getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
+  Program? getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
     final myInnerSolution = solution.first();
     if (constructor.also != null) {
       final deepInnerSolution =

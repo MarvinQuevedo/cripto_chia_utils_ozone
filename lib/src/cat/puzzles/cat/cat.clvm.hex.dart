@@ -11,3 +11,4 @@ final catProgramV2 = Program.deserializeHex(
 );
 
 final CAT_MOD = catProgramV2;
+final CAT_MOD_HASH = CAT_MOD.hash();

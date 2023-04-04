@@ -5,7 +5,6 @@ import 'package:chia_crypto_utils/src/cat/exceptions/mixed_asset_ids_exception.d
 import 'package:chia_crypto_utils/src/cat/models/conditions/run_tail_condition.dart';
 import 'package:chia_crypto_utils/src/core/exceptions/change_puzzlehash_needed_exception.dart';
 import 'package:chia_crypto_utils/src/core/exceptions/insufficient_coins_exception.dart';
-import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validation/incorrect_announcement_id_exception.dart';
 import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validation/multiple_origin_coin_exception.dart';
 
@@ -19,7 +18,7 @@ class CatWalletService extends BaseWalletService {
     Puzzlehash? changePuzzlehash,
     List<Coin> standardCoinsForFee = const [],
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
-    List<AssertPuzzleAnnouncementCondition> puzzleAnnouncementsToAssert = const [],
+    List<AssertPuzzleCondition> puzzleAnnouncementsToAssert = const [],
     int fee = 0,
   }) {
     final distinctAssetIds = catCoinsInput.map((c) => c.assetId).toSet();
@@ -520,7 +519,7 @@ class CatWalletService extends BaseWalletService {
     final uncurried = catPuzzle.uncurry();
 
     final uncurriedPuzzle = uncurried.program;
-    if (uncurriedPuzzle != CAT_MOD) {
+    if (uncurriedPuzzle.hash() != CAT_MOD_HASH) {
       return null;
     }
 

@@ -9,13 +9,14 @@ class TradeWalletService extends BaseWalletService {
   /// but doesn't bother with non-offer announcements
   Offer createOfferBundle(
       {required List<FullCoin> selectedCoins,
-      required List<AssertPuzzleAnnouncementCondition> announcements,
+      required List<AssertPuzzleCondition> announcements,
       required Map<Bytes?, int> offeredAmounts,
       required WalletKeychain keychain,
       required int fee,
       required Puzzlehash changePuzzlehash,
       required Map<Bytes?, PuzzleInfo> driverDict,
-      required Map<Bytes?, List<NotarizedPayment>> notarizedPayments}) {
+      required Map<Bytes?, List<NotarizedPayment>> notarizedPayments,
+      required bool old}) {
     final transactions = <SpendBundle>[];
 
     final feeLeftToPay = fee;
@@ -24,7 +25,7 @@ class TradeWalletService extends BaseWalletService {
       if (assetId == null) {
         final standarBundle = StandardWalletService().createSpendBundle(
           payments: [
-            Payment(offeredAmounts[assetId]!.abs(), Offer.ph),
+            Payment(offeredAmounts[assetId]!.abs(), Offer.ph(old)),
           ],
           coinsInput: selectedCoins,
           keychain: keychain,
@@ -35,18 +36,14 @@ class TradeWalletService extends BaseWalletService {
         transactions.add(standarBundle);
       } else {
         final catPayments = [
-          Payment(offeredAmounts[assetId]!.abs(), Offer.ph, memos: <Bytes>[
-            Offer.ph.toBytes(),
+          Payment(offeredAmounts[assetId]!.abs(), Offer.ph(old), memos: <Bytes>[
+            Offer.ph(old).toBytes(),
           ]),
         ];
-        final catCoins = selectedCoins
-            .where((element) => element.isCatCoin)
-            .map((e) => e.toCatCoin())
-            .toList();
-        final standardsCoins = selectedCoins
-            .where((element) => !element.isCatCoin)
-            .map((e) => e.coin)
-            .toList();
+        final catCoins =
+            selectedCoins.where((element) => element.isCatCoin).map((e) => e.toCatCoin()).toList();
+        final standardsCoins =
+            selectedCoins.where((element) => !element.isCatCoin).map((e) => e.coin).toList();
         final catBundle = CatWalletService().createSpendBundle(
           payments: catPayments,
           catCoinsInput: catCoins,
@@ -68,22 +65,22 @@ class TradeWalletService extends BaseWalletService {
     );
 
     return Offer(
-      requestedPayments: notarizedPayments,
-      bundle: totalSpendBundle,
-      driverDict: driverDict,
-    );
+        requestedPayments: notarizedPayments,
+        bundle: totalSpendBundle,
+        driverDict: driverDict,
+        old: old);
   }
 
-  Offer createOfferForIds({
-    required List<FullCoin> coins,
-    required Map<Bytes?, PuzzleInfo> driverDict,
-    required Map<Bytes?, List<Payment>> payments,
-    required Map<Bytes?, int> offeredAmounts,
-    int fee = 0,
-    validateOnly = false,
-    required Puzzlehash changePuzzlehash,
-    required WalletKeychain keychain,
-  }) {
+  Offer createOfferForIds(
+      {required List<FullCoin> coins,
+      required Map<Bytes?, PuzzleInfo> driverDict,
+      required Map<Bytes?, List<Payment>> payments,
+      required Map<Bytes?, int> offeredAmounts,
+      int fee = 0,
+      validateOnly = false,
+      required Puzzlehash changePuzzlehash,
+      required WalletKeychain keychain,
+      required bool old}) {
     final chiaRequestedPayments = payments;
 
     final chiaNotariedPayments = Offer.notarizePayments(
@@ -91,18 +88,21 @@ class TradeWalletService extends BaseWalletService {
       coins: coins,
     );
     final chiaAnnouncements = Offer.calculateAnnouncements(
-        notarizedPayment: chiaNotariedPayments, driverDict: driverDict);
+      notarizedPayment: chiaNotariedPayments,
+      driverDict: driverDict,
+      old: old,
+    );
 
     final chiaOffer = createOfferBundle(
-      announcements: chiaAnnouncements,
-      offeredAmounts: offeredAmounts,
-      selectedCoins: coins,
-      fee: fee,
-      changePuzzlehash: changePuzzlehash,
-      keychain: keychain,
-      notarizedPayments: chiaNotariedPayments,
-      driverDict: driverDict,
-    );
+        announcements: chiaAnnouncements,
+        offeredAmounts: offeredAmounts,
+        selectedCoins: coins,
+        fee: fee,
+        changePuzzlehash: changePuzzlehash,
+        keychain: keychain,
+        notarizedPayments: chiaNotariedPayments,
+        driverDict: driverDict,
+        old: old);
 
     return chiaOffer;
   }

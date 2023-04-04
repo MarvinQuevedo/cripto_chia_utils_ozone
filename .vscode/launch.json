@@ -4,10 +4,26 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        
         {
             "name": "offer cicle2",
             "request": "launch",
             "program": "test/offers/offer_life_cicle2_test.dart"
+        },
+        {
+            "name": "dis puzzle test",
+            "request": "launch",
+            "program": "test/did/did_puzzles_test.dart"
+        },
+        {
+            "name": "offer cicle2",
+            "request": "launch",
+            "program": "test/offers/offer_life_cicle2_test.dart"
+        },
+        {
+            "name": "offer v1 v2 test",
+            "request": "launch",
+            "program": "test/offers/offer_versions_test.dart"
         },
         {
             "name": "offer_parse",
@@ -27,6 +43,12 @@
             "type": "dart",
             "request": "launch",
             "program": "integration_test/nft1/nft_uncurried_test.dart"
+        },
+        {
+            "name": "NFT1 test",
+            "type": "dart",
+            "request": "launch",
+            "program": "test/nft1/nf1_puzzles_test.dart"
         },
         {
             "name": "CAT",

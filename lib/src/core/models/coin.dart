@@ -1,5 +1,7 @@
 // ignore_for_file: lines_longer_than_80_chars
 
+import 'dart:typed_data';
+
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/utils/serialization.dart';
 import 'package:meta/meta.dart';
@@ -11,21 +13,40 @@ class Coin extends CoinPrototype with ToBytesMixin {
   final bool coinbase;
   final int timestamp;
 
+  DateTime get dateConfirmed => DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+
   bool get isSpent => spentBlockIndex != 0;
+
+  double get amountXch => amount / mojosPerXch;
 
   const Coin({
     required this.confirmedBlockIndex,
     required this.spentBlockIndex,
     required this.coinbase,
     required this.timestamp,
-    required Bytes parentCoinInfo,
-    required Puzzlehash puzzlehash,
-    required int amount,
-  }) : super(
-          puzzlehash: puzzlehash,
-          amount: amount,
-          parentCoinInfo: parentCoinInfo,
-        );
+    required super.parentCoinInfo,
+    required super.puzzlehash,
+    required super.amount,
+  });
+
+  Coin copyWith({
+    int? confirmedBlockIndex,
+    int? spentBlockIndex,
+    bool? coinbase,
+    int? timestamp,
+    Bytes? parentCoinInfo,
+    Puzzlehash? puzzlehash,
+    int? amount,
+  }) {
+    return Coin(
+        confirmedBlockIndex: confirmedBlockIndex ?? this.confirmedBlockIndex,
+        spentBlockIndex: spentBlockIndex ?? this.spentBlockIndex,
+        coinbase: coinbase ?? this.coinbase,
+        timestamp: timestamp ?? this.timestamp,
+        amount: amount ?? this.amount,
+        parentCoinInfo: parentCoinInfo ?? this.parentCoinInfo,
+        puzzlehash: puzzlehash ?? this.puzzlehash);
+  }
 
   factory Coin.fromChiaCoinRecordJson(Map<String, dynamic> json) {
     final coinPrototype = CoinPrototype.fromJson(json['coin'] as Map<String, dynamic>);
@@ -76,6 +97,26 @@ class Coin extends CoinPrototype with ToBytesMixin {
       spentBlockIndex: spentBlockIndex,
       coinbase: coinbase,
       timestamp: timestamp,
+      parentCoinInfo: coinPrototype.parentCoinInfo,
+      puzzlehash: coinPrototype.puzzlehash,
+      amount: coinPrototype.amount,
+    );
+  }
+
+  factory Coin.fromBlokchainBytes(Bytes bytes) {
+    final bytesIter = bytes.iterator;
+    final coinPrototype = CoinPrototype.fromStream(bytesIter);
+
+    final confirmedBlockIndex = bytesToInt(bytesIter.extractBytesAndAdvance(4), Endian.big);
+    final spentBlockIndex = bytesToInt(bytesIter.extractBytesAndAdvance(4), Endian.big);
+    final coinbase = bytesToInt(bytesIter.extractBytesAndAdvance(1), Endian.big) == 1;
+    final timestamp = bytesToBigInt(bytesIter.extractBytesAndAdvance(8), Endian.big);
+
+    return Coin(
+      confirmedBlockIndex: confirmedBlockIndex,
+      spentBlockIndex: spentBlockIndex,
+      coinbase: coinbase,
+      timestamp: timestamp.toInt(),
       parentCoinInfo: coinPrototype.parentCoinInfo,
       puzzlehash: coinPrototype.puzzlehash,
       amount: coinPrototype.amount,

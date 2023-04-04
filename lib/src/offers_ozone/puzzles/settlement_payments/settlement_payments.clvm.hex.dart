@@ -12,5 +12,5 @@ final OFFER_MOD_V2 = Program.deserializeHex(
 );
 final OFFER_MOD_V2_HASH = OFFER_MOD_V2.hash();
 
-final OFFER_MOD = OFFER_MOD_V1;
-final OFFER_MOD_HASH = OFFER_MOD.hash();
+final OFFER_MOD = OFFER_MOD_V2;
+final OFFER_MOD_HASH = OFFER_MOD_V2.hash();
