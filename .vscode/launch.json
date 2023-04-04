@@ -4,6 +4,17 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        
+        {
+            "name": "offer cicle2",
+            "request": "launch",
+            "program": "test/offers/offer_life_cicle2_test.dart"
+        },
+        {
+            "name": "dis puzzle test",
+            "request": "launch",
+            "program": "test/did/did_puzzles_test.dart"
+        },
         {
             "name": "offer cicle2",
             "request": "launch",
