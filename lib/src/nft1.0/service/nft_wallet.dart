@@ -434,11 +434,11 @@ class NftWallet extends BaseWalletService {
       Puzzlehash? didId,
       int fee = 0}) {
     final amount = 1;
-    final origin = coins.toList().first;
+    final launcherParentCoin = coins.toList().first;
     // final genesisLauncherPuzz = LAUNCHER_PUZZLE;
 
     final launcherCoin = CoinPrototype(
-      parentCoinInfo: origin.id,
+      parentCoinInfo: launcherParentCoin.id,
       puzzlehash: LAUNCHER_PUZZLE_HASH,
       amount: amount,
     );
@@ -450,9 +450,10 @@ class NftWallet extends BaseWalletService {
     final targetWalletVector = keychain.getWalletVector(targetPuzzleHash);
     final p2InnerPuzzle = getPuzzleFromPk(targetWalletVector!.childPublicKey);
     print("Attempt to generate a new NFT to ${targetPuzzleHash.toHex()}");
+    print("address = ${Address.fromPuzzlehash(targetPuzzleHash, "txch").address}");
     if (didId != null) {
       innerPuzzle = NftService.createOwnwershipLayerPuzzle(
-        nftId: origin.id,
+        nftId: launcherParentCoin.id,
         didId: didId,
         p2Puzzle: p2InnerPuzzle,
         percentage: percentage,
@@ -463,15 +464,17 @@ class NftWallet extends BaseWalletService {
     }
 
     final eveFullPuz = NftService.createFullPuzzle(
-      singletonId: origin.id,
+      singletonId: launcherParentCoin.id,
       metadata: metadata.toProgram(),
       metadataUpdaterHash: NFT_METADATA_UPDATER_HASH,
       innerPuzzle: innerPuzzle,
     );
+    final eveFullPuzzleHash = eveFullPuz.hash();
+    print(eveFullPuz.hash().toHex());
 
     final announcementMessage = Program.list([
-      Program.fromBytes(eveFullPuz.hash()),
-      Program.fromInt(amount),
+      Program.fromBytes(eveFullPuzzleHash),
+      Program.fromInt(launcherCoin.amount),
       Program.list([]),
     ]).hash();
     final assertCoinAnnouncement = AssertCoinAnnouncementCondition(
@@ -489,7 +492,7 @@ class NftWallet extends BaseWalletService {
       coinsInput: coins,
       keychain: keychain,
       changePuzzlehash: changePuzzlehash,
-      originId: origin.id,
+      originId: launcherParentCoin.id,
       fee: fee,
       coinAnnouncementsToAssert: [assertCoinAnnouncement],
     );
@@ -500,20 +503,20 @@ class NftWallet extends BaseWalletService {
       Program.list([]),
     ]);
 
-    final launcherCoinSpend = CoinSpend(
+    final launcherCS = CoinSpend(
       coin: launcherCoin,
       puzzleReveal: LAUNCHER_PUZZLE,
       solution: genesisLauncherSolution,
     );
 
-    final launcherSpendBundle = SpendBundle(coinSpends: [launcherCoinSpend]);
+    final launcherSB = SpendBundle(coinSpends: [launcherCS]);
     final eveCoin = CoinPrototype(
       amount: amount,
       parentCoinInfo: launcherCoin.id,
       puzzlehash: eveFullPuz.hash(),
     );
 
-    final bundlesToAgg = createLauncherSpendBundle + launcherSpendBundle;
+    final bundlesToAgg = [createLauncherSpendBundle, launcherSB];
 
     Bytes? didInnerHash;
 
@@ -530,7 +533,10 @@ class NftWallet extends BaseWalletService {
       fullPuzzle: eveFullPuz,
       mintHeight: 0,
       latestHeight: 0,
-      lineageProof: LineageProof(parentName: launcherCoin.id, amount: launcherCoin.amount),
+      lineageProof: LineageProof(
+        parentName: launcherCoin.parentCoinInfo,
+        amount: launcherCoin.amount,
+      ),
       pendingTransaction: true,
     );
 
@@ -544,7 +550,7 @@ class NftWallet extends BaseWalletService {
       keychain: keychain,
       nftCoin: nftCoin,
       newOwner: didId,
-      additionalBundles: [bundlesToAgg],
+      additionalBundles: bundlesToAgg,
       newDidInnerhash: didInnerHash,
       changePuzzlehash: changePuzzlehash,
     );
