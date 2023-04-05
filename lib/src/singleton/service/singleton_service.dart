@@ -11,13 +11,13 @@ class SingletonService extends BaseWalletService {
     Program innerPuzzle, {
     Bytes? launcherHash,
   }) {
-    return singletonTopLayerV1_1Program.curry([
+    return SINGLETON_MOD_V1.curry([
       Program.cons(
-        Program.fromBytes(singletonTopLayerV1_1Program.hash()),
+        Program.fromBytes(SINGLETON_MOD_V1.hash()),
         Program.cons(
           Program.fromBytes(launcherId),
           Program.fromBytes(
-            launcherHash ?? SINGLETON_LAUNCHER_HASH,
+            launcherHash ?? SINGLETON_MOD_V1.hash(),
           ),
         ),
       ),
