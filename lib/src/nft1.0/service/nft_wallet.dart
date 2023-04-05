@@ -1,6 +1,6 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 import 'package:tuple/tuple.dart';
+
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/exceptions/change_puzzlehash_needed_exception.dart';
@@ -400,10 +400,12 @@ class NftWallet extends BaseWalletService {
           try {
             final sk = keys[pk];
             if (sk != null) {
+              //TODO: remove private key print
               print("sign message ${msg.toHex()} with ${sk.toBytes().toHex()}");
               final signature = AugSchemeMPL.sign(sk, msg);
               signatures.add(signature);
             } else {
+              //TODO: remove private key print
               print("Cant foun sk for ${pk}");
             }
           } catch (e) {
@@ -431,7 +433,7 @@ class NftWallet extends BaseWalletService {
       required Puzzlehash targetPuzzleHash,
       Puzzlehash? royaltyPuzzleHash,
       int percentage = 0,
-      Puzzlehash? didId,
+      DidInfo? didInfo,
       int fee = 0}) {
     final amount = 1;
     final launcherParentCoin = coins.toList().first;
@@ -451,10 +453,13 @@ class NftWallet extends BaseWalletService {
     final p2InnerPuzzle = getPuzzleFromPk(targetWalletVector!.childPublicKey);
     print("Attempt to generate a new NFT to ${targetPuzzleHash.toHex()}");
     print("address = ${Address.fromPuzzlehash(targetPuzzleHash, "txch").address}");
-    if (didId != null) {
+    if (didInfo != null) {
+      // eve coin DID can be set to whatever so we keep it empty
+      // WARNING: wallets should always ignore DID value for eve coins as they can be set
+      //          to any DID without approval
       innerPuzzle = NftService.createOwnwershipLayerPuzzle(
         nftId: launcherParentCoin.id,
-        didId: didId,
+        didId: null,
         p2Puzzle: p2InnerPuzzle,
         percentage: percentage,
         royaltyPuzzleHash: royaltyPuzzleHash,
@@ -520,11 +525,14 @@ class NftWallet extends BaseWalletService {
 
     Bytes? didInnerHash;
 
-    if (didId != null && didId.isNotEmpty) {
-      // did_inner_hash, did_bundle = await self.get_did_approval_info(launcher_coin.name())
-      //bundles_to_agg.append(did_bundle)
-
-      // TODO: implement DID
+    if (didInfo != null && didInfo.didId.isNotEmpty) {
+      final apporvalInfo = getDidApprovalInfo(
+        nftsIds: [launcherCoin.id],
+        didInfo: didInfo,
+        keychain: keychain,
+        coins: coins,
+      );
+      bundlesToAgg.add(apporvalInfo.item2);
     }
 
     final nftCoin = NFTCoinInfo(
@@ -534,10 +542,11 @@ class NftWallet extends BaseWalletService {
       mintHeight: 0,
       latestHeight: 0,
       lineageProof: LineageProof(
-        parentName: launcherCoin.parentCoinInfo,
+        parentName: Puzzlehash(launcherCoin.parentCoinInfo),
         amount: launcherCoin.amount,
       ),
       pendingTransaction: true,
+      minterDid: didInfo?.didId,
     );
 
     final signedSpendBundle = generateSignedSpendBundle(
@@ -549,7 +558,7 @@ class NftWallet extends BaseWalletService {
       coins: coins,
       keychain: keychain,
       nftCoin: nftCoin,
-      newOwner: didId,
+      newOwner: didInfo?.didId,
       additionalBundles: bundlesToAgg,
       newDidInnerhash: didInnerHash,
       changePuzzlehash: changePuzzlehash,
@@ -856,5 +865,25 @@ class NftWallet extends BaseWalletService {
         driverDict: driverDict,
         old: old);
     return offer;
+  }
+
+  /// Get DID spend with announcement created we need to transfer NFT with did with current inner hash of DID
+
+  /// We also store `did_id` and then iterate to find the did wallet as we'd otherwise have to subscribe to
+  /// any changes to DID wallet and storing wallet_id is not guaranteed to be consistent on wallet crash/reset.
+
+  Tuple2<Bytes, SpendBundle> getDidApprovalInfo({
+    required List<Bytes> nftsIds,
+    required DidInfo didInfo,
+    required List<CoinPrototype> coins,
+    required WalletKeychain keychain,
+  }) {
+    final didBundle = DidWallet().createMessageSpend(
+      didInfo,
+      coins: coins,
+      keychain: keychain,
+    );
+    final didInnerhash = didInfo.currentInner!.hash();
+    return Tuple2(didInnerhash, didBundle);
   }
 }

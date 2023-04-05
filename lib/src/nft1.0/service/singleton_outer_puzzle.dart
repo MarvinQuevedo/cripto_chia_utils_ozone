@@ -128,7 +128,7 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
 
     return solutionForSingleton(
       lineageProof: LineageProof(
-          parentName: parentCoin.parentCoinInfo,
+          parentName: Puzzlehash(parentCoin.parentCoinInfo),
           innerPuzzleHash: mathced.innerPuzzle.hash(),
           amount: parentCoin.amount),
       amount: coin.amount,

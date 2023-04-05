@@ -7,6 +7,7 @@ class NFTCoinInfo {
   final LineageProof? lineageProof;
   final Program fullPuzzle;
   final int mintHeight;
+  final Bytes? minterDid;
   final int latestHeight;
   final bool pendingTransaction;
 
@@ -20,6 +21,7 @@ class NFTCoinInfo {
     required this.mintHeight,
     required this.latestHeight,
     required this.pendingTransaction,
+    this.minterDid,
   });
 
   NFTCoinInfo copyWith({
@@ -30,6 +32,7 @@ class NFTCoinInfo {
     int? mintHeight,
     int? latestHeight,
     bool? pendingTransaction,
+    Bytes? minterDid,
   }) {
     return NFTCoinInfo(
       nftId: nftId ?? this.nftId,
@@ -39,6 +42,7 @@ class NFTCoinInfo {
       mintHeight: mintHeight ?? this.mintHeight,
       latestHeight: latestHeight ?? this.latestHeight,
       pendingTransaction: pendingTransaction ?? this.pendingTransaction,
+      minterDid: minterDid ?? this.minterDid,
     );
   }
 
