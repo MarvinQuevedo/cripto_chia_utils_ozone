@@ -1,7 +1,7 @@
 import '../../../chia_crypto_utils.dart';
 
 class LineageProof {
-  final Bytes? parentName;
+  final Puzzlehash? parentName;
 
   final Puzzlehash? innerPuzzleHash;
 
@@ -29,6 +29,15 @@ class LineageProof {
       list.add(Program.fromInt(amount!));
     }
     return Program.list(list);
+  }
+
+  static LineageProof fromMap(Map<String, dynamic> map) {
+    return LineageProof(
+      parentName: map['parent_name'] == null ? null : Puzzlehash.fromHex(map['parent_name']),
+      innerPuzzleHash:
+          map['inner_puzzle_hash'] == null ? null : Puzzlehash.fromHex(map['inner_puzzle_hash']),
+      amount: map['amount'],
+    );
   }
 
   bool isNone() => parentName == null && innerPuzzleHash == null && amount == null;

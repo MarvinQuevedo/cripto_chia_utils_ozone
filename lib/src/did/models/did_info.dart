@@ -1,18 +1,22 @@
+import 'dart:convert';
+
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:tuple/tuple.dart';
 
 class DidInfo extends Equatable {
-  final Coin? originCoin;
-  final List<Bytes> backupsIds;
+  final CoinPrototype? originCoin;
+  final List<Puzzlehash> backupsIds;
   final int numOfBackupIdsNeeded;
-  final List<Tuple2<Bytes, LineageProof?>> parentInfo;
+  final List<Tuple2<Puzzlehash, LineageProof?>> parentInfo;
   final Program? currentInner;
   final Coin? tempCoin;
-  final Bytes? tempPuzzlehash;
+  final Puzzlehash? tempPuzzlehash;
+
   final Bytes? tempPubKey;
   final bool sentRecoveryTransaction;
   final String metadata;
+
   DidInfo({
     required this.originCoin,
     required this.backupsIds,
@@ -42,17 +46,20 @@ class DidInfo extends Equatable {
     ];
   }
 
+  Puzzlehash get didId => Puzzlehash(parentInfo.first.item1);
+
   DidInfo copyWith({
     Coin? originCoin,
-    List<Bytes>? backupsIds,
+    List<Puzzlehash>? backupsIds,
     int? numOfBackupIdsNeeded,
-    List<Tuple2<Bytes, LineageProof?>>? parentInfo,
+    List<Tuple2<Puzzlehash, LineageProof?>>? parentInfo,
     Program? currentInner,
     Coin? tempCoin,
-    Bytes? tempPuzzlehash,
+    Puzzlehash? tempPuzzlehash,
     Bytes? tempPubKey,
     bool? sentRecoveryTransaction,
     String? metadata,
+    Bytes? p2PuzzleHash,
   }) {
     return DidInfo(
       originCoin: originCoin ?? this.originCoin,
@@ -67,6 +74,14 @@ class DidInfo extends Equatable {
       metadata: metadata ?? this.metadata,
     );
   }
+
+  List<String> get metadataStr {
+    final metadataProgram = Program.parse(metadata);
+    final metadataList = metadataProgram.toAtomList().map((e) => utf8.decode(e.atom)).toList();
+    return metadataList;
+  }
+
+  Puzzlehash? get p2PuzzleHash => tempPuzzlehash;
 
   @override
   String toString() {
