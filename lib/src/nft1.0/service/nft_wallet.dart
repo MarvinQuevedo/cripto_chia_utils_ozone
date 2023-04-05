@@ -271,17 +271,10 @@ class NftWallet extends BaseWalletService {
 
     if (unft.supportDid) {
       if (newOwner == null) {
-        //TODO Check is for DID support
-
-        /**
-         *  derivation_record: Optional[
-                    DerivationRecord
-                ] = await self.wallet_state_manager.puzzle_store.get_derivation_record_for_puzzle_hash(
-                    payments[0].puzzle_hash
-                )
-                if derivation_record is not None:
-                    new_owner = unft.owner_did
-         */
+        final walletVector = keychain.getWalletVector(payments.first.puzzlehash);
+        if (walletVector != null) {
+          newOwner = unft.ownerDid;
+        }
       }
 
       magicCondition = Program.list([
@@ -400,13 +393,11 @@ class NftWallet extends BaseWalletService {
           try {
             final sk = keys[pk];
             if (sk != null) {
-              //TODO: remove private key print
-              print("sign message ${msg.toHex()} with ${sk.toBytes().toHex()}");
+              print("sign message ${msg.toHex()} }");
               final signature = AugSchemeMPL.sign(sk, msg);
               signatures.add(signature);
             } else {
-              //TODO: remove private key print
-              print("Cant foun sk for ${pk}");
+              throw Exception("Cant foun sk for ${pk.toHex().substring(0, 5)}...}");
             }
           } catch (e) {
             throw Exception("This spend bundle cannot be signed by the NFT wallet");

@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import '../../bls.dart';
 import '../../clvm.dart';
 import '../../core/index.dart';
@@ -191,13 +192,10 @@ class DidWallet extends BaseWalletService {
             try {
               final sk = keys[pk];
               if (sk != null) {
-                //TODO: remove private key print
-                print("sign message ${msg.toHex()} with ${sk.toBytes().toHex()}");
                 final signature = AugSchemeMPL.sign(sk, msg);
                 signatures.add(signature);
               } else {
-                //TODO: remove private key print
-                print("Cant foun sk for ${pk}");
+                throw Exception("Cant foun sk for ${pk.toHex().substring(0, 5)}...}");
               }
             } catch (e) {
               throw Exception("This spend bundle cannot be signed by the NFT wallet");
