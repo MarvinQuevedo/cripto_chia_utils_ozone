@@ -26,7 +26,7 @@ class SingletonService extends BaseWalletService {
   }
 
   static Program makeSingletonStructureProgram(Bytes coinId) => Program.cons(
-        Program.fromBytes(singletonTopLayerV1Program.hash()),
+        Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
         Program.cons(
           Program.fromBytes(coinId),
           Program.fromBytes(singletonLauncherProgram.hash()),
