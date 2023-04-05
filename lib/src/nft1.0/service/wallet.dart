@@ -5,8 +5,8 @@ export '../models/index.dart';
 class NftWalletService extends BaseWalletService {
   final standardWalletService = StandardWalletService();
 
-  Program createFullpuzzle(Program innerpuz, Bytes genesisId) {
-    final modHash = singletonTopLayerV1_1Program.hash();
+  static Program createFullpuzzle(Program innerpuz, Bytes genesisId) {
+    final modHash = SINGLETON_TOP_LAYER_MOD_v1_1.hash();
     final singletonStruct = Program.list(
       [
         Program.fromBytes(modHash),
@@ -14,7 +14,7 @@ class NftWalletService extends BaseWalletService {
         Program.fromBytes(singletonLauncherProgram.hash())
       ],
     );
-    return singletonTopLayerV1_1Program.curry([
+    return SINGLETON_TOP_LAYER_MOD_v1_1.curry([
       singletonStruct,
       innerpuz,
     ]);

@@ -53,7 +53,7 @@ class NftService {
       required Bytes metadataUpdaterHash,
       required Program innerPuzzle}) {
     final singletonStruct = Program.cons(
-      Program.fromBytes(SINGLETON_MOD_HASH),
+      Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
       Program.cons(
         Program.fromBytes(singletonId),
         Program.fromBytes(
@@ -68,7 +68,7 @@ class NftService {
       innerPuzzle: innerPuzzle,
     );
 
-    return SINGLETON_TOP_LAYER_MOD.curry([singletonStruct, sinletonInnerPuzzle]);
+    return SINGLETON_TOP_LAYER_MOD_v1_1.curry([singletonStruct, sinletonInnerPuzzle]);
   }
 
   static NFTInfo getNftInfoFromPuzzle(NFTCoinInfo nftCoinInfo) {
@@ -142,7 +142,7 @@ class NftService {
     Puzzlehash? royaltyPuzzleHash,
   }) {
     final singletonStruct = Program.cons(
-      Program.fromBytes(SINGLETON_MOD_HASH),
+      Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
       Program.cons(
         Program.fromBytes(nftId),
         Program.fromBytes(

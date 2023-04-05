@@ -23,7 +23,7 @@ DeconstructedTransferProgramPuzzle? mathTransferProgramPuzzle(Program puzzle) {
 Program puzzleForTransferProgram(
     {required Bytes launcherId, required Puzzlehash royaltyAddress, required int percentage}) {
   final sinletonStruct = Program.cons(
-    Program.fromBytes(SINGLETON_MOD_HASH),
+    Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
     Program.cons(
       Program.fromBytes(launcherId),
       Program.fromBytes(SINGLETON_LAUNCHER_HASH),

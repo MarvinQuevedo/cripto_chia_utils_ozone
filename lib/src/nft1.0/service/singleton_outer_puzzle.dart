@@ -4,7 +4,7 @@ import '../models/deconstructed_singleton_puzzle.dart';
 
 DeconstructedSingletonPuzzle? mathSingletonPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
-  if (uncurried.program.hash() == SINGLETON_MOD_HASH) {
+  if (uncurried.program.hash() == SINGLETON_TOP_LAYER_MOD_V1_1_HASH) {
     final nftArgs = uncurried.arguments;
 
     final singletonStruct = nftArgs[0];

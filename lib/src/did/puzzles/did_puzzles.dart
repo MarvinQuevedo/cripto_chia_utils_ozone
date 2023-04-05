@@ -21,7 +21,7 @@ Program createDidInnerpuz(
 
   final backupIdsHash = Program.list(recoveryList.map((e) => Program.fromBytes(e)).toList()).hash();
   final sinletonStruct = Program.cons(
-    Program.fromBytes(SINGLETON_MOD_HASH),
+    Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
     Program.cons(
       Program.fromBytes(launcherId),
       Program.fromBytes(LAUNCHER_PUZZLE_HASH),
@@ -43,7 +43,7 @@ Program createDidInnerpuz(
 ///
 /// Return DID full puzzle
 Program createDidFullpuz(Program innerpuz, Bytes launcherId) {
-  final mod_hash = SINGLETON_MOD_HASH;
+  final mod_hash = SINGLETON_TOP_LAYER_MOD_V1_1_HASH;
   final sinletonStruct = Program.cons(
     Program.fromBytes(mod_hash),
     Program.cons(
@@ -95,7 +95,8 @@ bool isDidInnerPuz(Program innerPuzzle) {
 
 List<Program>? matchDidPuzzle({required Program mod, required Program curriedArgs}) {
   try {
-    if (mod == SINGLETON_TOP_LAYER_MOD) {
+    print(SINGLETON_TOP_LAYER_MOD_v1_1.hash());
+    if (mod == SINGLETON_TOP_LAYER_MOD_v1_1) {
       final uncurried = curriedArgs.rest().first().uncurry();
       if (uncurried.program == DID_INNERPUZ_MOD) {
         return uncurried.arguments;
