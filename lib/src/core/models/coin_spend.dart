@@ -184,7 +184,17 @@ class CoinSpend with ToBytesMixin {
   String toString() => 'CoinSpend(coin: $coin, puzzleReveal: $puzzleReveal, solution: $solution)';
 }
 
-enum SpendType { unknown, standard, cat1, cat2, nft }
+enum SpendType {
+  unknown("unknown"),
+  standard('xch'),
+  cat1("cat1"),
+  cat2("cat"),
+  nft("nft"),
+  did('did');
+
+  const SpendType(this.value);
+  final String value;
+}
 
 class PaymentsAndAdditions {
   final List<Payment> payments;
