@@ -1,5 +1,4 @@
 import '../../../chia_crypto_utils.dart';
-import '../../core/service/base_wallet.dart';
 export '../models/index.dart';
 
 class NftWalletService extends BaseWalletService {

@@ -415,7 +415,6 @@ class NftWallet extends BaseWalletService {
   }
 
 // generate_new_nft
-
   SpendBundle generateNewNft(
       {required List<CoinPrototype> coins,
       required WalletKeychain keychain,

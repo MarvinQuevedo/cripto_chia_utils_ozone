@@ -64,7 +64,7 @@ Future<void> main() async {
       innerSolution: Program.list([]),
       amount: 500,
       lineageProof: LineageProof(
-        parentName: parentName,
+        parentName: Puzzlehash(parentName),
         innerPuzzleHash: puzzleHash,
         amount: 502,
       ),
@@ -75,7 +75,8 @@ Future<void> main() async {
     final solutionProgram2 = solutionForSingleton(
       innerSolution: Program.list([]),
       amount: 500,
-      lineageProof: LineageProof(parentName: parentName, amount: 502, innerPuzzleHash: null),
+      lineageProof:
+          LineageProof(parentName: Puzzlehash(parentName), amount: 502, innerPuzzleHash: null),
     );
     print("singletonSolution2");
     expect(solutionProgram2.hash().toHex(), solutionSingletonHash2);
@@ -141,4 +142,31 @@ Future<void> main() async {
         ]).filterAt("rrrfrf"));
     expect(Program.fromInt(0), Program.list([]));
   });
+  final launcherId =
+      Bytes.fromHex('c8109361adf2cd32c07587312052ddbc8bf61eb4644fd6351e1cf1f814f272fb');
+  final eveFullPuz = NftService.createFullPuzzle(
+    singletonId: launcherId,
+    metadata: Program.list([]),
+    metadataUpdaterHash: NFT_METADATA_UPDATER_HASH,
+    innerPuzzle: Program.fromInt(1),
+  );
+  final announcementMessage = Program.list([
+    Program.fromBytes(eveFullPuz.hash()),
+    Program.fromInt(1),
+    Program.list([]),
+  ]).hash();
+  final assertCoinAnnouncement = AssertCoinAnnouncementCondition(
+    launcherId,
+    announcementMessage,
+  );
+  print(assertCoinAnnouncement);
+
+  final genesisLauncherSolution = Program.list([
+    Program.fromBytes(eveFullPuz.hash()),
+    Program.fromInt(1),
+    Program.list([]),
+  ]);
+  print("genesisLauncherSolution");
+  print(genesisLauncherSolution.hash());
+  print("finish");
 }
