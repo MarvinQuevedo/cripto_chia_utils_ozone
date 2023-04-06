@@ -4,6 +4,7 @@ import '../../bls.dart';
 import '../../clvm.dart';
 import '../../core/index.dart';
 import '../../core/service/conditions_utils.dart';
+import '../../nft1.0/index.dart';
 import '../../singleton/index.dart';
 import '../../utils/key_derivation.dart';
 import '../models/did_info.dart';
@@ -123,15 +124,15 @@ class DidWallet extends BaseWalletService {
     final p2Puzzle = uncurried.item1;
     final p2Solution = BaseWalletService.makeSolution(
       primaries: [
-        Payment(coin.amount, newInnerPuzzle.hash(), memos: [p2Puzzle.hash()]),
+        Payment(coin.amount, newInnerPuzzle.hash(), memos: <Bytes>[Bytes(p2Puzzle.hash())]),
       ],
       coinAnnouncements: coinAnnouncements ?? {},
       puzzleAnnouncements: puzzleannouncements ?? {},
     );
     final innerSol = Program.list([Program.fromInt(1), p2Solution]);
-    final fullPuzzle = SingletonService.puzzleForSingleton(
-      didInfo.originCoin!.id,
+    final fullPuzzle = NftWalletService.createFullpuzzle(
       innerpuz,
+      didInfo.originCoin!.id,
     );
     final parentInfo = didInfo.parentInfo.first.item2!;
     final fullSolution = Program.list([
@@ -161,9 +162,10 @@ class DidWallet extends BaseWalletService {
     final signatures = <JacobianPoint>[];
     for (final coinSpend in unsignedSpendBundle.coinSpends) {
       final uncurryPuzzleReveal = coinSpend.puzzleReveal.uncurry();
+
       final puzzleArgs = didPuzzles.matchDidPuzzle(
         mod: uncurryPuzzleReveal.program,
-        curriedArgs: uncurryPuzzleReveal.arguments[1],
+        curriedArgs: Program.list(uncurryPuzzleReveal.arguments),
       );
       if (puzzleArgs != null) {
         final p2Puzzle = puzzleArgs.first;

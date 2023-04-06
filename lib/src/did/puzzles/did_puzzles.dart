@@ -95,7 +95,6 @@ bool isDidInnerPuz(Program innerPuzzle) {
 
 List<Program>? matchDidPuzzle({required Program mod, required Program curriedArgs}) {
   try {
-    print(SINGLETON_TOP_LAYER_MOD_v1_1.hash());
     if (mod == SINGLETON_TOP_LAYER_MOD_v1_1) {
       final uncurried = curriedArgs.rest().first().uncurry();
       if (uncurried.program == DID_INNERPUZ_MOD) {
@@ -106,4 +105,5 @@ List<Program>? matchDidPuzzle({required Program mod, required Program curriedArg
     print(e);
     print(tracert);
   }
+  return null;
 }
