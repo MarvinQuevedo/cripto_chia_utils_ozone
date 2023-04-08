@@ -20,7 +20,7 @@ class NFTCoinInfo {
     required this.fullPuzzle,
     required this.mintHeight,
     required this.latestHeight,
-    required this.pendingTransaction,
+    this.pendingTransaction = false,
     this.minterDid,
   });
 
