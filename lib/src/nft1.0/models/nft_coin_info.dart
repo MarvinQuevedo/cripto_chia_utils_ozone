@@ -1,6 +1,6 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
-class NFTCoinInfo extends CoinPrototype {
+class NFTCoinInfo extends Coin {
   /// The launcher coin ID of the NFT
   final Bytes nftId;
   final CoinPrototype coin;
@@ -22,12 +22,19 @@ class NFTCoinInfo extends CoinPrototype {
     required this.latestHeight,
     this.pendingTransaction = false,
     this.minterDid,
+    int confirmedBlockIndex = 0,
+    int spentBlockIndex = 0,
   }) : super(
           amount: coin.amount,
           puzzlehash: coin.puzzlehash,
           parentCoinInfo: coin.parentCoinInfo,
+          coinbase: false,
+          confirmedBlockIndex: confirmedBlockIndex,
+          spentBlockIndex: spentBlockIndex,
+          timestamp: 0,
         );
 
+  /*  @override
   NFTCoinInfo copyWith({
     Bytes? nftId,
     CoinPrototype? coin,
@@ -48,7 +55,7 @@ class NFTCoinInfo extends CoinPrototype {
       pendingTransaction: pendingTransaction ?? this.pendingTransaction,
       minterDid: minterDid ?? this.minterDid,
     );
-  }
+  } */
 
   @override
   String toString() {

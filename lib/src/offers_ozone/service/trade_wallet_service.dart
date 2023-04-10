@@ -1,4 +1,10 @@
-import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import '../../cat/index.dart';
+import '../../clvm.dart';
+import '../../core/index.dart';
+import '../../nft1.0/index.dart';
+import '../../standard/index.dart';
+import '../../utils.dart';
+import '../index.dart';
 
 class TradeWalletService extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
@@ -101,25 +107,26 @@ class TradeWalletService extends BaseWalletService {
     );
 
     final chiaOffer = createOfferBundle(
-        announcements: chiaAnnouncements,
-        offeredAmounts: offeredAmounts,
-        selectedCoins: coins,
-        fee: fee,
-        changePuzzlehash: changePuzzlehash,
-        keychain: keychain,
-        notarizedPayments: chiaNotariedPayments,
-        driverDict: driverDict,
-        old: old);
+      announcements: chiaAnnouncements,
+      offeredAmounts: offeredAmounts,
+      selectedCoins: coins,
+      fee: fee,
+      changePuzzlehash: changePuzzlehash,
+      keychain: keychain,
+      notarizedPayments: chiaNotariedPayments,
+      driverDict: driverDict,
+      old: old,
+    );
 
     return chiaOffer;
   }
 
   ///  Group coins by asset id and type
-  Map<OfferAssetData, List<CoinPrototype>> prepareCoins(
+  Map<OfferAssetData, List<Coin>> prepareCoins(
     List<FullCoin> coins, {
     required WalletKeychain keychain,
   }) {
-    final groupedCoins = <OfferAssetData, List<CoinPrototype>>{};
+    final groupedCoins = <OfferAssetData, List<Coin>>{};
     for (final coin in coins) {
       final assetData = OfferAssetData.fromFullCoin(coin);
       if (assetData.type == SpendType.nft) {
@@ -132,6 +139,85 @@ class TradeWalletService extends BaseWalletService {
       }
     }
     return groupedCoins;
+  }
+
+  Future<AnalizedOffer?> analizeOffer({
+    required WalletKeychain keychain,
+    required int fee,
+    required Puzzlehash targetPuzzleHash,
+    required Puzzlehash changePuzzlehash,
+    required Offer offer,
+  }) async {
+    final isOld = offer.old;
+
+    final driverDict = <Bytes?, PuzzleInfo>{};
+    final takeOfferDict = <Bytes?, int>{};
+    Map<OfferAssetData?, int> offerredAmounts = {};
+
+    final arbitrage = offer.arbitrage();
+    final offerDriverDict = offer.driverDict;
+
+    arbitrage.forEach((assetId, amount) {
+      if (assetId != null) {
+        final assetType = offerDriverDict[assetId]!.type;
+        if (assetType == AssetType.CAT) {
+          driverDict[assetId] = PuzzleInfo({
+            "type": AssetType.CAT,
+            "tail": assetId.toHex(),
+          });
+        } else {
+          driverDict[assetId] = PuzzleInfo({
+            "type": AssetType.SINGLETON,
+            "launcher_id": assetId.toHexWithPrefix(),
+            "launcher_ph": assetId.toHexWithPrefix(),
+          });
+        }
+      }
+    });
+
+    final offerRequestedAmounts = offer.getRequestedAmounts();
+    offerRequestedAmounts.forEach((assetId, amount) {
+      takeOfferDict[assetId] = amount;
+
+      if (assetId == null) {
+        final totalChia = amount + fee;
+        offerredAmounts[OfferAssetData.standart()] = totalChia.abs();
+      } else {
+        final assetType = offerDriverDict[assetId]!.type;
+        if (assetType == AssetType.CAT) {
+          offerredAmounts[OfferAssetData.cat(tailHash: assetId)] = amount.abs();
+        } else if (assetType == AssetType.SINGLETON) {
+          offerredAmounts[OfferAssetData.singletonNft(launcherPuzhash: assetId)] = amount.abs();
+        }
+      }
+    });
+
+    final offerOfferedAmounts = offer.getOfferedAmounts();
+    Map<OfferAssetData?, List<int>> requestedAmounts = {};
+    final payments = <Bytes?, List<Payment>>{};
+    offerOfferedAmounts.forEach((assetId, amount) {
+      if (payments[assetId] == null) {
+        payments[assetId] = [];
+      }
+      payments[assetId]!.add(
+        Payment(amount.abs(), targetPuzzleHash),
+      );
+      if (assetId == null) {
+        requestedAmounts[OfferAssetData.standart()] = [amount.abs()];
+      } else {
+        final assetType = offerDriverDict[assetId]!.type;
+        if (assetType == AssetType.CAT) {
+          requestedAmounts[OfferAssetData.cat(tailHash: assetId)] = [amount.abs()];
+        } else if (assetType == AssetType.SINGLETON) {
+          requestedAmounts[OfferAssetData.singletonNft(launcherPuzhash: assetId)] = [amount.abs()];
+        }
+      }
+    });
+    return AnalizedOffer(
+      offered: offerredAmounts,
+      requested: requestedAmounts,
+      isOld: isOld,
+    );
   }
 
   Future<Offer> responseOffer({
@@ -255,7 +341,7 @@ class TradeWalletService extends BaseWalletService {
       required bool isOld,
       required Puzzlehash changePuzzlehash,
       List<CoinPrototype>? standardCoinsForFee}) async {
-    Map<OfferAssetData, List<CoinPrototype>> coinPrototypes = prepareCoins(
+    Map<OfferAssetData, List<Coin>> coinPrototypes = prepareCoins(
       coins,
       keychain: keychain,
     );
