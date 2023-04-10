@@ -12,7 +12,7 @@ class NftWallet extends BaseWalletService {
   Offer makeNftOffer(
       {required WalletKeychain keychain,
       required Map<Bytes?, int> offerDict,
-      required Map<Bytes, PuzzleInfo> driverDict,
+      required Map<Bytes?, PuzzleInfo> driverDict,
       required Puzzlehash targetPuzzleHash,
       required List<FullCoin> selectedCoins,
       int fee = 0,
@@ -553,7 +553,7 @@ class NftWallet extends BaseWalletService {
   Offer _makeOfferingNftOffer({
     required WalletKeychain keychain,
     required Map<Bytes?, int> offerDict,
-    required Map<Bytes, PuzzleInfo> driverDict,
+    required Map<Bytes?, PuzzleInfo> driverDict,
     required int fee,
     required Puzzlehash? changePuzzlehash,
     int? minCoinAmount,
@@ -568,6 +568,8 @@ class NftWallet extends BaseWalletService {
     if (offeredAssetId == null) {
       throw Exception("offered Asset Id not can be null");
     }
+    final DESIRED_OFFER_MOD = old ? OFFER_MOD_V1 : OFFER_MOD_V2;
+    final DESIRED_OFFER_MOD_HASH = old ? OFFER_MOD_V1_HASH : OFFER_MOD_HASH;
     driverDict[offeredAssetId]!.info["also"]["also"]['owner'] = '()';
     final Puzzlehash p2Ph = targetPuzzleHash;
     final int offerredAmount = offerDict[offeredAssetId]!.abs();
@@ -577,8 +579,8 @@ class NftWallet extends BaseWalletService {
     late final Program tradePrices;
     // If we are jus asking for xch
     if (requestedAssetId == null) {
-      tradePrices =
-          Program.list([Program.fromInt(requestedAmount), Program.fromBytes(OFFER_MOD_HASH)]);
+      tradePrices = Program.list(
+          [Program.fromInt(requestedAmount), Program.fromBytes(DESIRED_OFFER_MOD_HASH)]);
     } else {
       tradePrices = Program.list([
         Program.list([
@@ -587,7 +589,7 @@ class NftWallet extends BaseWalletService {
             outerPuzzle
                 .constructPuzzle(
                   constructor: driverDict[requestedAssetId]!,
-                  innerPuzzle: OFFER_MOD,
+                  innerPuzzle: DESIRED_OFFER_MOD,
                 )
                 .hash(),
           )
@@ -639,7 +641,7 @@ class NftWallet extends BaseWalletService {
   Offer _makeRequestingNftOffer({
     required WalletKeychain keychain,
     required Map<Bytes?, int> offerDict,
-    required Map<Bytes, PuzzleInfo> driverDict,
+    required Map<Bytes?, PuzzleInfo> driverDict,
     required int fee,
     required Puzzlehash? changePuzzlehash,
     int? minCoinAmount,
@@ -651,6 +653,9 @@ class NftWallet extends BaseWalletService {
     List<CoinPrototype>? standardCoinsForFee,
     required bool old,
   }) {
+    final DESIRED_OFFER_MOD = old ? OFFER_MOD_V1 : OFFER_MOD_V2;
+    //final DESIRED_OFFER_MOD_HASH = old ? OFFER_MOD_V1_HASH : OFFER_MOD_HASH;
+
     driverDict[offeredAssetId]!.info["also"]["also"]['owner'] = '()';
     final requestedInfo = driverDict[requestedAssetId];
     final transfertInfo = requestedInfo?.also?.also;
@@ -762,14 +767,6 @@ class NftWallet extends BaseWalletService {
       spendBundle = catBundle;
     }
 
-    /*
-      
-      Create a spend bundle for the royalty payout from OFFER MOD
-      make the royalty payment solution
-      ((nft_launcher_id . ((ROYALTY_ADDRESS, royalty_amount, (ROYALTY_ADDRESS)))))
-      we are basically just recreating the royalty announcement above.
-
-     */
     late final Program offerPuzzle;
     late final Program royaltySol;
     CoinPrototype? royaltyCoin = null;
@@ -788,12 +785,12 @@ class NftWallet extends BaseWalletService {
       ],
     );
     if (offeredAssetId == null) {
-      offerPuzzle = OFFER_MOD;
+      offerPuzzle = DESIRED_OFFER_MOD;
       royaltySol = innerRoyaltySol;
     } else {
       offerPuzzle = outerPuzzle.constructPuzzle(
         constructor: driverDict[offeredAssetId]!,
-        innerPuzzle: OFFER_MOD,
+        innerPuzzle: DESIRED_OFFER_MOD,
       );
     }
 
@@ -823,7 +820,7 @@ class NftWallet extends BaseWalletService {
       royaltySol = outerPuzzle.solvePuzzle(
         constructor: driverDict[offeredAssetId]!,
         solver: solver,
-        innerPuzzle: OFFER_MOD,
+        innerPuzzle: DESIRED_OFFER_MOD,
         innerSolution: innerRoyaltySol,
       );
     }
