@@ -1,6 +1,6 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
-class NFTCoinInfo {
+class NFTCoinInfo extends CoinPrototype {
   /// The launcher coin ID of the NFT
   final Bytes nftId;
   final CoinPrototype coin;
@@ -22,7 +22,11 @@ class NFTCoinInfo {
     required this.latestHeight,
     this.pendingTransaction = false,
     this.minterDid,
-  });
+  }) : super(
+          amount: coin.amount,
+          puzzlehash: coin.puzzlehash,
+          parentCoinInfo: coin.parentCoinInfo,
+        );
 
   NFTCoinInfo copyWith({
     Bytes? nftId,

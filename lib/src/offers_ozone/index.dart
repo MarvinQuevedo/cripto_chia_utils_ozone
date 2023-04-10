@@ -7,6 +7,5 @@ export 'models/offer_asset_data.dart';
 export 'models/notarized_payment.dart';
 export 'models/offer.dart';
 export 'models/puzzle_info.dart';
-export 'models/offert_type.dart';
 export 'models/solver.dart';
 export 'exceptions/coin_not_in_bundle.dart';

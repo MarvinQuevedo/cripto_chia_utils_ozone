@@ -115,14 +115,20 @@ class TradeWalletService extends BaseWalletService {
   }
 
   ///  Group coins by asset id and type
-  Map<OfferAssetData, List<CoinPrototype>> agroupCoins(List<FullCoin> coins) {
+  Map<OfferAssetData, List<CoinPrototype>> prepareCoins(
+    List<FullCoin> coins, {
+    required WalletKeychain keychain,
+  }) {
     final groupedCoins = <OfferAssetData, List<CoinPrototype>>{};
     for (final coin in coins) {
       final assetData = OfferAssetData.fromFullCoin(coin);
-      if (groupedCoins.containsKey(assetData)) {
-        groupedCoins[assetData]!.add(coin.coin);
+      if (assetData.type == SpendType.nft) {
+        final nftCoin = constructNftCoin(fullCoin: coin, keychain: keychain);
+        groupedCoins[assetData] ??= [];
+        groupedCoins[assetData]!.add(nftCoin);
       } else {
-        groupedCoins[assetData] = [coin.coin];
+        groupedCoins[assetData] ??= [];
+        groupedCoins[assetData]!.add(coin.coin);
       }
     }
     return groupedCoins;
@@ -137,7 +143,10 @@ class TradeWalletService extends BaseWalletService {
     required Offer offer,
   }) async {
     final isOld = offer.old;
-    final groupedCoins = agroupCoins(coins);
+    final groupedCoins = prepareCoins(
+      coins,
+      keychain: keychain,
+    );
     final driverDict = <Bytes?, PuzzleInfo>{};
     final takeOfferDict = <Bytes?, int>{};
     Map<OfferAssetData?, int> offerredAmounts = {};
@@ -148,14 +157,14 @@ class TradeWalletService extends BaseWalletService {
     arbitrage.forEach((assetId, amount) {
       if (assetId != null) {
         final assetType = offerDriverDict[assetId]!.type;
-        if (assetType == OfferType.cat.value) {
+        if (assetType == AssetType.CAT) {
           driverDict[assetId] = PuzzleInfo({
-            "type": OfferType.cat.value,
+            "type": AssetType.CAT,
             "tail": assetId.toHex(),
           });
         } else {
           driverDict[assetId] = PuzzleInfo({
-            "type": OfferType.singleton.value,
+            "type": AssetType.SINGLETON,
             "launcher_id": assetId.toHexWithPrefix(),
             "launcher_ph": assetId.toHexWithPrefix(),
           });
@@ -172,9 +181,9 @@ class TradeWalletService extends BaseWalletService {
         offerredAmounts[OfferAssetData.standart()] = totalChia.abs();
       } else {
         final assetType = offerDriverDict[assetId]!.type;
-        if (assetType == OfferType.cat.value) {
+        if (assetType == AssetType.CAT) {
           offerredAmounts[OfferAssetData.cat(tailHash: assetId)] = amount.abs();
-        } else if (assetType == OfferType.singleton.value) {
+        } else if (assetType == AssetType.SINGLETON) {
           offerredAmounts[OfferAssetData.singletonNft(launcherPuzhash: assetId)] = amount.abs();
         }
       }
@@ -194,9 +203,9 @@ class TradeWalletService extends BaseWalletService {
         requestedAmounts[OfferAssetData.standart()] = [amount.abs()];
       } else {
         final assetType = offerDriverDict[assetId]!.type;
-        if (assetType == OfferType.cat.value) {
+        if (assetType == AssetType.CAT) {
           requestedAmounts[OfferAssetData.cat(tailHash: assetId)] = [amount.abs()];
-        } else if (assetType == OfferType.singleton.value) {
+        } else if (assetType == AssetType.SINGLETON) {
           requestedAmounts[OfferAssetData.singletonNft(launcherPuzhash: assetId)] = [amount.abs()];
         }
       }
@@ -236,17 +245,20 @@ class TradeWalletService extends BaseWalletService {
   /// [targetPuzzleHash] - puzzlehash to use for offer
   /// [isOld] - is old offer
   /// [changePuzzlehash] - puzzlehash to use for change
-  Future<Offer> createOffer({
-    required List<FullCoin> coins,
-    required Map<OfferAssetData?, List<int>> requesteAmounts,
-    required Map<OfferAssetData?, int> offerredAmounts,
-    required WalletKeychain keychain,
-    required int fee,
-    required Puzzlehash targetPuzzleHash,
-    required bool isOld,
-    required Puzzlehash changePuzzlehash,
-  }) async {
-    Map<OfferAssetData, List<CoinPrototype>> coinPrototypes = agroupCoins(coins);
+  Future<Offer> createOffer(
+      {required List<FullCoin> coins,
+      required Map<OfferAssetData?, List<int>> requesteAmounts,
+      required Map<OfferAssetData?, int> offerredAmounts,
+      required WalletKeychain keychain,
+      required int fee,
+      required Puzzlehash targetPuzzleHash,
+      required bool isOld,
+      required Puzzlehash changePuzzlehash,
+      List<CoinPrototype>? standardCoinsForFee}) async {
+    Map<OfferAssetData, List<CoinPrototype>> coinPrototypes = prepareCoins(
+      coins,
+      keychain: keychain,
+    );
 
     final preparedData = await _prepareOfferData(
       coins: coinPrototypes,
@@ -256,18 +268,63 @@ class TradeWalletService extends BaseWalletService {
       targetPuzzleHash: targetPuzzleHash,
     );
 
-    final offerWallet = TradeWalletService();
-    final offer = offerWallet.createOfferForIds(
-      coins: coins,
-      driverDict: preparedData.driverDict,
-      requiredPayments: preparedData.payments,
-      offeredAmounts: preparedData.offerredAmounts,
-      changePuzzlehash: changePuzzlehash,
-      keychain: keychain,
-      old: isOld,
-      fee: fee,
-    );
-    return offer;
+    Bytes? nftOfferedLauncher;
+    preparedData.offerredAmounts.forEach((Bytes? assetId, int amount) {
+      if (amount < 0) {
+        if (assetId != null) {
+          // check if asset is an NFT
+
+          final offerringNft = preparedData.driverDict[assetId]?.checkType(types: [
+                AssetType.SINGLETON,
+                AssetType.METADATA,
+                AssetType.OWNERSHIP,
+              ]) ??
+              false;
+          if (offerringNft) {
+            nftOfferedLauncher = assetId;
+          }
+        }
+      }
+    });
+    if (nftOfferedLauncher != null) {
+      final nftCoin = coinPrototypes[nftOfferedLauncher]?.first;
+      if (nftCoin == null) {
+        throw Exception("Offered NFT coin not found ${nftOfferedLauncher!.toHex()}");
+      }
+      Map<Bytes?, int> offerDict = {};
+      preparedData.offerredAmounts.forEach((Bytes? assetId, int amount) {
+        if (assetId != null) {
+          offerDict[assetId] = amount;
+        }
+      });
+      final nftWallet = NftWallet();
+      final nftOffer = await nftWallet.makeNftOffer(
+        offerDict: offerDict,
+        driverDict: preparedData.driverDict,
+        changePuzzlehash: changePuzzlehash,
+        keychain: keychain,
+        old: isOld,
+        fee: fee,
+        selectedCoins: coins,
+        standardCoinsForFee: standardCoinsForFee!,
+        targetPuzzleHash: targetPuzzleHash,
+        nftCoin: nftCoin as NFTCoinInfo,
+      );
+      return nftOffer;
+    } else {
+      final offerWallet = TradeWalletService();
+      final offer = offerWallet.createOfferForIds(
+        coins: coins,
+        driverDict: preparedData.driverDict,
+        requiredPayments: preparedData.payments,
+        offeredAmounts: preparedData.offerredAmounts,
+        changePuzzlehash: changePuzzlehash,
+        keychain: keychain,
+        old: isOld,
+        fee: fee,
+      );
+      return offer;
+    }
   }
 
   Map<Bytes?, PuzzleInfo> _createDict({
@@ -280,15 +337,15 @@ class TradeWalletService extends BaseWalletService {
 
     for (final assetData in uniqueAssetsData) {
       if (assetData != null) {
-        if (assetData.type == OfferType.cat.value) {
+        if (assetData.type == AssetType.CAT) {
           final tailHash = assetData.assetId;
           driverDict[tailHash] = PuzzleInfo({
-            "type": OfferType.cat.value,
+            "type": AssetType.CAT,
             "tail": tailHash!.toHexWithPrefix(),
           });
         } else if (assetData.type == SpendType.nft) {
           driverDict[null] = PuzzleInfo({
-            "type": OfferType.singleton.value,
+            "type": AssetType.SINGLETON,
             "launcher_id": assetData.assetId!.toHexWithPrefix(),
             "launcher_ph": assetData.assetId!.toHexWithPrefix(),
           });
@@ -359,5 +416,62 @@ class TradeWalletService extends BaseWalletService {
       driverDict: driverDict,
       offerredAmounts: offeredAmountsSimple,
     );
+  }
+
+  NFTCoinInfo constructNftCoin({
+    required FullCoin fullCoin,
+    required WalletKeychain keychain,
+  }) {
+    final coin = fullCoin.toCoin();
+    final coinSpend = fullCoin.parentCoinSpend!;
+
+    final nftUncurried = UncurriedNFT.uncurry(coinSpend.puzzleReveal);
+    final nftInfo = NFTInfo.fromUncurried(
+      uncurriedNFT: nftUncurried,
+      currentCoin: coin,
+      mintHeight: fullCoin.coin.confirmedBlockIndex,
+    );
+
+    final data = NftService().getMetadataAndPhs(
+      nftUncurried,
+      coinSpend.solution,
+    );
+    final metadata = data.item1;
+
+    final p2PuzzleHash = Puzzlehash(data.item2);
+
+    final vector = keychain.getWalletVector(p2PuzzleHash);
+    Program innerPuzzle = getPuzzleFromPk(vector!.childPublicKey);
+
+    if (nftUncurried.supportDid) {
+      innerPuzzle = NftService().recurryNftPuzzle(
+        unft: nftUncurried,
+        solution: coinSpend.solution,
+        newInnerPuzzle: innerPuzzle,
+      );
+    }
+
+    Program fullPuzzle = NftService.createFullPuzzle(
+      singletonId: nftUncurried.singletonLauncherId.atom,
+      metadata: metadata,
+      metadataUpdaterHash: nftUncurried.metadataUpdaterHash.atom,
+      innerPuzzle: innerPuzzle,
+    );
+
+    NFTCoinInfo nftCoin = NFTCoinInfo(
+      coin: coin,
+      fullPuzzle: fullPuzzle,
+      latestHeight: coin.confirmedBlockIndex,
+      mintHeight: nftInfo.mintHeight,
+      minterDid: nftUncurried.ownerDid,
+      nftId: nftUncurried.singletonLauncherId.atom,
+      pendingTransaction: false,
+      lineageProof: LineageProof(
+        amount: coinSpend.coin.amount,
+        innerPuzzleHash: nftUncurried.nftStateLayer.hash(),
+        parentName: Puzzlehash(coinSpend.coin.parentCoinInfo),
+      ),
+    );
+    return nftCoin;
   }
 }
