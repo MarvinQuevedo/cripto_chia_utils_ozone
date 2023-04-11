@@ -103,55 +103,62 @@ class DidWallet extends BaseWalletService {
     return innerpuz;
   }
 
-  SpendBundle createMessageSpend(
+  Future<SpendBundle> createMessageSpend(
     DidInfo didInfo, {
     Set<Bytes>? coinAnnouncements,
-    Set<Bytes>? puzzleannouncements,
+    Set<Bytes>? puzzleAnnouncements,
     Program? newInnerPuzzle,
     required List<CoinPrototype> coins,
     required WalletKeychain keychain,
-  }) {
+  }) async {
+    if (didInfo.currentInner == null || didInfo.originCoin == null) {
+      throw Exception("didInfo.currentInner == null || didInfo.originCoin == null");
+    }
+
     final coin = coins.first;
     final innerpuz = didInfo.currentInner!;
     if (newInnerPuzzle == null) {
       newInnerPuzzle = innerpuz;
     }
     final uncurried = didPuzzles.uncurryInnerpuz(newInnerPuzzle);
-    if (uncurried == null) {
-      throw Exception("Puzzle is not DID puzzle");
-    }
+    assert(uncurried != null);
+    final p2Puzzle = uncurried!.item1;
 
-    final p2Puzzle = uncurried.item1;
     final p2Solution = BaseWalletService.makeSolution(
       primaries: [
-        Payment(coin.amount, newInnerPuzzle.hash(), memos: <Bytes>[Bytes(p2Puzzle.hash())]),
+        Payment(coin.amount, newInnerPuzzle.hash(), memos: <Puzzlehash>[p2Puzzle.hash()]),
       ],
       coinAnnouncements: coinAnnouncements ?? {},
-      puzzleAnnouncements: puzzleannouncements ?? {},
+      puzzleAnnouncements: puzzleAnnouncements ?? {},
     );
-    final innerSol = Program.list([Program.fromInt(1), p2Solution]);
+    final innersol = Program.list([Program.fromInt(1), p2Solution]);
     final fullPuzzle = NftWalletService.createFullpuzzle(
       innerpuz,
       didInfo.originCoin!.id,
     );
     final parentInfo = didInfo.parentInfo.first.item2!;
-    final fullSolution = Program.list([
-      Program.list([
-        Program.fromBytes(parentInfo.parentName!),
-        Program.fromBytes(parentInfo.innerPuzzleHash!),
-        Program.fromInt(parentInfo.amount!),
-      ]),
-      Program.fromInt(parentInfo.amount!),
-      innerSol
-    ]);
-    final listOfCoinsSpends = [
-      CoinSpend(coin: coin, puzzleReveal: fullPuzzle, solution: fullSolution),
+
+    final fullsol = Program.list(
+      [
+        Program.list([
+          Program.fromBytes(parentInfo.parentName!),
+          Program.fromBytes(parentInfo.innerPuzzleHash!),
+          Program.fromInt(parentInfo.amount!),
+        ]),
+        Program.fromInt(coin.amount),
+        innersol,
+      ],
+    );
+    final listOfCoinspends = <CoinSpend>[
+      CoinSpend(coin: coin, puzzleReveal: fullPuzzle, solution: fullsol)
     ];
-    final unsignedSpendBundle = SpendBundle(coinSpends: listOfCoinsSpends);
+    final unsignedSpendBundle = SpendBundle(
+      coinSpends: listOfCoinspends,
+    );
     return sign(
-      unsignedSpendBundle: unsignedSpendBundle,
-      keychain: keychain,
       didInfo: didInfo,
+      keychain: keychain,
+      unsignedSpendBundle: unsignedSpendBundle,
     );
   }
 
