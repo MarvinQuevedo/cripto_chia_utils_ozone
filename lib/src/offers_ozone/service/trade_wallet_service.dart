@@ -228,6 +228,7 @@ class TradeWalletService extends BaseWalletService {
     required int fee,
     required Puzzlehash targetPuzzleHash,
     required Puzzlehash changePuzzlehash,
+    required List<Coin> standardCoinsForFee,
     required Offer offer,
   }) async {
     final isOld = offer.old;
@@ -241,7 +242,7 @@ class TradeWalletService extends BaseWalletService {
 
     final arbitrage = offer.arbitrage();
     final offerDriverDict = offer.driverDict;
-
+    Bytes? nftOfferedLauncher;
     arbitrage.forEach((assetId, amount) {
       if (assetId != null) {
         final assetType = offerDriverDict[assetId]!.type;
@@ -256,6 +257,7 @@ class TradeWalletService extends BaseWalletService {
             "launcher_id": assetId.toHexWithPrefix(),
             "launcher_ph": assetId.toHexWithPrefix(),
           });
+          nftOfferedLauncher = assetId;
         }
       }
     });
@@ -307,20 +309,43 @@ class TradeWalletService extends BaseWalletService {
       targetPuzzleHash: targetPuzzleHash,
     );
 
-    final offerWallet = TradeWalletService();
-    final responseOffer = await offerWallet.createOfferForIds(
-      coins: coins,
-      driverDict: preparedData.driverDict,
-      requiredPayments: preparedData.payments,
-      offeredAmounts: preparedData.offerredAmounts,
-      changePuzzlehash: changePuzzlehash,
-      keychain: keychain,
-      old: isOld,
-      fee: fee,
-    );
+    if (nftOfferedLauncher != null) {
+      final preparedCoins = prepareFullCoins(coins, keychain: keychain);
+      final nftCoin = preparedCoins[nftOfferedLauncher]?.first;
+      if (nftCoin == null) {
+        throw Exception("Offered NFT coin not found ${nftOfferedLauncher!.toHex()}");
+      }
+      final nftWallet = NftWallet();
 
-    final completedOffer = Offer.aggreate([offer, responseOffer]);
-    return completedOffer;
+      final nftOffer = await nftWallet.makeNft1Offer(
+        offerDict: preparedData.offerredAmounts,
+        driverDict: preparedData.driverDict,
+        changePuzzlehash: changePuzzlehash,
+        keychain: keychain,
+        old: isOld,
+        fee: fee,
+        selectedCoins: preparedCoins,
+        standardCoinsForFee: standardCoinsForFee,
+        targetPuzzleHash: targetPuzzleHash,
+        nftCoin: (nftCoin as FullNFTCoinInfo),
+      );
+      return nftOffer;
+    } else {
+      final offerWallet = TradeWalletService();
+      final responseOffer = await offerWallet.createOfferForIds(
+        coins: coins,
+        driverDict: preparedData.driverDict,
+        requiredPayments: preparedData.payments,
+        offeredAmounts: preparedData.offerredAmounts,
+        changePuzzlehash: changePuzzlehash,
+        keychain: keychain,
+        old: isOld,
+        fee: fee,
+      );
+
+      final completedOffer = Offer.aggreate([offer, responseOffer]);
+      return completedOffer;
+    }
   }
 
   // create doc comments
@@ -386,7 +411,6 @@ class TradeWalletService extends BaseWalletService {
         }
       });
       final nftWallet = NftWallet();
-      final preparedFullCoins = prepareFullCoins(coins, keychain: keychain);
 
       final nftOffer = await nftWallet.makeNft1Offer(
         offerDict: offerDict,
@@ -395,7 +419,7 @@ class TradeWalletService extends BaseWalletService {
         keychain: keychain,
         old: isOld,
         fee: fee,
-        selectedCoins: preparedFullCoins,
+        selectedCoins: preparedCoins,
         standardCoinsForFee: standardCoinsForFee!,
         targetPuzzleHash: targetPuzzleHash,
         nftCoin: (nftCoin as FullNFTCoinInfo),
