@@ -129,7 +129,10 @@ class TradeWalletService extends BaseWalletService {
     for (final coin in coins) {
       final assetData = OfferAssetData.fromFullCoin(coin);
       if (assetData.type == SpendType.nft) {
-        final nftCoin = constructFullNftCoin(fullCoin: coin, keychain: keychain);
+        final FullNFTCoinInfo nftCoin = constructFullNftCoin(
+          fullCoin: coin,
+          keychain: keychain,
+        );
         groupedCoins[assetData] ??= [];
         groupedCoins[assetData]!.add(nftCoin);
       } else {
@@ -431,11 +434,6 @@ class TradeWalletService extends BaseWalletService {
             "tail": tailHash!.toHexWithPrefix(),
           });
         } else if (assetData.type == SpendType.nft) {
-          /*   driverDict[assetData.assetId] = PuzzleInfo({
-            "type": AssetType.SINGLETON,
-            "launcher_id": assetData.assetId!.toHexWithPrefix(),
-            "launcher_ph": assetData.assetId!.toHexWithPrefix(),
-          }); */
           driverDict[assetData.assetId] = await NftWallet().getPuzzleInfo(nftCoin!);
         }
       }
