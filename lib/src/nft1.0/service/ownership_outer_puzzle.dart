@@ -4,7 +4,7 @@ import '../models/deconstructed_ownership_outer_puzzle.dart';
 
 DeconstructedOwnershipOuterPuzzle? mathOwnershipLayerPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
-  if (uncurried.program.hash() == OWNERSHIP_LAYER_MOD_HASH) {
+  if (uncurried.program.hash() == NFT_OWNERSHIP_LAYER_HASH) {
     final nftArgs = uncurried.arguments;
 
     final currentOwner = nftArgs[1];
@@ -37,8 +37,8 @@ Program puzzleForOwnershipLayer(
       _currentOwner = Program.parse(currentOwner);
     }
   }
-  return OWNERSHIP_LAYER_MOD.curry(
-      [Program.fromBytes(OWNERSHIP_LAYER_MOD_HASH), _currentOwner, transferProgram, innerPuzzle]);
+  return NFT_OWNERSHIP_LAYER.curry(
+      [Program.fromBytes(NFT_OWNERSHIP_LAYER_HASH), _currentOwner, transferProgram, innerPuzzle]);
 }
 
 Program solutionForOwnershipLayer({required Program innerSolution}) {

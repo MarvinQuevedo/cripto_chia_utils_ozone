@@ -145,16 +145,14 @@ class NftService {
       Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
       Program.cons(
         Program.fromBytes(nftId),
-        Program.fromBytes(
-          LAUNCHER_PUZZLE_HASH,
-        ),
+        Program.fromBytes(LAUNCHER_PUZZLE_HASH),
       ),
     );
     if (royaltyPuzzleHash == null) {
       royaltyPuzzleHash = p2Puzzle.hash();
     }
 
-    final transferProgram = NFT_STATE_LAYER_MOD.curry([
+    final transferProgram = NFT_TRANSFER_PROGRAM_DEFAULT.curry([
       singletonStruct,
       Program.fromBytes(royaltyPuzzleHash),
       Program.fromInt(percentage),
