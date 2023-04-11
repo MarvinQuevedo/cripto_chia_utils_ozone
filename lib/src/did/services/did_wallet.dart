@@ -181,12 +181,12 @@ class DidWallet extends BaseWalletService {
         final privateKey = targetWalletVector!.childPrivateKey;
         final synthSecretKey = calculateSyntheticPrivateKey(privateKey);
 
-        final keys = <Bytes, PrivateKey>{
-          targetWalletVector.childPublicKey.toBytes(): synthSecretKey,
-        };
         final conditionsResult = conditionsDictForSolution(
-            puzzleReveal: coinSpend.puzzleReveal, solution: coinSpend.solution);
+          puzzleReveal: coinSpend.puzzleReveal,
+          solution: coinSpend.solution,
+        );
         if (conditionsResult.item2 != null) {
+          final syntheticPk = synthSecretKey.getG1().toBytes();
           final pairs = pkmPairsForConditionsDict(
             conditionsDict: conditionsResult.item2!,
             additionalData: Bytes.fromHex(
@@ -199,15 +199,20 @@ class DidWallet extends BaseWalletService {
             final pk = pair.item1;
             final msg = pair.item2;
             try {
-              final sk = keys[pk];
-              if (sk != null) {
-                final signature = AugSchemeMPL.sign(sk, msg);
+              if (syntheticPk == pk) {
+                final signature = AugSchemeMPL.sign(synthSecretKey, msg);
                 signatures.add(signature);
               } else {
-                throw Exception("Cant foun sk for ${pk.toHex().substring(0, 5)}...}");
+                final publickKey = PrivateKey.fromBytes(pk).getG1();
+                print("publickKey: ${publickKey.toHex()}");
+                throw Exception(
+                  "This spend bundle cannot be signed by the DID wallet ${pk.toHex()}}",
+                );
               }
-            } catch (e) {
-              throw Exception("This spend bundle cannot be signed by the NFT wallet");
+            } on Exception catch (e, stackTrace) {
+              print(stackTrace);
+              print(e);
+              rethrow;
             }
           }
         } else {
