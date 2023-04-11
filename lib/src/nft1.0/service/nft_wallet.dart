@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:tuple/tuple.dart';
 
+import '../../core/models/conditions/announcement.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/service/conditions_utils.dart';
@@ -866,5 +869,443 @@ class NftWallet extends BaseWalletService {
     );
     final didInnerhash = didInfo.currentInner!.hash();
     return Tuple2(didInnerhash, didBundle);
+  }
+
+  Future<Offer> makeNft1Offer(
+      {required WalletKeychain keychain,
+      required Map<Bytes?, int> offerDict,
+      required Map<Bytes?, PuzzleInfo> driverDict,
+      required Puzzlehash targetPuzzleHash,
+      required Map<OfferAssetData, List<FullCoin>> selectedCoins,
+      int fee = 0,
+      int? mintCoinAmount,
+      Puzzlehash? changePuzzlehash,
+      required List<Coin> standardCoinsForFee,
+      NFTCoinInfo? nftCoin,
+      required bool old}) async {
+    final amounts = offerDict.values.toList();
+    if (offerDict.length != 2 || ((amounts[0] > 0) == (amounts[1] > 0))) {
+      throw Exception(
+          "Royalty enabled NFTs only support offering/requesting one NFT for one currency");
+    }
+
+    final DESIRED_OFFER_MOD = old ? OFFER_MOD_V1 : OFFER_MOD_V2;
+    final DESIRED_OFFER_MOD_HASH = old ? OFFER_MOD_V1_HASH : OFFER_MOD_HASH;
+
+    bool offerringNft = false;
+
+    final royaltyNftAssetDict = <Bytes, int>{};
+    offerDict.forEach((Bytes? assetId, int amount) {
+      if (assetId != null) {
+        // check if asset is an NFT
+        offerringNft = driverDict[assetId]!.checkType(types: [
+          AssetType.SINGLETON,
+          AssetType.METADATA,
+          AssetType.OWNERSHIP,
+        ]);
+        if (offerringNft) {
+          driverDict[assetId]!.info["also"]["also"]["owner"] = "()";
+          royaltyNftAssetDict[assetId] = amount;
+        }
+      }
+    });
+    Map<Bytes?, int> fungibleAssetDict = {};
+    for (var asset in offerDict.keys) {
+      var amount = offerDict[asset];
+      if (asset == null || driverDict[asset]?['type'] != AssetType.SINGLETON) {
+        fungibleAssetDict[asset] = amount!;
+      }
+    }
+
+    int offerSideRoyaltySplit = 0;
+    int requestSideRoyaltySplit = 0;
+    royaltyNftAssetDict.forEach((asset, amount) {
+      if (amount > 0) {
+        requestSideRoyaltySplit++;
+      } else if (amount < 0) {
+        offerSideRoyaltySplit++;
+      }
+    });
+
+    List<Tuple2<int, Bytes>> tradePrices = [];
+    fungibleAssetDict.forEach((asset, amount) {
+      if (amount > 0 && offerSideRoyaltySplit > 0) {
+        var settlementPh = asset == null
+            ? DESIRED_OFFER_MOD_HASH
+            : constructPuzzle(
+                constructor: driverDict[asset]!,
+                innerPuzzle: DESIRED_OFFER_MOD,
+              ).hash();
+        tradePrices.add(Tuple2((amount ~/ offerSideRoyaltySplit).floor(), settlementPh));
+      }
+    });
+    List<Tuple3<Bytes, Bytes, int>> requiredRoyaltyInfo = [];
+    Map<Bytes, int> offeredRoyaltyPercentages = {};
+
+    for (var asset in royaltyNftAssetDict.keys) {
+      var transferInfo = driverDict[asset]!;
+
+      var royaltyPercentageRaw = transferInfo["transfer_program"]["royalty_percentage"];
+      if (royaltyPercentageRaw == null) {
+        throw Exception("Royalty percentage is not found in the transfer program");
+      }
+      // clvm encodes large ints as bytes
+      int royaltyPercentage;
+      if (royaltyPercentageRaw is Bytes) {
+        royaltyPercentage = bytesToInt(royaltyPercentageRaw, Endian.big);
+      } else {
+        royaltyPercentage = int.parse(royaltyPercentageRaw);
+      }
+      var amount = royaltyNftAssetDict[asset]!;
+      if (amount > 0) {
+        requiredRoyaltyInfo.add(Tuple3(
+          asset,
+          Bytes.fromHex(transferInfo["transfer_program"]["royalty_address"]),
+          royaltyPercentage,
+        ));
+      } else {
+        offeredRoyaltyPercentages[asset] = royaltyPercentage;
+      }
+    }
+
+    Map<Bytes?, List<Tuple2<Bytes, Payment>>> royaltyPayments = {};
+    for (var asset in fungibleAssetDict.keys) {
+      // offered fungible items
+      var amount = fungibleAssetDict[asset]!;
+      if (amount < 0 && requestSideRoyaltySplit > 0) {
+        List<Tuple2<Bytes, Payment>> paymentList = [];
+        for (var royaltyInfo in requiredRoyaltyInfo) {
+          var launcherId = royaltyInfo.item1;
+          var address = Puzzlehash(royaltyInfo.item2);
+          var percentage = royaltyInfo.item3;
+          int extraRoyaltyAmount =
+              (amount.abs() / requestSideRoyaltySplit).floor() * (percentage / 10000).floor();
+          if (extraRoyaltyAmount == amount.abs()) {
+            throw Exception("Amount offered and amount paid in royalties are equal");
+          }
+          paymentList.add(Tuple2<Bytes, Payment>(
+            launcherId,
+            Payment(extraRoyaltyAmount, address, memos: <Puzzlehash>[
+              address,
+            ]),
+          ));
+        }
+        royaltyPayments[asset] = paymentList;
+      }
+    }
+    final p2Ph = targetPuzzleHash;
+    Map<Bytes?, List<Payment>> requestedPayments = {};
+    offerDict.forEach((asset, amount) {
+      if (amount > 0) {
+        requestedPayments[asset] = [
+          Payment(
+            amount,
+            p2Ph,
+            memos: [
+              if (asset != null) p2Ph,
+            ],
+          )
+        ];
+      }
+    });
+    // Find all the coins we're offering
+    Map<Bytes?, Set<Coin>> offeredCoinsByAsset = {};
+    Set<Coin> allOfferedCoins = {};
+    selectedCoins.forEach((asset, fullCoins) {
+      final coins = fullCoins.map((e) => e.toCoin()).toSet();
+      offeredCoinsByAsset[asset.assetId] = coins;
+      allOfferedCoins.addAll(coins);
+    });
+
+    // Notariza los pagos y obtiene los anuncios para el paquete
+    Map<Bytes?, List<NotarizedPayment>> notarizedPayments = Offer.notarizePayments(
+      requestedPayments: requestedPayments,
+      coins: allOfferedCoins.toList(),
+    );
+
+    final announcementsToAssert = Offer.calculateAnnouncements(
+        notarizedPayment: notarizedPayments, driverDict: driverDict, old: old);
+
+    for (var asset in royaltyPayments.keys) {
+      final paymentList = royaltyPayments[asset];
+      if (paymentList == null) {
+        throw Exception("Payments are null for asset $asset");
+      }
+      Puzzlehash royaltyPh;
+      Program offerPuzzle;
+      if (asset == null) {
+        // xch offer
+        offerPuzzle = DESIRED_OFFER_MOD;
+        royaltyPh = DESIRED_OFFER_MOD_HASH;
+      } else {
+        offerPuzzle = constructPuzzle(
+          constructor: driverDict[asset]!,
+          innerPuzzle: DESIRED_OFFER_MOD,
+        );
+        royaltyPh = offerPuzzle.hash();
+        paymentList.forEach((item) {
+          final payment = item.item2;
+          final launcherId = item.item1;
+          if (payment.amount > 0 || old) {
+            Program p = payment.toProgram();
+            announcementsToAssert.add(
+              Announcement(
+                royaltyPh,
+                Program.cons(Program.fromBytes(launcherId), Program.list([p])).hash(),
+              ),
+            );
+          }
+        });
+      }
+    }
+    // Crear todas las transacciones
+    List<SpendBundle> allTransactions = [];
+    List<SpendBundle> additionalBundles = [];
+    // standard paga la tarifa si es posible
+
+    int feeLeftToPay = 0;
+    if (offerDict.containsKey(null) && (offerDict[null] ?? 0) < 0) {
+      feeLeftToPay = 0;
+    } else {
+      feeLeftToPay = fee;
+    }
+
+    for (var assetId in offerDict.keys) {
+      var amount = offerDict[assetId]!;
+      if (amount < 0) {
+        List<SpendBundle> txs = [];
+        BaseWalletService wallet = StandardWalletService();
+        if (assetId != null) {
+          final type = driverDict[assetId]!["type"];
+          if (type == AssetType.SINGLETON) {
+            wallet = NftWallet();
+          } else {
+            wallet = CatWalletService();
+          }
+        }
+
+        // Enviar todas las monedas a OFFER_MOD
+        if (wallet is StandardWalletService) {
+          var royPayments = royaltyPayments[assetId]?.map((e) => e.item2).toList() ?? [];
+          var royPaymentSum = royPayments.map((p) => p.amount).reduce((a, b) => a + b);
+          final coins = offeredCoinsByAsset[assetId];
+
+          final standarBundle = wallet.createSpendBundle(
+            payments: [
+              (royPaymentSum > 0 || old)
+                  ? Payment(royPaymentSum, Offer.ph(old))
+                  : Payment(amount, DESIRED_OFFER_MOD_HASH),
+            ],
+            coinsInput: coins!.toList(),
+            keychain: keychain,
+            fee: feeLeftToPay,
+            puzzleAnnouncementsToAssert: announcementsToAssert,
+            changePuzzlehash: changePuzzlehash,
+          );
+          txs = [standarBundle];
+        } else if (fungibleAssetDict[assetId] == null && wallet is NftWallet) {
+          if (assetId == null) {
+            throw Exception("Asset id is null");
+          }
+          final tradePriceList = <Program>[];
+          for (var price in tradePrices) {
+            if ((price.item1 * (offeredRoyaltyPercentages[assetId]! / 10000)).floor != 0 || old) {
+              tradePriceList.add(Program.list([
+                Program.fromInt(price.item1),
+                Program.fromBytes(
+                  price.item2,
+                ),
+              ]));
+            }
+          }
+          final nftBundles = wallet.generateSignedSpendBundle(
+            payments: [
+              Payment(amount, DESIRED_OFFER_MOD_HASH),
+            ],
+            nftCoin: offeredCoinsByAsset[assetId]!.first as NFTCoinInfo,
+            standardCoinsForFee: standardCoinsForFee,
+            fee: feeLeftToPay,
+            keychain: keychain,
+            tradePricesList: Program.list(tradePriceList),
+            puzzleAnnouncementsToAssert: announcementsToAssert,
+            changePuzzlehash: changePuzzlehash,
+          );
+          txs = [nftBundles];
+        } else if (wallet is CatWalletService) {
+          List<Payment> catPayments = [];
+          if (royaltyPayments[assetId] != null) {
+            var royPayments = royaltyPayments[assetId]?.map((e) => e.item2).toList() ?? [];
+            var royPaymentSum = royPayments.map((p) => p.amount).reduce((a, b) => a + b);
+
+            catPayments.add(
+              Payment(
+                royPaymentSum,
+                DESIRED_OFFER_MOD_HASH,
+              ),
+            );
+          }
+          final offerAssetData = OfferAssetData.cat(tailHash: assetId!);
+          final catCoins = selectedCoins[offerAssetData]!.map((e) => e.toCatCoin()).toList();
+          final catBundle = CatWalletService().createSpendBundle(
+            payments: [
+              Payment(amount, DESIRED_OFFER_MOD_HASH),
+              ...catPayments,
+            ],
+            catCoinsInput: catCoins,
+            keychain: keychain,
+            fee: feeLeftToPay,
+            standardCoinsForFee: standardCoinsForFee,
+            puzzleAnnouncementsToAssert: announcementsToAssert,
+            changePuzzlehash: changePuzzlehash,
+          );
+          final catBytes = catBundle.toBytes();
+          final _ = SpendBundle.fromBytes(catBytes);
+          txs = [catBundle];
+        }
+        allTransactions.addAll(txs);
+        feeLeftToPay = 0;
+
+// Then, adding in the spends for the royalty offer mod
+        if (fungibleAssetDict.containsKey(assetId)) {
+          // Create a coin_spend for the royalty payout from OFFER MOD
+
+          // Skip it if we're paying 0 royalties
+          var payments = royaltyPayments[assetId] ?? [];
+          if (!old && payments.map((p) => p.item2.amount).reduce((a, b) => a + b) == 0) {
+            continue;
+          }
+
+          // We cannot create coins with the same puzzle hash and amount
+          // So if there's multiple NFTs with the same royalty puzhash/percentage, we must create multiple
+          // generations of offer coins
+          CoinPrototype? royaltyCoin;
+          CoinSpend? parentSpend;
+          while (true) {
+            List<Tuple2<Bytes, Payment>> duplicatePayments = [];
+            List<Tuple2<Bytes, Payment>> dedupedPaymentList = [];
+            payments.forEach((item) {
+              final launcherId = item.item1;
+              final payment = item.item2;
+              if (dedupedPaymentList.any((dedupedPayment) => dedupedPayment.item2 == payment)) {
+                duplicatePayments.add(Tuple2(launcherId, payment));
+              } else {
+                dedupedPaymentList.add(Tuple2(launcherId, payment));
+              }
+            });
+
+            // ((nft_launcher_id . ((ROYALTY_ADDRESS, royalty_amount, memos) ...)))
+            final innerRoyaltySolList = dedupedPaymentList.map((item) {
+              final launcherId = item.item1;
+              final payment = item.item2;
+              return Program.cons(
+                Program.fromBytes(launcherId),
+                Program.list([payment.toProgram()]),
+              );
+            }).toList();
+            Program innerRoyaltySol = Program.list(innerRoyaltySolList);
+
+            if (duplicatePayments.isNotEmpty) {
+              final duplicatePaymentsSum =
+                  duplicatePayments.fold(0, (sum, payment) => sum + payment.item2.amount);
+              innerRoyaltySol = Program.cons(
+                  Program.cons(
+                    Program.nil,
+                    Program.list([
+                      Payment(duplicatePaymentsSum, Offer.ph(old)).toProgram(),
+                      innerRoyaltySol,
+                    ]),
+                  ),
+                  innerRoyaltySol);
+            }
+            Program offerPuzzle;
+            Puzzlehash royaltyPh;
+            if (assetId == null) {
+              // xch offer
+              offerPuzzle = DESIRED_OFFER_MOD;
+              royaltyPh = DESIRED_OFFER_MOD_HASH;
+            } else {
+              offerPuzzle = constructPuzzle(
+                  constructor: driverDict[assetId]!, innerPuzzle: DESIRED_OFFER_MOD);
+              royaltyPh = offerPuzzle.hash();
+            }
+            if (royaltyCoin == null) {
+              for (var tx in txs) {
+                final spendBundle = tx;
+
+                for (var coin in spendBundle.additions) {
+                  int royaltyPaymentAmount =
+                      payments.map((e) => e.item2).fold(0, (sum, payment) => sum + payment.amount);
+                  if (coin.amount == royaltyPaymentAmount && coin.puzzlehash == royaltyPh) {
+                    royaltyCoin = coin;
+                    parentSpend = spendBundle.coinSpends
+                        .where(
+                          (cs) => cs.coin.id == royaltyCoin!.parentCoinInfo,
+                        )
+                        .first;
+                    break;
+                  }
+                }
+                if (royaltyCoin != null) {
+                  break;
+                }
+              }
+            }
+            if (royaltyCoin == null) {
+              throw Exception("Could not find royalty coin");
+            }
+            if (parentSpend == null) {
+              throw Exception("Could not find royalty parent spend");
+            }
+            Program royaltySol;
+            if (assetId == null) {
+              // If XCH
+              royaltySol = innerRoyaltySol;
+            } else {
+              // Call our drivers to solve the puzzle
+              String royaltyCoinHex = "0x" +
+                  royaltyCoin.parentCoinInfo.toHex() +
+                  royaltyCoin.puzzlehash.toHex() +
+                  Bytes(intTo64Bits(royaltyCoin.amount)).toHex();
+              String parentSpendHex = "0x" + parentSpend.toBytes().toHex();
+              Solver solver = Solver({
+                "coin": royaltyCoinHex,
+                "parentSpend": parentSpendHex,
+                "siblings": "()",
+                "siblingSpends": "()",
+                "siblingPuzzles": "()",
+                "siblingSolutions": "()",
+              });
+              royaltySol = solvePuzzle(
+                  constructor: driverDict[assetId]!,
+                  solver: solver,
+                  innerPuzzle: DESIRED_OFFER_MOD,
+                  innerSolution: innerRoyaltySol);
+            }
+
+            CoinSpend newCoinSpend =
+                CoinSpend(coin: royaltyCoin, puzzleReveal: offerPuzzle, solution: royaltySol);
+            additionalBundles.add(SpendBundle(coinSpends: [newCoinSpend]));
+
+            if (duplicatePayments.isNotEmpty) {
+              payments = duplicatePayments;
+              royaltyCoin = newCoinSpend.additions.where((c) => c.puzzlehash == royaltyPh).first;
+              parentSpend = newCoinSpend;
+              continue;
+            } else {
+              break;
+            }
+          }
+        }
+      }
+    }
+    // Finalmente, ensambla los registros de transacciones correctamente
+    SpendBundle txsBundle = SpendBundle.aggregate(allTransactions);
+    SpendBundle aggregateBundle = SpendBundle.aggregate([txsBundle, ...additionalBundles]);
+    Offer offer = Offer(
+        requestedPayments: notarizedPayments,
+        bundle: aggregateBundle,
+        driverDict: driverDict,
+        old: old);
+    return offer;
   }
 }

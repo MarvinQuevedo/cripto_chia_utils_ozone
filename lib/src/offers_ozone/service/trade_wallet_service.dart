@@ -141,6 +141,25 @@ class TradeWalletService extends BaseWalletService {
     return groupedCoins;
   }
 
+  Map<OfferAssetData, List<FullCoin>> prepareFullCoins(
+    List<FullCoin> coins, {
+    required WalletKeychain keychain,
+  }) {
+    final groupedCoins = <OfferAssetData, List<FullCoin>>{};
+    for (final coin in coins) {
+      final assetData = OfferAssetData.fromFullCoin(coin);
+      if (assetData.type == SpendType.nft) {
+        final nftCoin = constructNftCoin(fullCoin: coin, keychain: keychain);
+        groupedCoins[assetData] ??= [];
+        groupedCoins[assetData]!.add(coin);
+      } else {
+        groupedCoins[assetData] ??= [];
+        groupedCoins[assetData]!.add(coin);
+      }
+    }
+    return groupedCoins;
+  }
+
   Future<AnalizedOffer?> analizeOffer({
     required WalletKeychain keychain,
     required int fee,
@@ -340,14 +359,14 @@ class TradeWalletService extends BaseWalletService {
       required Puzzlehash targetPuzzleHash,
       required bool isOld,
       required Puzzlehash changePuzzlehash,
-      List<CoinPrototype>? standardCoinsForFee}) async {
-    Map<OfferAssetData, List<Coin>> coinPrototypes = prepareCoins(
+      List<Coin>? standardCoinsForFee}) async {
+    Map<OfferAssetData, List<Coin>> preparedCoins = prepareCoins(
       coins,
       keychain: keychain,
     );
 
     final preparedData = await _prepareOfferData(
-      coins: coinPrototypes,
+      coins: preparedCoins,
       requestedAmounts: requesteAmounts,
       offerredAmounts: offerredAmounts,
       fee: fee,
@@ -373,7 +392,7 @@ class TradeWalletService extends BaseWalletService {
       }
     });
     if (nftOfferedLauncher != null) {
-      final nftCoin = coinPrototypes[nftOfferedLauncher]?.first;
+      final nftCoin = preparedCoins[nftOfferedLauncher]?.first;
       if (nftCoin == null) {
         throw Exception("Offered NFT coin not found ${nftOfferedLauncher!.toHex()}");
       }
@@ -384,14 +403,16 @@ class TradeWalletService extends BaseWalletService {
         }
       });
       final nftWallet = NftWallet();
-      final nftOffer = await nftWallet.makeNftOffer(
+      final preparedFullCoins = prepareFullCoins(coins, keychain: keychain);
+
+      final nftOffer = await nftWallet.makeNft1Offer(
         offerDict: offerDict,
         driverDict: preparedData.driverDict,
         changePuzzlehash: changePuzzlehash,
         keychain: keychain,
         old: isOld,
         fee: fee,
-        selectedCoins: coins,
+        selectedCoins: preparedFullCoins,
         standardCoinsForFee: standardCoinsForFee!,
         targetPuzzleHash: targetPuzzleHash,
         nftCoin: nftCoin as NFTCoinInfo,
