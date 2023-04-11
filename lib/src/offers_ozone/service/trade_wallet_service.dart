@@ -228,7 +228,7 @@ class TradeWalletService extends BaseWalletService {
     required int fee,
     required Puzzlehash targetPuzzleHash,
     required Puzzlehash changePuzzlehash,
-    required List<Coin> standardCoinsForFee,
+    List<Coin>? standardCoinsForFee,
     required Offer offer,
   }) async {
     final isOld = offer.old;
@@ -316,6 +316,9 @@ class TradeWalletService extends BaseWalletService {
         throw Exception("Offered NFT coin not found ${nftOfferedLauncher!.toHex()}");
       }
       final nftWallet = NftWallet();
+      if (standardCoinsForFee == null) {
+        throw Exception("Standard coins for fee not found for NFT Offer");
+      }
 
       final nftOffer = await nftWallet.makeNft1Offer(
         offerDict: preparedData.offerredAmounts,
@@ -325,7 +328,7 @@ class TradeWalletService extends BaseWalletService {
         old: isOld,
         fee: fee,
         selectedCoins: preparedCoins,
-        standardCoinsForFee: standardCoinsForFee,
+        standardCoinsForFee: standardCoinsForFee!,
         targetPuzzleHash: targetPuzzleHash,
         nftCoin: (nftCoin as FullNFTCoinInfo),
       );
