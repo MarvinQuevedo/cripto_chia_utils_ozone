@@ -121,23 +121,26 @@ class TradeWalletService extends BaseWalletService {
     return chiaOffer;
   }
 
-  Map<OfferAssetData, List<FullCoin>> prepareFullCoins(
+  Map<OfferAssetData?, List<FullCoin>> prepareFullCoins(
     List<FullCoin> coins, {
     required WalletKeychain keychain,
   }) {
-    final groupedCoins = <OfferAssetData, List<FullCoin>>{};
+    final groupedCoins = <OfferAssetData?, List<FullCoin>>{};
     for (final coin in coins) {
       final assetData = OfferAssetData.fromFullCoin(coin);
-      if (assetData.type == SpendType.nft) {
+      if (assetData?.type == SpendType.nft) {
         final FullNFTCoinInfo nftCoin = constructFullNftCoin(
           fullCoin: coin,
           keychain: keychain,
         );
         groupedCoins[assetData] ??= [];
         groupedCoins[assetData]!.add(nftCoin);
-      } else {
+      } else if (assetData?.type == SpendType.cat2) {
         groupedCoins[assetData] ??= [];
         groupedCoins[assetData]!.add(coin);
+      } else {
+        groupedCoins[null] ??= [];
+        groupedCoins[null]!.add(coin);
       }
     }
     return groupedCoins;
@@ -328,7 +331,7 @@ class TradeWalletService extends BaseWalletService {
         old: isOld,
         fee: fee,
         selectedCoins: preparedCoins,
-        standardCoinsForFee: standardCoinsForFee!,
+        standardCoinsForFee: standardCoinsForFee,
         targetPuzzleHash: targetPuzzleHash,
         nftCoin: (nftCoin as FullNFTCoinInfo),
       );
@@ -371,7 +374,7 @@ class TradeWalletService extends BaseWalletService {
       required bool isOld,
       required Puzzlehash changePuzzlehash,
       List<Coin>? standardCoinsForFee}) async {
-    Map<OfferAssetData, List<FullCoin>> preparedCoins = prepareFullCoins(
+    Map<OfferAssetData?, List<FullCoin>> preparedCoins = prepareFullCoins(
       coins,
       keychain: keychain,
     );
@@ -454,7 +457,7 @@ class TradeWalletService extends BaseWalletService {
 
     for (final assetData in uniqueAssetsData) {
       if (assetData != null) {
-        if (assetData.type == AssetType.CAT) {
+        if (assetData.type == SpendType.cat2) {
           final tailHash = assetData.assetId;
           driverDict[tailHash] = PuzzleInfo({
             "type": AssetType.CAT,

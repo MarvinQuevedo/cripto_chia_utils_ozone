@@ -876,7 +876,7 @@ class NftWallet extends BaseWalletService {
       required Map<Bytes?, int> offerDict,
       required Map<Bytes?, PuzzleInfo> driverDict,
       required Puzzlehash targetPuzzleHash,
-      required Map<OfferAssetData, List<FullCoin>> selectedCoins,
+      required Map<OfferAssetData?, List<FullCoin>> selectedCoins,
       int fee = 0,
       int? mintCoinAmount,
       Puzzlehash? changePuzzlehash,
@@ -1013,7 +1013,7 @@ class NftWallet extends BaseWalletService {
     Set<Coin> allOfferedCoins = {};
     selectedCoins.forEach((asset, fullCoins) {
       final coins = fullCoins.map((e) => e.toCoin()).toSet();
-      offeredCoinsByAsset[asset.assetId] = coins;
+      offeredCoinsByAsset[asset?.assetId] = coins;
       allOfferedCoins.addAll(coins);
     });
 

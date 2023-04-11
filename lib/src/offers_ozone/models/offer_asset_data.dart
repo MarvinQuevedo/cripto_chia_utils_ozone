@@ -6,7 +6,7 @@ class OfferAssetData extends Equatable {
   final SpendType type;
 
   OfferAssetData({required this.assetId, required this.type});
-  factory OfferAssetData.fromFullCoin(FullCoin coin) {
+  static OfferAssetData? fromFullCoin(FullCoin coin) {
     final type = coin.parentCoinSpend?.type ?? SpendType.standard;
     Bytes? assetId;
     if (type == SpendType.cat2) {
@@ -16,9 +16,12 @@ class OfferAssetData extends Equatable {
       if (uncurriedNft != null) {
         assetId = uncurriedNft.launcherPuzhash.atom;
       }
+    } else {
+      return OfferAssetData.standart();
     }
     return OfferAssetData(assetId: assetId, type: type);
   }
+
   factory OfferAssetData.cat({
     required Bytes tailHash,
   }) {
