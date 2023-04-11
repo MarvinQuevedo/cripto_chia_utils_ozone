@@ -881,7 +881,7 @@ class NftWallet extends BaseWalletService {
       int? mintCoinAmount,
       Puzzlehash? changePuzzlehash,
       required List<Coin> standardCoinsForFee,
-      NFTCoinInfo? nftCoin,
+      FullNFTCoinInfo? nftCoin,
       required bool old}) async {
     final amounts = offerDict.values.toList();
     if (offerDict.length != 2 || ((amounts[0] > 0) == (amounts[1] > 0))) {
@@ -1122,7 +1122,7 @@ class NftWallet extends BaseWalletService {
             payments: [
               Payment(amount, DESIRED_OFFER_MOD_HASH),
             ],
-            nftCoin: offeredCoinsByAsset[assetId]!.first as NFTCoinInfo,
+            nftCoin: (selectedCoins[assetId]!.first as FullNFTCoinInfo).toNftCoinInfo(),
             standardCoinsForFee: standardCoinsForFee,
             fee: feeLeftToPay,
             keychain: keychain,
@@ -1165,7 +1165,7 @@ class NftWallet extends BaseWalletService {
         allTransactions.addAll(txs);
         feeLeftToPay = 0;
 
-// Then, adding in the spends for the royalty offer mod
+        // Then, adding in the spends for the royalty offer mod
         if (fungibleAssetDict.containsKey(assetId)) {
           // Create a coin_spend for the royalty payout from OFFER MOD
 
@@ -1307,5 +1307,14 @@ class NftWallet extends BaseWalletService {
         driverDict: driverDict,
         old: old);
     return offer;
+  }
+
+  Future<PuzzleInfo> getPuzzleInfo(NFTCoinInfo nftCoin) async {
+    PuzzleInfo? puzzleInfo = matchPuzzle(nftCoin.fullPuzzle);
+    if (puzzleInfo == null) {
+      throw ArgumentError("Internal Error: NFT wallet is tracking a non NFT coin");
+    } else {
+      return puzzleInfo;
+    }
   }
 }
