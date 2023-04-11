@@ -17,20 +17,18 @@ class DidWallet extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
 
   Future<Tuple2<SpendBundle, DidInfo>?> _generateNewDecentralisedId(
-      {required int amount,
+      {int amount = 1,
       int fee = 0,
       required List<CoinPrototype> coins,
       required WalletKeychain keychain,
       required Puzzlehash changePuzzlehash,
       required DidInfo didInfo}) async {
-    /*
-  This must be called under the wallet state manager lock
-  */
-
+    // divide coins into origin and standard coins for fee
     final origin = coins.first;
     final standardCoinsForFee = coins.sublist(1);
 
     Program genesisLauncherPuz = LAUNCHER_PUZZLE;
+
     final launcherCoin = CoinPrototype(
       parentCoinInfo: origin.id,
       puzzlehash: genesisLauncherPuz.hash(),
@@ -46,17 +44,19 @@ class DidWallet extends BaseWalletService {
       p2Puzzle: p2Puzzle,
     );
     var didInnerHash = didInner.hash();
+
     Program didFullPuz = NftWalletService.createFullpuzzle(
       didInner,
       launcherCoin.id,
     );
+
     var didPuzzleHash = didFullPuz.hash();
 
     Set<AssertCoinAnnouncementCondition> announcementSet = Set();
     var announcementMessage = Program.list([
       Program.fromBytes(didPuzzleHash),
       Program.fromInt(amount),
-      Program.fromBytes(Bytes([0x80]))
+      Program.list([]),
     ]).hash();
     final assertCoinAnnouncement = AssertCoinAnnouncementCondition(
       launcherCoin.id,
@@ -72,7 +72,7 @@ class DidWallet extends BaseWalletService {
           ,
         ),
       ],
-      coinsInput: [origin, ...standardCoinsForFee],
+      coinsInput: coins, //[origin, ...standardCoinsForFee],
       keychain: keychain,
       changePuzzlehash: changePuzzlehash,
       originId: origin.id,
@@ -83,14 +83,20 @@ class DidWallet extends BaseWalletService {
     Program genesisLauncherSolution = Program.list([
       Program.fromBytes(didPuzzleHash),
       Program.fromInt(amount),
-      Program.fromBytes(Bytes([0x80]))
+      Program.list([]),
     ]);
 
     CoinSpend launcherCs = CoinSpend(
-        coin: launcherCoin, puzzleReveal: genesisLauncherPuz, solution: genesisLauncherSolution);
+      coin: launcherCoin,
+      puzzleReveal: genesisLauncherPuz,
+      solution: genesisLauncherSolution,
+    );
     SpendBundle launcherSb = SpendBundle(coinSpends: [launcherCs]);
-    CoinPrototype eveCoin =
-        CoinPrototype(parentCoinInfo: launcherCoin.id, puzzlehash: didPuzzleHash, amount: amount);
+    CoinPrototype eveCoin = CoinPrototype(
+      parentCoinInfo: launcherCoin.id,
+      puzzlehash: didPuzzleHash,
+      amount: amount,
+    );
     LineageProof futureParent = LineageProof(
       parentName: Puzzlehash(eveCoin.parentCoinInfo),
       innerPuzzleHash: didInnerHash,
@@ -104,7 +110,7 @@ class DidWallet extends BaseWalletService {
     didInfo = addParent(eveCoin.parentCoinInfo, eveParent, didInfo: didInfo);
     didInfo = addParent(eveCoin.id, futureParent, didInfo: didInfo);
 
-    DidInfo didInfoResult = DidInfo(
+    didInfo = DidInfo(
       originCoin: launcherCoin,
       backupsIds: didInfo.backupsIds,
       numOfBackupIdsNeeded: didInfo.numOfBackupIdsNeeded,
@@ -118,7 +124,7 @@ class DidWallet extends BaseWalletService {
       coin: eveCoin,
       fullPuzzle: didFullPuz,
       innerPuz: didInner,
-      didInfo: didInfoResult,
+      didInfo: didInfo,
       keychain: keychain,
     );
 
@@ -127,14 +133,14 @@ class DidWallet extends BaseWalletService {
       eveSpend,
       launcherSb,
     ]);
-    if (didInfoResult.originCoin == null) {
+    if (didInfo.originCoin == null) {
       print('origin coin is null');
     }
-    if (didInfoResult.currentInner == null) {
+    if (didInfo.currentInner == null) {
       print('current inner is null');
     }
 
-    return Tuple2(fullSpend, didInfoResult);
+    return Tuple2(fullSpend, didInfo);
   }
 
   DidInfo addParent(Bytes name, LineageProof? parent, {required DidInfo didInfo}) {
@@ -155,6 +161,7 @@ class DidWallet extends BaseWalletService {
     required List<CoinPrototype> coins,
     required WalletKeychain keychain,
     required Puzzlehash changePuzzlehash,
+    required Puzzlehash p2Puzlehash,
   }) async {
     if (numOfBackupIdsNeeded == null) {
       numOfBackupIdsNeeded = backupsIds.length;
@@ -169,6 +176,7 @@ class DidWallet extends BaseWalletService {
       parentInfo: [],
       sentRecoveryTransaction: false,
       metadata: json.encode(metadata),
+      tempPuzzlehash: p2Puzlehash,
     );
 
     return _generateNewDecentralisedId(
@@ -179,6 +187,14 @@ class DidWallet extends BaseWalletService {
       didInfo: didInfo,
       fee: fee,
     );
+  }
+
+  Map<Bytes, dynamic> parseMetadata(Map<String, dynamic> metadata) {
+    Map<Bytes, dynamic> metadataMap = {};
+    metadata.forEach((key, value) {
+      metadataMap[Bytes.fromHex(key)] = value;
+    });
+    return metadataMap;
   }
 
   Program getNewDidInnerPuz({
@@ -194,7 +210,7 @@ class DidWallet extends BaseWalletService {
         recoveryList: didInfo.backupsIds,
         numOfBackupIdsNeeded: didInfo.numOfBackupIdsNeeded,
         launcherId: didInfo.originCoin!.id,
-        metadata: didPuzzles.metadataToProgram(json.decode(didInfo.metadata)),
+        metadata: didPuzzles.metadataToProgram(parseMetadata(json.decode(didInfo.metadata))),
       );
     } else if (coinName != null) {
       innerpuz = didPuzzles.createDidInnerpuz(
@@ -202,7 +218,7 @@ class DidWallet extends BaseWalletService {
         recoveryList: didInfo.backupsIds,
         numOfBackupIdsNeeded: didInfo.numOfBackupIdsNeeded,
         launcherId: coinName,
-        metadata: didPuzzles.metadataToProgram(json.decode(didInfo.metadata)),
+        metadata: didPuzzles.metadataToProgram(parseMetadata(json.decode(didInfo.metadata))),
       );
     } else {
       throw Exception("must have origin coin");
@@ -275,56 +291,62 @@ class DidWallet extends BaseWalletService {
       required DidInfo didInfo}) {
     final signatures = <JacobianPoint>[];
     for (final coinSpend in unsignedSpendBundle.coinSpends) {
-      final uncurryPuzzleReveal = coinSpend.puzzleReveal.uncurry();
+      try {
+        final uncurryPuzzleReveal = coinSpend.puzzleReveal.uncurry();
 
-      final puzzleArgs = didPuzzles.matchDidPuzzle(
-        mod: uncurryPuzzleReveal.program,
-        curriedArgs: Program.list(uncurryPuzzleReveal.arguments),
-      );
-      if (puzzleArgs != null) {
-        final p2Puzzle = puzzleArgs.first;
-        final puzzleHash = p2Puzzle.hash();
-        final targetWalletVector = keychain.getWalletVector(puzzleHash);
-        final privateKey = targetWalletVector!.childPrivateKey;
-        final synthSecretKey = calculateSyntheticPrivateKey(privateKey);
-
-        final conditionsResult = conditionsDictForSolution(
-          puzzleReveal: coinSpend.puzzleReveal,
-          solution: coinSpend.solution,
+        final puzzleArgs = didPuzzles.matchDidPuzzle(
+          mod: uncurryPuzzleReveal.program,
+          curriedArgs: Program.list(uncurryPuzzleReveal.arguments),
         );
-        if (conditionsResult.item2 != null) {
-          final syntheticPk = synthSecretKey.getG1().toBytes();
-          final pairs = pkmPairsForConditionsDict(
-            conditionsDict: conditionsResult.item2!,
-            additionalData: Bytes.fromHex(
-              this.blockchainNetwork.aggSigMeExtraData,
-            ),
-            coinName: coinSpend.coin.id,
-          );
+        if (puzzleArgs != null) {
+          final p2Puzzle = puzzleArgs.first;
+          final puzzleHash = p2Puzzle.hash();
+          final targetWalletVector = keychain.getWalletVector(puzzleHash);
+          final privateKey = targetWalletVector!.childPrivateKey;
+          final synthSecretKey = calculateSyntheticPrivateKey(privateKey);
 
-          for (final pair in pairs) {
-            final pk = pair.item1;
-            final msg = pair.item2;
-            try {
-              if (syntheticPk == pk) {
-                final signature = AugSchemeMPL.sign(synthSecretKey, msg);
-                signatures.add(signature);
-              } else {
-                final publickKey = PrivateKey.fromBytes(pk).getG1();
-                print("publickKey: ${publickKey.toHex()}");
-                throw Exception(
-                  "This spend bundle cannot be signed by the DID wallet ${pk.toHex()}}",
-                );
+          final conditionsResult = conditionsDictForSolution(
+            puzzleReveal: coinSpend.puzzleReveal,
+            solution: coinSpend.solution,
+          );
+          if (conditionsResult.item2 != null) {
+            final syntheticPk = synthSecretKey.getG1().toBytes();
+            final pairs = pkmPairsForConditionsDict(
+              conditionsDict: conditionsResult.item2!,
+              additionalData: Bytes.fromHex(
+                this.blockchainNetwork.aggSigMeExtraData,
+              ),
+              coinName: coinSpend.coin.id,
+            );
+
+            for (final pair in pairs) {
+              final pk = pair.item1;
+              final msg = pair.item2;
+              try {
+                if (syntheticPk == pk) {
+                  final signature = AugSchemeMPL.sign(synthSecretKey, msg);
+                  signatures.add(signature);
+                } else {
+                  final publickKey = PrivateKey.fromBytes(pk).getG1();
+                  print("publickKey: ${publickKey.toHex()}");
+                  throw Exception(
+                    "This spend bundle cannot be signed by the DID wallet ${pk.toHex()}}",
+                  );
+                }
+              } on Exception catch (e, stackTrace) {
+                print(stackTrace);
+                print(e);
+                rethrow;
               }
-            } on Exception catch (e, stackTrace) {
-              print(stackTrace);
-              print(e);
-              rethrow;
             }
+          } else {
+            throw Exception(conditionsResult.item1);
           }
-        } else {
-          throw Exception(conditionsResult.item1);
         }
+      } catch (e, stackTrace) {
+        print(stackTrace);
+        print(e);
+        rethrow;
       }
     }
     final aggregatedSignature = AugSchemeMPL.aggregate(signatures);
@@ -350,7 +372,7 @@ class DidWallet extends BaseWalletService {
         Payment(
           coin.amount,
           innerPuz.hash(),
-          memos: [p2Puzzle.hash()],
+          memos: <Puzzlehash>[p2Puzzle.hash()],
         )
       ],
     );
@@ -370,6 +392,7 @@ class DidWallet extends BaseWalletService {
     var unsignedSpendBundle = SpendBundle(
       coinSpends: listOfCoinSpends,
     );
+
     return await sign(
       unsignedSpendBundle: unsignedSpendBundle,
       keychain: keychain,

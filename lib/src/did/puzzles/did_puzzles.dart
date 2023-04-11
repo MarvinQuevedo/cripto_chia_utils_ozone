@@ -14,12 +14,17 @@ Program createDidInnerpuz(
     required List<Bytes> recoveryList,
     required int numOfBackupIdsNeeded,
     required Bytes launcherId,
+    Puzzlehash? recoveryListHash,
     Program? metadata}) {
   if (metadata == null) {
     metadata = Program.fromBytes(Bytes.empty);
   }
 
-  final backupIdsHash = Program.list(recoveryList.map((e) => Program.fromBytes(e)).toList()).hash();
+  Puzzlehash backupIdsHash =
+      Program.list(recoveryList.map((e) => Program.fromBytes(e)).toList()).hash();
+  if (recoveryListHash != null) {
+    backupIdsHash = recoveryListHash;
+  }
   final sinletonStruct = Program.cons(
     Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
     Program.cons(
