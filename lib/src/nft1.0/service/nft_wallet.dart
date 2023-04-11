@@ -405,7 +405,7 @@ class NftWallet extends BaseWalletService {
   }
 
 // generate_new_nft
-  SpendBundle generateNewNft(
+  Future<SpendBundle> generateNewNft(
       {required CoinPrototype origin,
       required List<CoinPrototype> standardCoinsForFee,
       CoinPrototype? didAprovalCoins,
@@ -415,7 +415,7 @@ class NftWallet extends BaseWalletService {
       required Puzzlehash targetPuzzleHash,
       int amount = 1,
       DidInfo? didInfo,
-      int fee = 0}) {
+      int fee = 0}) async {
     final percentage = metadata.royaltyPc;
     final royaltyPuzzleHash = metadata.royaltyPh;
     final genesisLauncherPuz = LAUNCHER_PUZZLE;
@@ -513,7 +513,7 @@ class NftWallet extends BaseWalletService {
     Bytes? didInnerHash;
 
     if (didInfo != null && didInfo.didId.isNotEmpty) {
-      final apporvalInfo = getDidApprovalInfo(
+      final apporvalInfo = await getDidApprovalInfo(
         nftsIds: [launcherCoin.id],
         didInfo: didInfo,
         keychain: keychain,
@@ -856,13 +856,13 @@ class NftWallet extends BaseWalletService {
   /// We also store `did_id` and then iterate to find the did wallet as we'd otherwise have to subscribe to
   /// any changes to DID wallet and storing wallet_id is not guaranteed to be consistent on wallet crash/reset.
 
-  Tuple2<Bytes, SpendBundle> getDidApprovalInfo({
+  Future<Tuple2<Bytes, SpendBundle>> getDidApprovalInfo({
     required List<Bytes> nftsIds,
     required DidInfo didInfo,
     required List<CoinPrototype> coins,
     required WalletKeychain keychain,
-  }) {
-    final didBundle = DidWallet().createMessageSpend(
+  }) async {
+    final didBundle = await DidWallet().createMessageSpend(
       didInfo,
       coins: coins,
       keychain: keychain,
