@@ -40,7 +40,7 @@ class TradeWalletService extends BaseWalletService {
         );
         transactions.add(standarBundle);
       } else {
-        bool isCat = driverDict[assetId]!.type == "cat";
+        bool isCat = driverDict[assetId]!.type == AssetType.CAT;
 
         if (isCat) {
           final catPayments = [
