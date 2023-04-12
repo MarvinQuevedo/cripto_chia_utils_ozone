@@ -88,7 +88,7 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
         "launcher_id": matched.singletonLauncherId.toHexWithPrefix(),
         "launcher_ph": matched.launcherPuzzhash.toHexWithPrefix(),
       };
-      final next = matchPuzzle(matched.innerPuzzle);
+      final next = outerPuzzle.matchPuzzle(matched.innerPuzzle);
       if (next != null) {
         constructorDict["also"] = next.info;
       }
@@ -114,6 +114,7 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
     final coin = CoinPrototype.fromBytes(coinBytes);
     final parentSpend = CoinSpend.fromBytes(Bytes.fromHex(solver["parent_spend"]));
     final parentCoin = parentSpend.coin;
+
     if (constructor.also != null) {
       innerSolution = outerPuzzle.solvePuzzle(
           constructor: constructor.also!,
@@ -144,7 +145,7 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
       if (constructor.also != null) {
         final deepInnerPuzzle = outerPuzzle.getInnerPuzzle(
           constructor: constructor.also!,
-          puzzleReveal: puzzleReveal,
+          puzzleReveal: innerPuzzle,
         );
         return deepInnerPuzzle;
       }

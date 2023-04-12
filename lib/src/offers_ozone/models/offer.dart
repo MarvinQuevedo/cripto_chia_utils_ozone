@@ -127,19 +127,18 @@ class Offer {
         List<int> offeredAmounts = [];
 
         for (var condition in conditionResultIter) {
-          if (condition.first().toInt() == 51) {
-            final ph = condition.rest().first();
-            print(ph);
-          }
-
           if (condition.first().toInt() == 51 &&
               OFFERS_HASHES.contains(Puzzlehash(condition.rest().first().atom))) {
             expectedNumMatches++;
             offeredAmounts.add(condition.rest().rest().first().toInt());
           }
         }
-        List<CoinPrototype> matchingSpendAdditions =
-            additions.where((a) => offeredAmounts.contains(a)).toList();
+        List<CoinPrototype> matchingSpendAdditions = additions
+            .where(
+              (a) => offeredAmounts.contains(a.amount),
+            )
+            .toList();
+
         if (matchingSpendAdditions.length == expectedNumMatches) {
           coinForThisSpend.addAll(matchingSpendAdditions);
         } else {
@@ -150,10 +149,16 @@ class Offer {
           matchingSpendAdditions = matchingSpendAdditions.where((a) {
             final posiblePhs = [
               outerPuzzle
-                  .constructPuzzle(constructor: puzzleDriver, innerPuzzle: OFFER_MOD_V1)
+                  .constructPuzzle(
+                    constructor: puzzleDriver,
+                    innerPuzzle: OFFER_MOD_V1,
+                  )
                   .hash(),
               outerPuzzle
-                  .constructPuzzle(constructor: puzzleDriver, innerPuzzle: OFFER_MOD_V2)
+                  .constructPuzzle(
+                    constructor: puzzleDriver,
+                    innerPuzzle: OFFER_MOD_V2,
+                  )
                   .hash(),
             ];
             return posiblePhs.contains(a.puzzlehash);

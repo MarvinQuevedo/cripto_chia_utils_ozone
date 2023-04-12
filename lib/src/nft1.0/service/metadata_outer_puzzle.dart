@@ -3,7 +3,7 @@ import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 DeconstructedUpdateMetadataPuzzle? mathMetadataLayerPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
-  if (uncurried.program.hash() == NFT_STATE_LAYER_MOD_HASH) {
+  if (uncurried.program == NFT_STATE_LAYER_MOD) {
     final nftArgs = uncurried.arguments;
 
     final metadata = nftArgs[1];
@@ -43,10 +43,22 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
       innerPuzzle =
           outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: innerPuzzle);
     }
+    Program metadata;
+    if (constructor["metadata"] is Program) {
+      metadata = constructor["metadata"];
+    } else {
+      metadata = Program.parse(constructor["metadata"]);
+    }
+    Bytes updaterHash;
+    if (constructor["updater_hash"] is Bytes) {
+      updaterHash = constructor["updater_hash"];
+    } else {
+      updaterHash = Bytes.fromHex(constructor["updater_hash"] as String);
+    }
 
     return puzzleForMetadataLayer(
-      metadata: constructor["metadata"],
-      metadataUpdaterHash: constructor["updater_hash"],
+      metadata: metadata,
+      metadataUpdaterHash: updaterHash,
       innerPuzzle: innerPuzzle,
     );
   }
