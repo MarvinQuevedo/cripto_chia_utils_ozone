@@ -85,7 +85,7 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
     if (matched != null) {
       final Map<String, dynamic> constructorDict = {
         "type": AssetType.SINGLETON,
-        "launcher_id": matched.launcherPuzzhash.toHexWithPrefix(),
+        "launcher_id": matched.singletonLauncherId.toHexWithPrefix(),
         "launcher_ph": matched.launcherPuzzhash.toHexWithPrefix(),
       };
       final next = matchPuzzle(matched.innerPuzzle);
