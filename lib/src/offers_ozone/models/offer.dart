@@ -5,9 +5,9 @@ import 'package:quiver/iterables.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/models/conditions/announcement.dart';
-import '../../utils/from_bench32.dart';
 
 final OFFERS_HASHES = {OFFER_MOD_HASH, OFFER_MOD_V1_HASH};
+final OFFER_MOD_OLD_HASH = OFFER_MOD_V1_HASH;
 
 class Offer {
   /// The key is the asset id of the asset being requested, if is null then request XCH
@@ -97,8 +97,11 @@ class Offer {
 
       final parentPuzzle = parentSpend.puzzleReveal;
       final parentSolution = parentSpend.solution;
-      final additions =
-          bundle.additions.where((element) => !bundle.removals.contains(element)).toList();
+      final additions = bundle.additions
+          .where(
+            (element) => !bundle.removals.contains(element),
+          )
+          .toList();
 
       final puzzleDriver = outerPuzzle.matchPuzzle(parentPuzzle);
 
@@ -114,41 +117,52 @@ class Offer {
           constructor: puzzleDriver,
           solution: parentSolution,
         );
-        assert(innerSolution != null && innerPuzzle != null);
+        if (innerPuzzle == null || innerSolution == null) {
+          throw Exception("innerPuzzle or innerSolution is null");
+        }
 
-        final conditionResult = innerPuzzle!.run(innerSolution!);
+        final conditionResult = innerPuzzle.run(innerSolution);
         final conditionResultIter = conditionResult.program.toList();
-        for (var condition in conditionResultIter) {
-          try {
-            if (condition.first().toInt() == 51 &&
-                OFFERS_HASHES.contains(condition.rest().first().atom)) {
-              final additionsWAmount = additions
-                  .where((element) => element.amount == condition.rest().rest().first().toInt())
-                  .toList();
-              if (additionsWAmount.length == 1) {
-                coinForThisSpend.add(additionsWAmount.first);
-              } else {
-                final additionsWAmountAndPuzzlehashes = additionsWAmount.where((element) => [
-                      outerPuzzle
-                          .constructPuzzle(
-                            constructor: puzzleDriver,
-                            innerPuzzle: OFFER_MOD_V1,
-                          )
-                          .hash(),
-                      outerPuzzle
-                          .constructPuzzle(
-                            constructor: puzzleDriver,
-                            innerPuzzle: OFFER_MOD,
-                          )
-                          .hash(),
-                    ].contains(element.puzzlehash));
+        int expectedNumMatches = 0;
+        List<int> offeredAmounts = [];
 
-                if (additionsWAmountAndPuzzlehashes.length == 1) {
-                  coinForThisSpend.add(additionsWAmountAndPuzzlehashes.first);
-                }
-              }
-            }
-          } catch (_) {}
+        for (var condition in conditionResultIter) {
+          if (condition.first().toInt() == 51) {
+            final ph = condition.rest().first();
+            print(ph);
+          }
+
+          if (condition.first().toInt() == 51 &&
+              OFFERS_HASHES.contains(Puzzlehash(condition.rest().first().atom))) {
+            expectedNumMatches++;
+            offeredAmounts.add(condition.rest().rest().first().toInt());
+          }
+        }
+        List<CoinPrototype> matchingSpendAdditions =
+            additions.where((a) => offeredAmounts.contains(a)).toList();
+        if (matchingSpendAdditions.length == expectedNumMatches) {
+          coinForThisSpend.addAll(matchingSpendAdditions);
+        } else {
+          if (matchingSpendAdditions.length < expectedNumMatches) {
+            matchingSpendAdditions = additions;
+          }
+
+          matchingSpendAdditions = matchingSpendAdditions.where((a) {
+            final posiblePhs = [
+              outerPuzzle
+                  .constructPuzzle(constructor: puzzleDriver, innerPuzzle: OFFER_MOD_V1)
+                  .hash(),
+              outerPuzzle
+                  .constructPuzzle(constructor: puzzleDriver, innerPuzzle: OFFER_MOD_V2)
+                  .hash(),
+            ];
+            return posiblePhs.contains(a.puzzlehash);
+          }).toList();
+          if (matchingSpendAdditions.length == expectedNumMatches) {
+            coinForThisSpend.addAll(matchingSpendAdditions);
+          } else {
+            throw Exception("Could not properly guess offered coins from parent spend");
+          }
         }
       } else {
         assetId = null;
