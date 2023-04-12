@@ -516,7 +516,7 @@ class NftWallet extends BaseWalletService {
       FullNFTCoinInfo? nftCoin,
       required bool old}) async {
     final DESIRED_OFFER_MOD = old ? OFFER_MOD_V1 : OFFER_MOD_V2;
-    final DESIRED_OFFER_MOD_HASH = old ? OFFER_MOD_V1_HASH : OFFER_MOD_HASH;
+    final DESIRED_OFFER_MOD_HASH = old ? OFFER_MOD_V1_HASH : OFFER_MOD_V2_HASH;
 
     //  First, let's take note of all the royalty enabled NFTs
     final royaltyNftAssetDict = <Bytes, int>{};
@@ -716,7 +716,7 @@ class NftWallet extends BaseWalletService {
           final standarBundle = wallet.createSpendBundle(
             payments: [
               (royPaymentSum > 0 || old)
-                  ? Payment(royPaymentSum.abs(), Offer.ph(old))
+                  ? Payment(royPaymentSum.abs(), DESIRED_OFFER_MOD_HASH)
                   : Payment(amount.abs(), DESIRED_OFFER_MOD_HASH),
             ],
             coinsInput: coins!.toList(),
