@@ -712,13 +712,14 @@ class NftWallet extends BaseWalletService {
           var royPaymentSum =
               royPayments.isEmpty ? 0 : royPayments.map((p) => p.amount).reduce((a, b) => a + b);
           final coins = offeredCoinsByAsset[assetId];
+          final payments = [
+            (royPaymentSum > 0 || old)
+                ? Payment(royPaymentSum.abs(), DESIRED_OFFER_MOD_HASH)
+                : Payment(amount.abs(), DESIRED_OFFER_MOD_HASH),
+          ];
 
           final standarBundle = wallet.createSpendBundle(
-            payments: [
-              (royPaymentSum > 0 || old)
-                  ? Payment(royPaymentSum.abs(), DESIRED_OFFER_MOD_HASH)
-                  : Payment(amount.abs(), DESIRED_OFFER_MOD_HASH),
-            ],
+            payments: payments,
             coinsInput: coins!.toList(),
             keychain: keychain,
             fee: feeLeftToPay,
@@ -741,10 +742,11 @@ class NftWallet extends BaseWalletService {
               ]));
             }
           }
+          final payments = [
+            Payment(amount.abs(), DESIRED_OFFER_MOD_HASH),
+          ];
           final nftBundles = wallet.generateSignedSpendBundle(
-            payments: [
-              Payment(amount.abs(), DESIRED_OFFER_MOD_HASH),
-            ],
+            payments: payments,
             nftCoin: (selectedCoins[OfferAssetData.singletonNft(launcherPuzhash: assetId)]!.first
                     as FullNFTCoinInfo)
                 .toNftCoinInfo(),
@@ -755,6 +757,7 @@ class NftWallet extends BaseWalletService {
             puzzleAnnouncementsToAssert: announcementsToAssert,
             changePuzzlehash: changePuzzlehash,
           );
+
           txs = [nftBundles];
         } else if (wallet is CatWalletService) {
           List<Payment> catPayments = [];
