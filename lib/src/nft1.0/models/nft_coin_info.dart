@@ -68,7 +68,7 @@ class NFTCoinInfo extends Coin {
 class FullNFTCoinInfo extends FullCoin {
   /// The launcher coin ID of the NFT
   final Bytes nftId;
-  final Coin coin;
+
   final LineageProof? nftLineageProof;
   final Program fullPuzzle;
   final int mintHeight;
@@ -80,7 +80,7 @@ class FullNFTCoinInfo extends FullCoin {
 
   FullNFTCoinInfo({
     required this.nftId,
-    required this.coin,
+    required Coin coin,
     this.nftLineageProof,
     required this.fullPuzzle,
     required this.mintHeight,
