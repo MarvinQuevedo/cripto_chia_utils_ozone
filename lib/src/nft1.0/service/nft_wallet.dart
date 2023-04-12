@@ -330,7 +330,6 @@ class NftWallet extends BaseWalletService {
   Future<SpendBundle> generateNewNft(
       {required CoinPrototype origin,
       required List<CoinPrototype> standardCoinsForFee,
-      CoinPrototype? didAprovalCoins,
       required WalletKeychain keychain,
       Puzzlehash? changePuzzlehash,
       required NftMetadata metadata,
@@ -443,7 +442,6 @@ class NftWallet extends BaseWalletService {
         nftsIds: [launcherCoin.id],
         didInfo: didInfo,
         keychain: keychain,
-        coins: [didAprovalCoins!],
       );
       didInnerHash = apporvalInfo.item1;
       bundlesToAgg.add(apporvalInfo.item2);
@@ -492,15 +490,15 @@ class NftWallet extends BaseWalletService {
   Future<Tuple2<Bytes, SpendBundle>> getDidApprovalInfo({
     required List<Bytes> nftsIds,
     required DidInfo didInfo,
-    required List<CoinPrototype> coins,
     required WalletKeychain keychain,
   }) async {
+    print("Creating announcement from DID for nft_ids: ${nftsIds}");
     final didBundle = await DidWallet().createMessageSpend(
       didInfo,
-      coins: coins,
       keychain: keychain,
     );
     final didInnerhash = didInfo.currentInner!.hash();
+    print("Sending DID announcement from puzzle: ${didBundle.removals}");
     return Tuple2(didInnerhash, didBundle);
   }
 

@@ -7,6 +7,7 @@ import '../../clvm.dart';
 import '../../core/index.dart';
 import '../../core/service/conditions_utils.dart';
 import '../../nft1.0/index.dart';
+import '../../offers_ozone/index.dart';
 import '../../singleton/index.dart';
 import '../../standard/index.dart';
 import '../../utils/key_derivation.dart';
@@ -231,35 +232,44 @@ class DidWallet extends BaseWalletService {
     Set<Bytes>? coinAnnouncements,
     Set<Bytes>? puzzleAnnouncements,
     Program? newInnerPuzzle,
-    required List<CoinPrototype> coins,
     required WalletKeychain keychain,
   }) async {
     if (didInfo.currentInner == null || didInfo.originCoin == null) {
       throw Exception("didInfo.currentInner == null || didInfo.originCoin == null");
     }
 
-    final coin = coins.first;
+    final coin = didInfo.tempCoin!;
     final innerpuz = didInfo.currentInner!;
     if (newInnerPuzzle == null) {
       newInnerPuzzle = innerpuz;
     }
     final uncurried = didPuzzles.uncurryInnerpuz(newInnerPuzzle);
-    assert(uncurried != null);
-    final p2Puzzle = uncurried!.item1;
+    if (uncurried == null) {
+      throw Exception("uncurried == null");
+    }
+    final p2Puzzle = uncurried.item1;
 
     final p2Solution = BaseWalletService.makeSolution(
       primaries: [
-        Payment(coin.amount, newInnerPuzzle.hash(), memos: <Puzzlehash>[p2Puzzle.hash()]),
+        Payment(
+          coin.amount,
+          newInnerPuzzle.hash(),
+          memos: <Puzzlehash>[p2Puzzle.hash()],
+        ),
       ],
-      coinAnnouncements: coinAnnouncements ?? {},
       puzzleAnnouncements: puzzleAnnouncements ?? {},
+      coinAnnouncements: coinAnnouncements ?? {},
     );
     final innersol = Program.list([Program.fromInt(1), p2Solution]);
     final fullPuzzle = NftWalletService.createFullpuzzle(
       innerpuz,
       didInfo.originCoin!.id,
     );
-    final parentInfo = didInfo.parentInfo.first.item2!;
+
+    final parentInfo = getParentForCoin(coin, didInfo: didInfo);
+    if (parentInfo == null) {
+      throw Exception("parentInfo == null");
+    }
 
     final fullsol = Program.list(
       [
@@ -283,6 +293,19 @@ class DidWallet extends BaseWalletService {
       keychain: keychain,
       unsignedSpendBundle: unsignedSpendBundle,
     );
+  }
+
+  LineageProof? getParentForCoin(Coin coin, {required DidInfo didInfo}) {
+    LineageProof? parentInfo;
+    for (var item in didInfo.parentInfo) {
+      final name = item.item1;
+      final ccParent = item.item2;
+      if (name == coin.parentCoinInfo) {
+        parentInfo = ccParent;
+      }
+    }
+
+    return parentInfo;
   }
 
   SpendBundle sign(
