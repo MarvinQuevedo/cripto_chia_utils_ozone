@@ -7,6 +7,7 @@ import '../../core/models/conditions/announcement.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/service/conditions_utils.dart';
+import '../../offers_ozone/utils/build_keychain.dart';
 //import '../../did/puzzles/did_puzzles.dart' as didPuzzles;
 
 class NftWallet extends BaseWalletService {
@@ -514,30 +515,20 @@ class NftWallet extends BaseWalletService {
       required List<Coin> standardCoinsForFee,
       FullNFTCoinInfo? nftCoin,
       required bool old}) async {
-    final amounts = offerDict.values.toList();
-    if (offerDict.length != 2 || ((amounts[0] > 0) == (amounts[1] > 0))) {
-      throw Exception(
-          "Royalty enabled NFTs only support offering/requesting one NFT for one currency");
-    }
-
     final DESIRED_OFFER_MOD = old ? OFFER_MOD_V1 : OFFER_MOD_V2;
     final DESIRED_OFFER_MOD_HASH = old ? OFFER_MOD_V1_HASH : OFFER_MOD_HASH;
 
-    bool offerringNft = false;
-
+    //  First, let's take note of all the royalty enabled NFTs
     final royaltyNftAssetDict = <Bytes, int>{};
     offerDict.forEach((Bytes? assetId, int amount) {
-      if (assetId != null) {
-        // check if asset is an NFT
-        offerringNft = driverDict[assetId]!.checkType(types: [
-          AssetType.SINGLETON,
-          AssetType.METADATA,
-          AssetType.OWNERSHIP,
-        ]);
-        if (offerringNft) {
-          driverDict[assetId]!.info["also"]["also"]["owner"] = "()";
-          royaltyNftAssetDict[assetId] = amount;
-        }
+      if (assetId != null &&
+          driverDict[assetId]!.checkType(types: [
+            AssetType.SINGLETON,
+            AssetType.METADATA,
+            AssetType.OWNERSHIP,
+          ])) {
+        driverDict[assetId]!.info["also"]["also"]["owner"] = "()";
+        royaltyNftAssetDict[assetId] = amount;
       }
     });
     Map<Bytes?, int> fungibleAssetDict = {};
@@ -632,7 +623,7 @@ class NftWallet extends BaseWalletService {
           Payment(
             amount,
             p2Ph,
-            memos: [
+            memos: <Puzzlehash>[
               if (asset != null) p2Ph,
             ],
           )
@@ -718,14 +709,15 @@ class NftWallet extends BaseWalletService {
         // Enviar todas las monedas a OFFER_MOD
         if (wallet is StandardWalletService) {
           var royPayments = royaltyPayments[assetId]?.map((e) => e.item2).toList() ?? [];
-          var royPaymentSum = royPayments.map((p) => p.amount).reduce((a, b) => a + b);
+          var royPaymentSum =
+              royPayments.isEmpty ? 0 : royPayments.map((p) => p.amount).reduce((a, b) => a + b);
           final coins = offeredCoinsByAsset[assetId];
 
           final standarBundle = wallet.createSpendBundle(
             payments: [
               (royPaymentSum > 0 || old)
-                  ? Payment(royPaymentSum, Offer.ph(old))
-                  : Payment(amount, DESIRED_OFFER_MOD_HASH),
+                  ? Payment(royPaymentSum.abs(), Offer.ph(old))
+                  : Payment(amount.abs(), DESIRED_OFFER_MOD_HASH),
             ],
             coinsInput: coins!.toList(),
             keychain: keychain,
@@ -751,9 +743,11 @@ class NftWallet extends BaseWalletService {
           }
           final nftBundles = wallet.generateSignedSpendBundle(
             payments: [
-              Payment(amount, DESIRED_OFFER_MOD_HASH),
+              Payment(amount.abs(), DESIRED_OFFER_MOD_HASH),
             ],
-            nftCoin: (selectedCoins[assetId]!.first as FullNFTCoinInfo).toNftCoinInfo(),
+            nftCoin: (selectedCoins[OfferAssetData.singletonNft(launcherPuzhash: assetId)]!.first
+                    as FullNFTCoinInfo)
+                .toNftCoinInfo(),
             standardCoinsForFee: standardCoinsForFee,
             fee: feeLeftToPay,
             keychain: keychain,
@@ -770,7 +764,7 @@ class NftWallet extends BaseWalletService {
 
             catPayments.add(
               Payment(
-                royPaymentSum,
+                royPaymentSum.abs(),
                 DESIRED_OFFER_MOD_HASH,
               ),
             );
@@ -779,7 +773,7 @@ class NftWallet extends BaseWalletService {
           final catCoins = selectedCoins[offerAssetData]!.map((e) => e.toCatCoin()).toList();
           final catBundle = CatWalletService().createSpendBundle(
             payments: [
-              Payment(amount, DESIRED_OFFER_MOD_HASH),
+              Payment(amount.abs(), DESIRED_OFFER_MOD_HASH),
               ...catPayments,
             ],
             catCoinsInput: catCoins,
@@ -802,7 +796,10 @@ class NftWallet extends BaseWalletService {
 
           // Skip it if we're paying 0 royalties
           var payments = royaltyPayments[assetId] ?? [];
-          if (!old && payments.map((p) => p.item2.amount).reduce((a, b) => a + b) == 0) {
+          if ((!old &&
+                  payments.isNotEmpty &&
+                  payments.map((p) => p.item2.amount).reduce((a, b) => a + b) == 0) ||
+              payments.isEmpty) {
             continue;
           }
 
@@ -947,5 +944,62 @@ class NftWallet extends BaseWalletService {
     } else {
       return puzzleInfo;
     }
+  }
+
+  Future<Tuple3<FullNFTCoinInfo, Program, WalletKeychain>> getNFTFullCoinInfo(FullCoin nftFullCoin,
+      {required BuildKeychain buildKeychain}) async {
+    final coin = nftFullCoin.coin;
+    final coinSpend = nftFullCoin.parentCoinSpend!;
+
+    final nftUncurried = UncurriedNFT.uncurry(coinSpend.puzzleReveal);
+    final nftInfo = NFTInfo.fromUncurried(
+      uncurriedNFT: nftUncurried,
+      currentCoin: coin,
+      mintHeight: 0,
+    );
+
+    final data = NftService().getMetadataAndPhs(nftUncurried, coinSpend.solution);
+    final metadata = data.item1;
+
+    final p2PuzzleHash = Puzzlehash(data.item2);
+
+    WalletKeychain keychainForNft = await buildKeychain({p2PuzzleHash});
+
+    final vector = keychainForNft.getWalletVector(p2PuzzleHash);
+    Program innerPuzzle = getPuzzleFromPk(vector!.childPublicKey);
+
+    if (nftUncurried.supportDid) {
+      innerPuzzle = NftService().recurryNftPuzzle(
+        unft: nftUncurried,
+        solution: coinSpend.solution,
+        newInnerPuzzle: innerPuzzle,
+      );
+    }
+
+    Program fullPuzzle = NftService.createFullPuzzle(
+      singletonId: nftUncurried.singletonLauncherId.atom,
+      metadata: metadata,
+      metadataUpdaterHash: nftUncurried.metadataUpdaterHash.atom,
+      innerPuzzle: innerPuzzle,
+    );
+
+    final nftCoin = FullNFTCoinInfo(
+      coin: coin,
+      fullPuzzle: fullPuzzle,
+      latestHeight: coin.confirmedBlockIndex,
+      mintHeight: nftInfo.mintHeight,
+      nftId: nftUncurried.singletonLauncherId.atom,
+      pendingTransaction: false,
+      parentCoinSpend: nftFullCoin.parentCoinSpend,
+      confirmedBlockIndex: nftFullCoin.coin.confirmedBlockIndex,
+      minterDid: nftUncurried.ownerDid,
+      nftLineageProof: LineageProof(
+        amount: coinSpend.coin.amount,
+        innerPuzzleHash: nftUncurried.nftStateLayer.hash(),
+        parentName: Puzzlehash(coinSpend.coin.parentCoinInfo),
+      ),
+      spentBlockIndex: nftFullCoin.coin.spentBlockIndex,
+    );
+    return Tuple3(nftCoin, fullPuzzle, keychainForNft);
   }
 }
