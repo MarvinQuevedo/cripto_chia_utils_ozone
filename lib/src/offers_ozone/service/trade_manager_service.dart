@@ -469,9 +469,7 @@ class TradeManagerService extends BaseWalletService {
       requestedAmounts.forEach((OfferAssetData? asset, List<int> amounts) {
         final amount = amounts.fold(0, (previousValue, element) => previousValue + element);
         if (amount > 0) {
-          if (asset != null) {
-            offerDict[asset.assetId] = amount.abs();
-          }
+          offerDict[asset?.assetId] = amount.abs();
         }
       });
 
