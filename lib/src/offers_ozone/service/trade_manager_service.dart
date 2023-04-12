@@ -365,8 +365,7 @@ class TradeManagerService extends BaseWalletService {
   /// [isOld] - is old offer
   /// [changePuzzlehash] - puzzlehash to use for change
   Future<Offer> createOffer(
-      {List<FullCoin>? selectedCoins,
-      Map<OfferAssetData?, List<FullCoin>>? groupedCoins,
+      {required Map<OfferAssetData?, List<FullCoin>> groupedCoins,
       required Map<OfferAssetData?, List<int>> requestedAmounts,
       required Map<OfferAssetData?, int> offerredAmounts,
       required WalletKeychain keychain,
@@ -376,28 +375,27 @@ class TradeManagerService extends BaseWalletService {
       required Puzzlehash changePuzzlehash,
       List<Coin>? standardCoinsForFee}) async {
     List<FullCoin> coins = [];
-    if (selectedCoins == null && groupedCoins == null) {
-      throw Exception("coins or groupedCoins must be not null");
-    }
-    if (groupedCoins != null) {
-      groupedCoins.forEach((key, value) {
-        coins.addAll(value);
-      });
-    }
+
+    groupedCoins.forEach((key, value) {
+      coins.addAll(value);
+    });
+
     if (standardCoinsForFee == null && fee > 0) {
       if (offerredAmounts[null] == null) {
-        standardCoinsForFee = groupedCoins?[null]?.map((e) => e.toCoin()).toList();
+        standardCoinsForFee = groupedCoins[null]?.map((e) => e.toCoin()).toList();
         if (standardCoinsForFee == null) {
           throw Exception("Standard coins for fee not found");
         }
       }
     }
 
-    Map<OfferAssetData?, List<FullCoin>> preparedCoins = groupedCoins ??
+    Map<OfferAssetData?, List<FullCoin>> preparedCoins =
+        groupedCoins /*  ??
         prepareFullCoins(
           coins,
           keychain: keychain,
-        );
+        ) */
+        ;
 
     final preparedData = await _prepareOfferData(
       coins: preparedCoins,
