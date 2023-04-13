@@ -4,7 +4,7 @@ import '../models/deconstructed_transfer_program_puzzle.dart';
 
 DeconstructedTransferProgramPuzzle? mathTransferProgramPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
-  if (uncurried.program.hash() == NFT_OWNERSHIP_LAYER_HASH) {
+  if (uncurried.program.hash() == TRANSFER_PROGRAM_MOD_HASH) {
     final nftArgs = uncurried.arguments;
 
     final singletonStruct = nftArgs[0];

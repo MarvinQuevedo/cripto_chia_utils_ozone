@@ -40,8 +40,10 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     if (constructor.also != null) {
-      innerPuzzle =
-          outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: innerPuzzle);
+      innerPuzzle = outerPuzzle.constructPuzzle(
+        constructor: constructor.also!,
+        innerPuzzle: innerPuzzle,
+      );
     }
     Program metadata;
     if (constructor["metadata"] is Program) {
@@ -83,7 +85,8 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
         "metadata": matched.metadata.toSource(),
         "updater_hash": matched.metadataUpdaterHash.toHexWithPrefix(),
       };
-      final next = matchPuzzle(matched.innerPuzzle);
+      final innerPuzzle = matched.innerPuzzle;
+      final next = outerPuzzle.matchPuzzle(innerPuzzle);
       if (next != null) {
         constructorDict["also"] = next.info;
       }
@@ -127,7 +130,7 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
       if (constructor.also != null) {
         final deopInnerPuzzle = outerPuzzle.getInnerPuzzle(
           constructor: constructor.also!,
-          puzzleReveal: puzzleReveal,
+          puzzleReveal: innerPuzzle,
         );
         return deopInnerPuzzle;
       }

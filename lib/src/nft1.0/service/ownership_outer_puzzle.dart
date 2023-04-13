@@ -55,8 +55,10 @@ class OwnershipOuterPuzzle extends outerPuzzle.OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     if (constructor.also != null) {
-      innerPuzzle =
-          outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: innerPuzzle);
+      innerPuzzle = outerPuzzle.constructPuzzle(
+        constructor: constructor.also!,
+        innerPuzzle: innerPuzzle,
+      );
     }
     final transfer_program_info = constructor["transfer_program"];
     Program transfer_program;
@@ -86,12 +88,13 @@ class OwnershipOuterPuzzle extends outerPuzzle.OuterPuzzle {
     final matched = mathOwnershipLayerPuzzle(puzzle);
     if (matched != null) {
       final tpMatch = outerPuzzle.matchPuzzle(matched.transferProgram);
+
       final Map<String, dynamic> constructorDict = {
         "type": AssetType.OWNERSHIP,
         "owner": matched.currentOwner.isEmpty ? "()" : matched.currentOwner.toHexWithPrefix(),
         "transfer_program": tpMatch == null ? matched.transferProgram.toSource() : tpMatch.info,
       };
-      final next = matchPuzzle(matched.innerPuzzle);
+      final next = outerPuzzle.matchPuzzle(matched.innerPuzzle);
       if (next != null) {
         constructorDict["also"] = next.info;
       }
@@ -125,7 +128,7 @@ class OwnershipOuterPuzzle extends outerPuzzle.OuterPuzzle {
       if (constructor.also != null) {
         final deopInnerPuzzle = outerPuzzle.getInnerPuzzle(
           constructor: constructor.also!,
-          puzzleReveal: puzzleReveal,
+          puzzleReveal: innerPuzzle,
         );
         return deopInnerPuzzle;
       }
@@ -139,8 +142,10 @@ class OwnershipOuterPuzzle extends outerPuzzle.OuterPuzzle {
   Program? getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
     final myInnerSolution = solution.first();
     if (constructor.also != null) {
-      final deepInnerSolution =
-          outerPuzzle.getInnerSolution(constructor: constructor.also!, solution: myInnerSolution);
+      final deepInnerSolution = outerPuzzle.getInnerSolution(
+        constructor: constructor.also!,
+        solution: myInnerSolution,
+      );
       return deepInnerSolution;
     }
     return myInnerSolution;

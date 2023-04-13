@@ -5,6 +5,7 @@ import '../../nft1.0/index.dart';
 import '../../standard/index.dart';
 import '../../utils.dart';
 import '../index.dart';
+import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 class TradeManagerService extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
@@ -389,13 +390,7 @@ class TradeManagerService extends BaseWalletService {
       }
     }
 
-    Map<OfferAssetData?, List<FullCoin>> preparedCoins =
-        groupedCoins /*  ??
-        prepareFullCoins(
-          coins,
-          keychain: keychain,
-        ) */
-        ;
+    Map<OfferAssetData?, List<FullCoin>> preparedCoins = groupedCoins;
 
     final preparedData = await _prepareOfferData(
       coins: preparedCoins,
@@ -412,10 +407,7 @@ class TradeManagerService extends BaseWalletService {
         if (assetId != null) {
           // check if asset is an NFT
 
-          final offerringNft = preparedData.driverDict[assetId]?.checkType(types: [
-                AssetType.SINGLETON,
-              ]) ??
-              false;
+          final offerringNft = preparedData.driverDict[assetId]?.type == AssetType.SINGLETON;
           if (offerringNft) {
             nftOfferedLauncher = assetId;
           }
@@ -428,10 +420,8 @@ class TradeManagerService extends BaseWalletService {
         if (asset != null) {
           // check if asset is an NFT
 
-          final requestingNft = preparedData.driverDict[asset.assetId]?.checkType(types: [
-                AssetType.SINGLETON,
-              ]) ??
-              false;
+          final requestingNft = preparedData.driverDict[asset.assetId]?.type == AssetType.SINGLETON;
+          ;
           if (requestingNft) {
             nftRequestedLauncher = asset.assetId;
           }
