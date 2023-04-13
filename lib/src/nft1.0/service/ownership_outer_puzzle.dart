@@ -29,7 +29,7 @@ Program puzzleForOwnershipLayer(
   } else if (currentOwner is Bytes) {
     _currentOwner = Program.fromBytes(currentOwner);
   } else if (currentOwner == null) {
-    _currentOwner = Program.fromInt(0);
+    _currentOwner = Program.nil;
   } else {
     if ((currentOwner as String).contains("0x")) {
       _currentOwner = Program.fromHex(currentOwner);
@@ -38,7 +38,13 @@ Program puzzleForOwnershipLayer(
     }
   }
   return NFT_OWNERSHIP_LAYER.curry(
-      [Program.fromBytes(NFT_OWNERSHIP_LAYER_HASH), _currentOwner, transferProgram, innerPuzzle]);
+    [
+      Program.fromBytes(NFT_OWNERSHIP_LAYER_HASH),
+      _currentOwner,
+      transferProgram,
+      innerPuzzle,
+    ],
+  );
 }
 
 Program solutionForOwnershipLayer({required Program innerSolution}) {
