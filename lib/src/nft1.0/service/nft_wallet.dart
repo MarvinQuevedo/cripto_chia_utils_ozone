@@ -494,9 +494,11 @@ class NftWallet extends BaseWalletService {
     required WalletKeychain keychain,
   }) async {
     print("Creating announcement from DID for nft_ids: ${nftsIds}");
+
     final didBundle = await DidWallet().createMessageSpend(
       didInfo,
       keychain: keychain,
+      puzzleAnnouncements: nftsIds.toSet(),
     );
     final didInnerhash = didInfo.currentInner!.hash();
     print("Sending DID announcement from puzzle: ${didBundle.removals}");
