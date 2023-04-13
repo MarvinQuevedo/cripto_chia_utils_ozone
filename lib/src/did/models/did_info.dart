@@ -46,7 +46,8 @@ class DidInfo extends Equatable {
     ];
   }
 
-  Puzzlehash get didId => Puzzlehash(parentInfo.first.item1);
+  Puzzlehash get didId =>
+      originCoin?.id != null ? Puzzlehash(originCoin!.id) : Puzzlehash(parentInfo.first.item1);
 
   DidInfo copyWith({
     Coin? originCoin,
