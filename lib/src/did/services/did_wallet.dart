@@ -263,7 +263,7 @@ class DidWallet extends BaseWalletService {
     final innersol = Program.list([Program.fromInt(1), p2Solution]);
     final fullPuzzle = NftWalletService.createFullpuzzle(
       innerpuz,
-      didInfo.originCoin!.id,
+      didInfo.didId!,
     );
 
     final parentInfo = getParentForCoin(coin, didInfo: didInfo);
