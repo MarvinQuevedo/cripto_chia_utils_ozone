@@ -555,7 +555,7 @@ class NftWallet extends BaseWalletService {
     Map<Bytes, int> offeredRoyaltyPercentages = {};
 
     for (var asset in royaltyNftAssetDict.keys) {
-      var transferInfo = driverDict[asset]!;
+      var transferInfo = driverDict[asset]!.also!.also!;
 
       var royaltyPercentageRaw = transferInfo["transfer_program"]["royalty_percentage"];
       if (royaltyPercentageRaw == null) {
@@ -565,6 +565,8 @@ class NftWallet extends BaseWalletService {
       int royaltyPercentage;
       if (royaltyPercentageRaw is Bytes) {
         royaltyPercentage = bytesToInt(royaltyPercentageRaw, Endian.big);
+      } else if (royaltyPercentageRaw is int) {
+        royaltyPercentage = royaltyPercentageRaw;
       } else {
         royaltyPercentage = int.parse(royaltyPercentageRaw);
       }
