@@ -273,11 +273,7 @@ class DidWallet extends BaseWalletService {
 
     final fullsol = Program.list(
       [
-        Program.list([
-          Program.fromBytes(parentInfo.parentName!),
-          Program.fromBytes(parentInfo.innerPuzzleHash!),
-          Program.fromInt(parentInfo.amount!),
-        ]),
+        parentInfo.toProgram(),
         Program.fromInt(coin.amount),
         innersol,
       ],
