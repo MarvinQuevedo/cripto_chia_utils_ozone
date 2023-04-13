@@ -125,7 +125,7 @@ class NftService {
   }
 
   static Program constructOwnershipLayer(
-          {required currentOwner,
+          {required Bytes? currentOwner,
           required Program transferProgram,
           required Program innerPuzzle}) =>
       puzzleForOwnershipLayer(

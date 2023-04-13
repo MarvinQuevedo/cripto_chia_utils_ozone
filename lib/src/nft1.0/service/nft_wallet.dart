@@ -83,33 +83,19 @@ class NftWallet extends BaseWalletService {
 
     var unsignedSpendBundle = generateSpendsTuple.item1;
     final chiaSpendBundle = generateSpendsTuple.item2;
-    print(
-      "p2puzzleNew = ${UncurriedNFT.uncurry(unsignedSpendBundle.coinSpends.first.puzzleReveal).p2PuzzleHash.toHex()} ",
-    );
+
     SpendBundle spendBundle = _sign(
       unsignedSpendBundle: unsignedSpendBundle,
       keychain: keychain,
     );
 
-    standardWalletService.validateSpendBundle(spendBundle);
-
-    standardWalletService.validateSpendBundleSignature(spendBundle);
-
-    print(
-      "p2puzzleNew = ${UncurriedNFT.uncurry(generateSpendsTuple.item1.coinSpends.first.puzzleReveal).p2PuzzleHash.toHex()} ",
-    );
+    spendBundle = SpendBundle.aggregate([spendBundle] + (additionalBundles ?? []));
 
     if (chiaSpendBundle != null) {
-      spendBundle = spendBundle + chiaSpendBundle;
+      spendBundle = SpendBundle.aggregate([spendBundle, chiaSpendBundle]);
     }
-    final spendBundleList = [spendBundle];
 
-    spendBundleList.addAll(additionalBundles ?? []);
-
-    return spendBundleList.fold<SpendBundle>(
-      SpendBundle(coinSpends: []),
-      (previousValue, element) => previousValue + element,
-    );
+    return spendBundle;
   }
 
   SpendBundle _makeStandardSpendBundleForFee({
@@ -168,8 +154,6 @@ class NftWallet extends BaseWalletService {
           standardCoins: standardCoinsForFee,
           keychain: keychain,
           changePuzzlehash: changePuzzlehash);
-
-      // validateSpendBundleSignature(feeSpendBundle);
     }
 
     Program innerSol = BaseWalletService.makeSolution(
@@ -201,8 +185,12 @@ class NftWallet extends BaseWalletService {
     if (metadataUpdate != null) {
       final metadataUpdateListP = <Program>[];
       metadataUpdate.forEach((key, value) {
-        metadataUpdateListP.add(Program.cons(
-            Program.fromBytes(Bytes.fromHex(key)), Program.fromBytes(Bytes.fromHex(value))));
+        metadataUpdateListP.add(
+          Program.cons(
+            Program.fromBytes(Bytes.fromHex(key)),
+            Program.fromBytes(Bytes.fromHex(value)),
+          ),
+        );
       });
       magicCondition = Program.list([
         Program.fromInt(-24),
@@ -438,7 +426,7 @@ class NftWallet extends BaseWalletService {
 
     Bytes? didInnerHash;
 
-    if (didInfo != null && didInfo.didId.isNotEmpty) {
+    if (didInfo != null && didInfo.didId != null) {
       final apporvalInfo = await getDidApprovalInfo(
         nftsIds: [launcherCoin.id],
         didInfo: didInfo,
@@ -459,7 +447,7 @@ class NftWallet extends BaseWalletService {
       mintHeight: 0,
       latestHeight: 0,
       pendingTransaction: true,
-      minterDid: (didInfo != null && didInfo.didId.isNotEmpty) ? didInfo.didId : null,
+      minterDid: (didInfo != null && didInfo.didId != null) ? didInfo.didId : null,
     );
 
     final signedSpendBundle = generateSignedSpendBundle(
@@ -472,7 +460,7 @@ class NftWallet extends BaseWalletService {
           ],
         )
       ],
-      standardCoinsForFee: standardCoinsForFee,
+      standardCoinsForFee: [],
       keychain: keychain,
       nftCoin: nftCoin,
       newOwner: didInfo?.didId,
