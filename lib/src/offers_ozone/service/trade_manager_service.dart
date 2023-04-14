@@ -403,10 +403,8 @@ class TradeManagerService extends BaseWalletService {
       final amount = amounts.fold(0, (previousValue, element) => previousValue + element);
       if (amount > 0) {
         if (asset != null) {
-          // check if asset is an NFT
-
           final requestingNft = preparedData.driverDict[asset.assetId]?.type == AssetType.SINGLETON;
-          ;
+
           if (requestingNft) {
             nftRequestedLauncher = asset.assetId;
           }
@@ -429,7 +427,9 @@ class TradeManagerService extends BaseWalletService {
 
         if (standardCoinsForFee == null) {
           throw Exception(
-              "Standard coins for fee not found, pass into [standardCoinsForFee] or in  groupedCoins[null] ");
+            "Standard coins for fee not found, pass into"
+            "[standardCoinsForFee] or in  groupedCoins[null] ",
+          );
         }
       } else {
         if (standardCoinsForFee == null) {
