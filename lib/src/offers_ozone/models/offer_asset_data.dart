@@ -50,10 +50,14 @@ class PreparedTradeData {
   final Map<Bytes?, PuzzleInfo> driverDict;
   final Map<Bytes?, List<Payment>> payments;
   final Map<Bytes?, int> offerredAmounts;
+  final Bytes? nftOfferedLauncher;
+  final bool requestedLauncher;
 
   const PreparedTradeData({
     required this.driverDict,
     required this.payments,
     required this.offerredAmounts,
+    required this.nftOfferedLauncher,
+    required this.requestedLauncher,
   });
 }
