@@ -15,7 +15,7 @@ Offer generate_secure_bundle(
     required WalletKeychain keychain,
     required int fee,
     required Puzzlehash changePuzzlehash,
-    required Map<Bytes?, PuzzleInfo> driverDict,
+    required Map<Bytes, PuzzleInfo> driverDict,
     required Map<Bytes?, List<NotarizedPayment>> notarizedPayments}) {
   final transactions = <SpendBundle>[];
 
@@ -189,7 +189,7 @@ Future<void> main() async {
 
   test('Produces valid offert', () async {
     final stardarCoins = [standardCoin];
-    final driverDict = <Bytes?, PuzzleInfo>{
+    final driverDict = <Bytes, PuzzleInfo>{
       assetId: PuzzleInfo({
         "type": "CAT",
         "tail": assetId.toHexWithPrefix(),

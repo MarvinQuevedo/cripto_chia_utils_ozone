@@ -47,7 +47,7 @@ class OfferAssetData extends Equatable {
 }
 
 class PreparedTradeData {
-  final Map<Bytes?, PuzzleInfo> driverDict;
+  final Map<Bytes, PuzzleInfo> driverDict;
   final Map<Bytes?, List<Payment>> payments;
   final Map<Bytes?, int> offerredAmounts;
   final Bytes? nftOfferedLauncher;

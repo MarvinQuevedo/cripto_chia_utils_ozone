@@ -20,7 +20,7 @@ class TradeManagerService extends BaseWalletService {
       required WalletKeychain keychain,
       required int fee,
       required Puzzlehash changePuzzlehash,
-      required Map<Bytes?, PuzzleInfo> driverDict,
+      required Map<Bytes, PuzzleInfo> driverDict,
       required Map<Bytes?, List<NotarizedPayment>> notarizedPayments,
       required bool old}) {
     final transactions = <SpendBundle>[];
@@ -87,7 +87,7 @@ class TradeManagerService extends BaseWalletService {
 
   Offer createOfferForIds(
       {required List<FullCoin> coins,
-      required Map<Bytes?, PuzzleInfo> driverDict,
+      required Map<Bytes, PuzzleInfo> driverDict,
       required Map<Bytes?, List<Payment>> requiredPayments,
       required Map<Bytes?, int> offeredAmounts,
       int fee = 0,
@@ -320,7 +320,7 @@ class TradeManagerService extends BaseWalletService {
         targetPuzzleHash: targetPuzzleHash,
         nftCoin: nftCoin,
       );
-      final completedOffer = Offer.aggreate([offer, nftOffer]);
+      final completedOffer = Offer.aggregate([offer, nftOffer]);
       return completedOffer;
     } else {
       final offerWallet = TradeManagerService();
@@ -335,7 +335,7 @@ class TradeManagerService extends BaseWalletService {
         fee: fee,
       );
 
-      final completedOffer = Offer.aggreate([offer, responseOffer]);
+      final completedOffer = Offer.aggregate([offer, responseOffer]);
       return completedOffer;
     }
   }
@@ -477,11 +477,11 @@ class TradeManagerService extends BaseWalletService {
     }
   }
 
-  Future<Map<Bytes?, PuzzleInfo>> _createDict(
+  Future<Map<Bytes, PuzzleInfo>> _createDict(
       {required Map<OfferAssetData?, List<int>> requestedAmounts,
       required Map<OfferAssetData?, int> offerredAmounts,
       NFTCoinInfo? nftCoin}) async {
-    Map<Bytes?, PuzzleInfo> driverDict = {};
+    Map<Bytes, PuzzleInfo> driverDict = {};
     final uniqueAssetsData =
         (requestedAmounts.keys.toList() + offerredAmounts.keys.toList()).toSet();
 
@@ -489,13 +489,13 @@ class TradeManagerService extends BaseWalletService {
       if (assetData != null) {
         if (assetData.type == SpendType.cat2) {
           final tailHash = assetData.assetId;
-          driverDict[tailHash] = PuzzleInfo({
+          driverDict[tailHash!] = PuzzleInfo({
             "type": AssetType.CAT,
-            "tail": tailHash!.toHexWithPrefix(),
+            "tail": tailHash.toHexWithPrefix(),
           });
         } else if (assetData.type == SpendType.nft) {
           final puzzleInfo = await NftWallet().getPuzzleInfo(nftCoin!);
-          driverDict[assetData.assetId] = puzzleInfo;
+          driverDict[assetData.assetId!] = puzzleInfo;
         }
       }
     }
@@ -508,7 +508,7 @@ class TradeManagerService extends BaseWalletService {
       required int fee,
       required Map<OfferAssetData?, List<FullCoin>> coins,
       required Puzzlehash targetPuzzleHash,
-      Map<Bytes?, PuzzleInfo>? offerDriverDict}) async {
+      Map<Bytes, PuzzleInfo>? offerDriverDict}) async {
     FullNFTCoinInfo? nftCoin;
     Bytes? nftOfferedLauncher;
     bool requestedLauncher = false;
@@ -523,7 +523,7 @@ class TradeManagerService extends BaseWalletService {
         }
       }
     });
-    Map<Bytes?, PuzzleInfo> driverDict = offerDriverDict ??
+    Map<Bytes, PuzzleInfo> driverDict = offerDriverDict ??
         await _createDict(
           requestedAmounts: requestedAmounts,
           offerredAmounts: offerredAmounts,
