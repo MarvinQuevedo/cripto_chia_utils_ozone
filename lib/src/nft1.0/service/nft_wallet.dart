@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/command/exchange/cross_chain_offer_exchange.dart';
 import 'package:tuple/tuple.dart';
 
 import '../../core/models/conditions/announcement.dart';
@@ -897,7 +898,6 @@ class NftWallet extends BaseWalletService {
                     Program.nil,
                     Program.list([
                       Payment(duplicatePaymentsSum, Offer.ph(old)).toProgram(),
-                      innerRoyaltySol,
                     ]),
                   ),
                   innerRoyaltySol);
@@ -1012,8 +1012,11 @@ class NftWallet extends BaseWalletService {
     }
   }
 
-  Future<Tuple3<FullNFTCoinInfo, Program, WalletKeychain>> getNFTFullCoinInfo(FullCoin nftFullCoin,
-      {required BuildKeychain buildKeychain}) async {
+  /// From FullCoin It prepare the FullNftCoinInfo with the updated data for transfer,
+  /// if you want use It only for requested NFT, you can return null the the buildKeychain
+  /// for create the last spend fullNftCoinInfo
+  Future<Tuple3<FullNFTCoinInfo, Program, WalletKeychain?>> getNFTFullCoinInfo(FullCoin nftFullCoin,
+      {BuildKeychain? buildKeychain}) async {
     final coin = nftFullCoin.coin;
     final coinSpend = nftFullCoin.parentCoinSpend!;
 
@@ -1029,10 +1032,27 @@ class NftWallet extends BaseWalletService {
 
     final p2PuzzleHash = Puzzlehash(data.item2);
 
-    WalletKeychain keychainForNft = await buildKeychain({p2PuzzleHash});
+    WalletKeychain? keychainForNft;
 
-    final vector = keychainForNft.getWalletVector(p2PuzzleHash);
-    Program innerPuzzle = getPuzzleFromPk(vector!.childPublicKey);
+    Program innerPuzzle;
+    if (buildKeychain != null) {
+      keychainForNft = await buildKeychain({p2PuzzleHash});
+      final vector = keychainForNft?.getWalletVector(p2PuzzleHash);
+      if (vector == null) {
+        throw Exception("Could not find keychain for NFT ${nftInfo.launcherId}");
+      }
+      innerPuzzle = getPuzzleFromPk(vector.childPublicKey);
+    } else {
+      final driver = OuterPuzzleDriver.matchPuzzle(coinSpend.puzzleReveal);
+      final foundedInnerPuzzle = OuterPuzzleDriver.getInnerPuzzle(
+        constructor: driver!,
+        puzzleReveal: nftFullCoin.parentCoinSpend!.puzzleReveal,
+      );
+      if (foundedInnerPuzzle == null) {
+        throw Exception("Could not find inner puzzle for NFT ${nftInfo.launcherId}");
+      }
+      innerPuzzle = foundedInnerPuzzle;
+    }
 
     if (nftUncurried.supportDid) {
       innerPuzzle = NftService().recurryNftPuzzle(
