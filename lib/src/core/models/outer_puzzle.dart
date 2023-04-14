@@ -9,76 +9,78 @@ class AssetType {
   static String get ROYALTY_TRANSFER_PROGRAM => 'royalty transfer program';
 }
 
-final Map<String, OuterPuzzle> _driverLookup = {
-  AssetType.CAT: CATOuterPuzzle(),
-  AssetType.SINGLETON: SingletonOuterPuzzle(),
-  AssetType.METADATA: MetadataOurterPuzzle(),
-  AssetType.OWNERSHIP: OwnershipOuterPuzzle(),
-  AssetType.ROYALTY_TRANSFER_PROGRAM: TransferProgramOuterPuzzle()
-};
+class OuterPuzzleDriver {
+  static final Map<String, OuterPuzzle> _driverLookup = {
+    AssetType.CAT: CATOuterPuzzle(),
+    AssetType.SINGLETON: SingletonOuterPuzzle(),
+    AssetType.METADATA: MetadataOurterPuzzle(),
+    AssetType.OWNERSHIP: OwnershipOuterPuzzle(),
+    AssetType.ROYALTY_TRANSFER_PROGRAM: TransferProgramOuterPuzzle()
+  };
 
-Program constructPuzzle({
-  required PuzzleInfo constructor,
-  required Program innerPuzzle,
-}) {
-  final driver = _driverLookup[constructor.info['type']];
-  if (driver == null) throw Exception('Unknown asset type: ${constructor.info["type"]}');
+  static Program constructPuzzle({
+    required PuzzleInfo constructor,
+    required Program innerPuzzle,
+  }) {
+    final driver = _driverLookup[constructor.info['type']];
+    if (driver == null) throw Exception('Unknown asset type: ${constructor.info["type"]}');
 
-  return driver.constructPuzzle(
-    constructor: constructor,
-    innerPuzzle: innerPuzzle,
-  );
-}
-
-Bytes? createAssetId(PuzzleInfo constructor) {
-  final driver = _driverLookup[constructor.info['type']];
-  if (driver == null) throw Exception('Unknown asset type: ${constructor.info["type"]}');
-  return driver.createAssetId(constructor: constructor);
-}
-
-PuzzleInfo? matchPuzzle(Program puzzle) {
-  for (var driver in _driverLookup.values) {
-    final matched = driver.matchPuzzle(puzzle);
-    if (matched != null) {
-      return matched;
-    }
+    return driver.constructPuzzle(
+      constructor: constructor,
+      innerPuzzle: innerPuzzle,
+    );
   }
-  return null;
-}
 
-Program solvePuzzle({
-  required PuzzleInfo constructor,
-  required Solver solver,
-  required Program innerPuzzle,
-  required Program innerSolution,
-}) {
-  final driver = _driverLookup[constructor.info['type']];
-  if (driver == null) throw Exception('Unknown asset type: ${constructor.info["type"]}');
+  static Bytes? createAssetId(PuzzleInfo constructor) {
+    final driver = _driverLookup[constructor.info['type']];
+    if (driver == null) throw Exception('Unknown asset type: ${constructor.info["type"]}');
+    return driver.createAssetId(constructor: constructor);
+  }
 
-  return driver.solvePuzzle(
-    constructor: constructor,
-    solver: solver,
-    innerPuzzle: innerPuzzle,
-    innerSolution: innerSolution,
-  );
-}
+  static PuzzleInfo? matchPuzzle(Program puzzle) {
+    for (var driver in _driverLookup.values) {
+      final matched = driver.matchPuzzle(puzzle);
+      if (matched != null) {
+        return matched;
+      }
+    }
+    return null;
+  }
 
-Program? getInnerPuzzle({
-  required PuzzleInfo constructor,
-  required Program puzzleReveal,
-}) {
-  final driver = _driverLookup[constructor.info['type']];
-  if (driver == null) throw Exception('Unknown asset type: ${constructor.info["type"]}');
-  return driver.getInnerPuzzle(constructor: constructor, puzzleReveal: puzzleReveal);
-}
+  static Program solvePuzzle({
+    required PuzzleInfo constructor,
+    required Solver solver,
+    required Program innerPuzzle,
+    required Program innerSolution,
+  }) {
+    final driver = _driverLookup[constructor.info['type']];
+    if (driver == null) throw Exception('Unknown asset type: ${constructor.info["type"]}');
 
-Program? getInnerSolution({
-  required PuzzleInfo constructor,
-  required Program solution,
-}) {
-  final driver = _driverLookup[constructor.info['type']];
-  if (driver == null) throw Exception('Unknown asset type: ${constructor.info["type"]}');
-  return driver.getInnerSolution(constructor: constructor, solution: solution);
+    return driver.solvePuzzle(
+      constructor: constructor,
+      solver: solver,
+      innerPuzzle: innerPuzzle,
+      innerSolution: innerSolution,
+    );
+  }
+
+  static Program? getInnerPuzzle({
+    required PuzzleInfo constructor,
+    required Program puzzleReveal,
+  }) {
+    final driver = _driverLookup[constructor.info['type']];
+    if (driver == null) throw Exception('Unknown asset type: ${constructor.info["type"]}');
+    return driver.getInnerPuzzle(constructor: constructor, puzzleReveal: puzzleReveal);
+  }
+
+  static Program? getInnerSolution({
+    required PuzzleInfo constructor,
+    required Program solution,
+  }) {
+    final driver = _driverLookup[constructor.info['type']];
+    if (driver == null) throw Exception('Unknown asset type: ${constructor.info["type"]}');
+    return driver.getInnerSolution(constructor: constructor, solution: solution);
+  }
 }
 
 abstract class OuterPuzzle {

@@ -1,5 +1,4 @@
 import '../../../chia_crypto_utils.dart';
-import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 DeconstructedUpdateMetadataPuzzle? mathMetadataLayerPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
@@ -36,11 +35,11 @@ Program solutionForMetadataLayer({required int amount, required Program innerSol
   ]);
 }
 
-class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
+class MetadataOurterPuzzle extends OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     if (constructor.also != null) {
-      innerPuzzle = outerPuzzle.constructPuzzle(
+      innerPuzzle = OuterPuzzleDriver.constructPuzzle(
         constructor: constructor.also!,
         innerPuzzle: innerPuzzle,
       );
@@ -86,7 +85,7 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
         "updater_hash": matched.metadataUpdaterHash.toHexWithPrefix(),
       };
       final innerPuzzle = matched.innerPuzzle;
-      final next = outerPuzzle.matchPuzzle(innerPuzzle);
+      final next = OuterPuzzleDriver.matchPuzzle(innerPuzzle);
       if (next != null) {
         constructorDict["also"] = next.info;
       }
@@ -112,7 +111,7 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
     final coin = CoinPrototype.fromBytes(coinBytes);
 
     if (constructor.also != null) {
-      innerSolution = outerPuzzle.solvePuzzle(
+      innerSolution = OuterPuzzleDriver.solvePuzzle(
           constructor: constructor.also!,
           solver: solver,
           innerPuzzle: innerPuzzle,
@@ -128,7 +127,7 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
     if (matched != null) {
       final innerPuzzle = matched.innerPuzzle;
       if (constructor.also != null) {
-        final deopInnerPuzzle = outerPuzzle.getInnerPuzzle(
+        final deopInnerPuzzle = OuterPuzzleDriver.getInnerPuzzle(
           constructor: constructor.also!,
           puzzleReveal: innerPuzzle,
         );
@@ -144,8 +143,10 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
   Program? getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
     final myInnerSolution = solution.first();
     if (constructor.also != null) {
-      final deepInnerSolution =
-          outerPuzzle.getInnerSolution(constructor: constructor.also!, solution: myInnerSolution);
+      final deepInnerSolution = OuterPuzzleDriver.getInnerSolution(
+        constructor: constructor.also!,
+        solution: myInnerSolution,
+      );
       return deepInnerSolution;
     }
     return myInnerSolution;

@@ -1,5 +1,4 @@
 import '../../../chia_crypto_utils.dart';
-import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 import '../models/deconstructed_transfer_program_puzzle.dart';
 
 DeconstructedTransferProgramPuzzle? mathTransferProgramPuzzle(Program puzzle) {
@@ -57,7 +56,7 @@ Program solutionForTransferProgram(
   ]);
 }
 
-class TransferProgramOuterPuzzle extends outerPuzzle.OuterPuzzle {
+class TransferProgramOuterPuzzle extends OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     return puzzleForTransferProgram(
@@ -95,7 +94,7 @@ class TransferProgramOuterPuzzle extends outerPuzzle.OuterPuzzle {
       required Program innerPuzzle,
       required Program innerSolution}) {
     if (constructor.also != null) {
-      innerSolution = outerPuzzle.solvePuzzle(
+      innerSolution = OuterPuzzleDriver.solvePuzzle(
           constructor: constructor.also!,
           solver: solver,
           innerPuzzle: innerPuzzle,

@@ -1,5 +1,4 @@
 import '../../../chia_crypto_utils.dart';
-import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 import '../models/deconstructed_singleton_puzzle.dart';
 
 DeconstructedSingletonPuzzle? mathSingletonPuzzle(Program puzzle) {
@@ -54,12 +53,12 @@ Program solutionForSingleton({
   ]);
 }
 
-class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
+class SingletonOuterPuzzle extends OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     if (constructor.also != null) {
-      innerPuzzle =
-          outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: innerPuzzle);
+      innerPuzzle = OuterPuzzleDriver.constructPuzzle(
+          constructor: constructor.also!, innerPuzzle: innerPuzzle);
     }
 
     Bytes launcherHash = SINGLETON_LAUNCHER_HASH;
@@ -88,7 +87,7 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
         "launcher_id": matched.singletonLauncherId.toHexWithPrefix(),
         "launcher_ph": matched.launcherPuzzhash.toHexWithPrefix(),
       };
-      final next = outerPuzzle.matchPuzzle(matched.innerPuzzle);
+      final next = OuterPuzzleDriver.matchPuzzle(matched.innerPuzzle);
       if (next != null) {
         constructorDict["also"] = next.info;
       }
@@ -125,7 +124,7 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
     final parentCoin = parentSpend.coin;
 
     if (constructor.also != null) {
-      innerSolution = outerPuzzle.solvePuzzle(
+      innerSolution = OuterPuzzleDriver.solvePuzzle(
           constructor: constructor.also!,
           solver: solver,
           innerPuzzle: innerPuzzle,
@@ -152,7 +151,7 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
     if (matched != null) {
       final innerPuzzle = matched.innerPuzzle;
       if (constructor.also != null) {
-        final deepInnerPuzzle = outerPuzzle.getInnerPuzzle(
+        final deepInnerPuzzle = OuterPuzzleDriver.getInnerPuzzle(
           constructor: constructor.also!,
           puzzleReveal: innerPuzzle,
         );
@@ -168,7 +167,7 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
   Program? getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
     final myInnerSolution = solution.filterAt("rrf");
     if (constructor.also != null) {
-      final deepInnerSolution = outerPuzzle.getInnerSolution(
+      final deepInnerSolution = OuterPuzzleDriver.getInnerSolution(
         constructor: constructor.also!,
         solution: myInnerSolution,
       );

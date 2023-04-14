@@ -1,14 +1,13 @@
 import 'package:quiver/iterables.dart';
 
 import '../../../chia_crypto_utils.dart';
-import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
-class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
+class CATOuterPuzzle extends OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     if (constructor.also != null) {
-      innerPuzzle =
-          outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: innerPuzzle);
+      innerPuzzle = OuterPuzzleDriver.constructPuzzle(
+          constructor: constructor.also!, innerPuzzle: innerPuzzle);
     }
     return CatWalletService.makeCatPuzzle(createAssetId(constructor: constructor), innerPuzzle);
   }
@@ -89,8 +88,11 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
 
       // final parentCoin = parentSpend.coin;
       if (constructor.also != null) {
-        puzzle = outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: puzzle);
-        solution = outerPuzzle.solvePuzzle(
+        puzzle = OuterPuzzleDriver.constructPuzzle(
+          constructor: constructor.also!,
+          innerPuzzle: puzzle,
+        );
+        solution = OuterPuzzleDriver.solvePuzzle(
             constructor: constructor.also!,
             solver: solver,
             innerPuzzle: innerPuzzle,
@@ -123,7 +125,7 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
     if (matched != null) {
       final innerPuzzle = matched.innerPuzzle;
       if (constructor.also != null) {
-        final deopInnerPuzzle = outerPuzzle.getInnerPuzzle(
+        final deopInnerPuzzle = OuterPuzzleDriver.getInnerPuzzle(
           constructor: constructor.also!,
           puzzleReveal: puzzleReveal,
         );
@@ -139,8 +141,10 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
   Program? getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
     final myInnerSolution = solution.first();
     if (constructor.also != null) {
-      final deepInnerSolution =
-          outerPuzzle.getInnerSolution(constructor: constructor.also!, solution: solution);
+      final deepInnerSolution = OuterPuzzleDriver.getInnerSolution(
+        constructor: constructor.also!,
+        solution: solution,
+      );
       return deepInnerSolution;
     }
     return myInnerSolution;
