@@ -309,7 +309,7 @@ class TradeManagerService extends BaseWalletService {
       });
 
       final nftOffer = await nftWallet.makeNft1Offer(
-        offerDict: preparedData.offerredAmounts,
+        offerDict: offerDict,
         driverDict: preparedData.driverDict,
         changePuzzlehash: changePuzzlehash,
         keychain: keychain,
