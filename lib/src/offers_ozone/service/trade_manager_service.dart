@@ -295,7 +295,7 @@ class TradeManagerService extends BaseWalletService {
         }
       }
       final nftWallet = NftWallet();
-      if (standardCoinsForFee == null && preparedData.offerredAmounts[null] == null) {
+      if (standardCoinsForFee == null && preparedData.offerredAmounts[null] == null && fee > 0) {
         throw Exception("Standard coins for fee not found for NFT Offer");
       }
       preparedData.offerredAmounts.forEach((Bytes? assetId, int amount) {
@@ -425,7 +425,7 @@ class TradeManagerService extends BaseWalletService {
           throw Exception("Offered NFT coin not found ${nftOfferedLauncher!.toHex()}");
         }
 
-        if (standardCoinsForFee == null) {
+        if (standardCoinsForFee == null && fee > 0) {
           throw Exception(
             "Standard coins for fee not found, pass into"
             "[standardCoinsForFee] or in  groupedCoins[null] ",
@@ -456,7 +456,7 @@ class TradeManagerService extends BaseWalletService {
         old: isOld,
         fee: fee,
         selectedCoins: preparedCoins,
-        standardCoinsForFee: standardCoinsForFee,
+        standardCoinsForFee: standardCoinsForFee ?? [],
         targetPuzzleHash: targetPuzzleHash,
         nftCoin: nftCoin,
       );
