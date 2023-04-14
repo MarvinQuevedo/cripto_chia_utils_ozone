@@ -65,8 +65,18 @@ class OwnershipOuterPuzzle extends outerPuzzle.OuterPuzzle {
     if (transfer_program_info is Program) {
       transfer_program = transfer_program_info;
     } else {
+      PuzzleInfo? constructor;
+      if (transfer_program_info is Map<String, dynamic>) {
+        constructor = PuzzleInfo(transfer_program_info);
+      } else if (transfer_program_info is PuzzleInfo) {
+        constructor = transfer_program_info;
+      }
+      if (constructor == null) {
+        throw Exception("Can't conver  $transfer_program_info to PuzzleInfo");
+      }
+
       transfer_program = outerPuzzle.constructPuzzle(
-        constructor: transfer_program_info,
+        constructor: constructor,
         innerPuzzle: innerPuzzle,
       );
     }
