@@ -76,9 +76,10 @@ class Offer {
       } else {
         settlementPh = (old) ? OFFER_MOD_V1_HASH : OFFER_MOD_HASH;
       }
-      final msgProgram = Program.list([
+      final msgProgram = Program.cons(
         Program.fromBytes(payments.first.nonce),
-      ]..addAll(payments.map((e) => e.toProgram()).toList()));
+        Program.list(payments.map((e) => e.toProgram()).toList()),
+      );
 
       Bytes msg = msgProgram.hash();
 
@@ -439,12 +440,15 @@ class Offer {
                 )
                 .toList();
 
-            innerSolutions.add(Program.list(<Program>[
-              Program.fromBytes(nonce),
-              Program.list(
-                noncePayments.map((e) => e.toProgram()).toList(),
-              )
-            ]));
+            innerSolutions.add(Program.cons(
+                Program.fromBytes(nonce),
+                Program.list(
+                  noncePayments
+                      .map(
+                        (e) => e.toProgram(),
+                      )
+                      .toList(),
+                )));
           }
         }
         coinToSolutionDict[coin] = Program.list(innerSolutions);
@@ -548,13 +552,15 @@ class Offer {
       final nonces = cleanDuplicatesValues(payments.map((e) => e.nonce).toList());
       nonces.forEach((nonce) {
         final noncePayments = payments.where((element) => element.nonce == nonce).toList();
-        innerSolutions.add(Program.list(<Program>[
-          Program.fromBytes(nonce),
-        ]..addAll(noncePayments
-            .map(
-              (e) => e.toProgram(),
-            )
-            .toList())));
+        innerSolutions.add(Program.cons(
+            Program.fromBytes(nonce),
+            Program.list(
+              noncePayments
+                  .map(
+                    (e) => e.toProgram(),
+                  )
+                  .toList(),
+            )));
       });
       aditionalCoinSpends.add(CoinSpend(
           coin: CoinPrototype(
