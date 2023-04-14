@@ -272,16 +272,18 @@ class TradeManagerService extends BaseWalletService {
         }
       }
     }
+    final requestedAmounts = convertOfferedToRequested(analizedOffer!.offered);
 
     final preparedData = await _prepareOfferData(
         coins: groupedCoins,
-        requestedAmounts: convertOfferedToRequested(analizedOffer!.offered),
+        requestedAmounts: requestedAmounts,
         offerredAmounts: convertRequestedToOffered(analizedOffer.requested),
         fee: fee,
         targetPuzzleHash: targetPuzzleHash,
         offerDriverDict: offerDriverDict);
 
     if (preparedData.nftOfferedLauncher != null || preparedData.requestedLauncher) {
+      Map<Bytes?, int> offerDict = {};
       final preparedCoins = prepareFullCoins(coins, keychain: keychain);
       FullNFTCoinInfo? nftCoin;
       if (preparedData.nftOfferedLauncher != null) {
@@ -296,6 +298,15 @@ class TradeManagerService extends BaseWalletService {
       if (standardCoinsForFee == null && preparedData.offerredAmounts[null] == null) {
         throw Exception("Standard coins for fee not found for NFT Offer");
       }
+      preparedData.offerredAmounts.forEach((Bytes? assetId, int amount) {
+        offerDict[assetId] = -(amount.abs());
+      });
+      requestedAmounts.forEach((OfferAssetData? asset, List<int> amounts) {
+        final amount = amounts.fold(0, (previousValue, element) => previousValue + element);
+        if (amount > 0) {
+          offerDict[asset?.assetId] = amount.abs();
+        }
+      });
 
       final nftOffer = await nftWallet.makeNft1Offer(
         offerDict: preparedData.offerredAmounts,
@@ -309,7 +320,8 @@ class TradeManagerService extends BaseWalletService {
         targetPuzzleHash: targetPuzzleHash,
         nftCoin: nftCoin,
       );
-      return nftOffer;
+      final completedOffer = Offer.aggreate([offer, nftOffer]);
+      return completedOffer;
     } else {
       final offerWallet = TradeManagerService();
       final responseOffer = await offerWallet.createOfferForIds(
