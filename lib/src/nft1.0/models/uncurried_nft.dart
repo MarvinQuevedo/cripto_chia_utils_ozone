@@ -65,7 +65,7 @@ class UncurriedNFT {
   final bool supportDid;
 
   /// Puzzle hash of the ownership layer inner puzzle
-  final Bytes? nftInnerPuzzleHash;
+  //final Bytes? nftInnerPuzzleHash;
 
   /// Curried parameters of the transfer program
   /// [royalty_address, trade_price_percentage, settlement_mod_hash, cat_mod_hash]
@@ -83,7 +83,7 @@ class UncurriedNFT {
     required this.seriesTotal,
     required this.p2Puzzle,
     required this.supportDid,
-    required this.nftInnerPuzzleHash,
+    //required this.nftInnerPuzzleHash,
     required this.transferProgram,
     required this.nftModHash,
     required this.nftStateLayer,
@@ -224,32 +224,33 @@ class UncurriedNFT {
       }
 
       return UncurriedNFT._(
-          nftModHash: nftModHash,
-          nftStateLayer: nftStateLayer,
-          singletonStruct: singletonStruct,
-          singletonModHash: sinletonModHash,
-          singletonLauncherId: singletonLauncherId,
-          launcherPuzhash: launcherPuzzhash,
-          metadata: metadata,
-          dataUris: dataUris,
-          dataHash: dataHash,
-          p2Puzzle: p2Puzzle,
-          metaUris: metaUris,
-          metaHash: metaHash,
-          licenseUris: licenseUris,
-          licenseHash: licenseHash,
-          seriesNumber: seriesNumber,
-          seriesTotal: seriesTotal,
-          innerPuzzle: innerPuzzle,
-          metadataUpdaterHash: metadataUpdaterHash,
-          ownerDid: currentDid,
-          supportDid: supportsDid,
-          transferProgram: transferProgram,
-          transferProgramCurryParams:
-              transferProgramArgs != null ? Program.list(transferProgramArgs) : null,
-          royaltyPuzzlehash: royaltyPuzzlehash,
-          tradePricePercentage: royaltyPercentage,
-          nftInnerPuzzleHash: nftInnerPuzzleMod);
+        nftModHash: nftModHash,
+        nftStateLayer: nftStateLayer,
+        singletonStruct: singletonStruct,
+        singletonModHash: sinletonModHash,
+        singletonLauncherId: singletonLauncherId,
+        launcherPuzhash: launcherPuzzhash,
+        metadata: metadata,
+        dataUris: dataUris,
+        dataHash: dataHash,
+        p2Puzzle: p2Puzzle,
+        metaUris: metaUris,
+        metaHash: metaHash,
+        licenseUris: licenseUris,
+        licenseHash: licenseHash,
+        seriesNumber: seriesNumber,
+        seriesTotal: seriesTotal,
+        innerPuzzle: innerPuzzle,
+        metadataUpdaterHash: metadataUpdaterHash,
+        ownerDid: currentDid,
+        supportDid: supportsDid,
+        transferProgram: transferProgram,
+        transferProgramCurryParams:
+            transferProgramArgs != null ? Program.list(transferProgramArgs) : null,
+        royaltyPuzzlehash: royaltyPuzzlehash,
+        tradePricePercentage: royaltyPercentage,
+        // nftInnerPuzzleHash: nftInnerPuzzleMod,
+      );
     } catch (e) {
       print(e);
       throw Exception("Cannot uncurry NFT state layer: Args ${curried_args}");
