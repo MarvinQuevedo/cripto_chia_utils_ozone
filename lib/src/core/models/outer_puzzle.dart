@@ -10,6 +10,7 @@ class AssetType {
 }
 
 class OuterPuzzleDriver {
+  OuterPuzzleDriver._();
   static final Map<String, OuterPuzzle> _driverLookup = {
     AssetType.CAT: CATOuterPuzzle(),
     AssetType.SINGLETON: SingletonOuterPuzzle(),
