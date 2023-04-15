@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../cat/index.dart';
 import '../../clvm.dart';
 import '../../core/index.dart';
@@ -155,44 +157,27 @@ class TradeManagerService extends BaseWalletService {
   }) async {
     final isOld = offer.old;
 
-    final driverDict = <Bytes?, PuzzleInfo>{};
     final takeOfferDict = <Bytes?, int>{};
     Map<OfferAssetData?, int> offerredAmounts = {};
+    int? royaltyPercentage;
+    int? royaltyAmount;
 
     final arbitrage = offer.arbitrage();
     final offerDriverDict = offer.driverDict;
 
+    final offerRequestedAmounts = <Bytes?, int>{};
+    final fungibleAssetAmount = <Bytes?, int>{};
+
     arbitrage.forEach((assetId, amount) {
-      if (assetId != null) {
-        final assetType = offerDriverDict[assetId]!.type;
-        if (assetType == AssetType.CAT) {
-          driverDict[assetId] = PuzzleInfo({
-            "type": AssetType.CAT,
-            "tail": assetId.toHex(),
-          });
+      if (amount < 0) {
+        offerRequestedAmounts[assetId] = amount.abs();
+        if (assetId != null) {
+          final type = offerDriverDict[assetId]!.type;
+          if (type == AssetType.CAT) {
+            fungibleAssetAmount[assetId] = amount.abs();
+          }
         } else {
-          driverDict[assetId] = PuzzleInfo({
-            "type": AssetType.SINGLETON,
-            "launcher_id": assetId.toHexWithPrefix(),
-            "launcher_ph": assetId.toHexWithPrefix(),
-          });
-        }
-      }
-    });
-
-    final offerRequestedAmounts = offer.getRequestedAmounts();
-    offerRequestedAmounts.forEach((assetId, amount) {
-      takeOfferDict[assetId] = -(amount.abs());
-
-      if (assetId == null) {
-        final totalChia = amount + fee;
-        offerredAmounts[OfferAssetData.standart()] = -(totalChia.abs());
-      } else {
-        final assetType = offerDriverDict[assetId]!.type;
-        if (assetType == AssetType.CAT) {
-          offerredAmounts[OfferAssetData.cat(tailHash: assetId)] = -(amount.abs());
-        } else if (assetType == AssetType.SINGLETON) {
-          offerredAmounts[OfferAssetData.singletonNft(launcherPuzhash: assetId)] = -(amount.abs());
+          fungibleAssetAmount[null] = amount.abs();
         }
       }
     });
@@ -214,14 +199,61 @@ class TradeManagerService extends BaseWalletService {
         if (assetType == AssetType.CAT) {
           requestedAmounts[OfferAssetData.cat(tailHash: assetId)] = [amount.abs()];
         } else if (assetType == AssetType.SINGLETON) {
+          bool isRoyalty = offerDriverDict[assetId]!.checkType(types: [
+            AssetType.SINGLETON,
+            AssetType.METADATA,
+            AssetType.OWNERSHIP,
+          ]);
+
+          if (isRoyalty) {
+            var transferInfo = offerDriverDict[assetId]!.also!.also!;
+            var royaltyPercentageRaw = transferInfo["transfer_program"]["royalty_percentage"];
+            if (royaltyPercentageRaw == null) {
+              throw Exception("Royalty percentage is not found in the transfer program");
+            }
+            // clvm encodes large ints as bytes
+
+            if (royaltyPercentageRaw is Bytes) {
+              royaltyPercentage = bytesToInt(royaltyPercentageRaw, Endian.big);
+            } else if (royaltyPercentageRaw is int) {
+              royaltyPercentage = royaltyPercentageRaw;
+            } else {
+              royaltyPercentage = int.parse(royaltyPercentageRaw);
+            }
+          }
+
           requestedAmounts[OfferAssetData.singletonNft(launcherPuzhash: assetId)] = [amount.abs()];
         }
       }
     });
+    if (royaltyPercentage != null && fungibleAssetAmount.length == 1) {
+      final fungibleAmount = fungibleAssetAmount.values.first;
+      royaltyAmount = (fungibleAmount.abs() * (royaltyPercentage! / 10000)).floor();
+    }
+
+    offerRequestedAmounts.forEach((assetId, amount) {
+      takeOfferDict[assetId] = -(amount.abs());
+
+      if (assetId == null) {
+        final totalChia = amount + fee;
+        offerredAmounts[OfferAssetData.standart()] = -(totalChia.abs());
+      } else {
+        final assetType = offerDriverDict[assetId]!.type;
+        if (assetType == AssetType.CAT) {
+          final totalCat = amount;
+          offerredAmounts[OfferAssetData.cat(tailHash: assetId)] = -(totalCat.abs());
+        } else if (assetType == AssetType.SINGLETON) {
+          offerredAmounts[OfferAssetData.singletonNft(launcherPuzhash: assetId)] = -(amount.abs());
+        }
+      }
+    });
+
     return AnalizedOffer(
       offered: convertRequestedToOffered(requestedAmounts),
       requested: convertOfferedToRequested(offerredAmounts),
       isOld: isOld,
+      royaltyAmount: royaltyAmount,
+      royaltyPer: royaltyPercentage,
     );
   }
 
