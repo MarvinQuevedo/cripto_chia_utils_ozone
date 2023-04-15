@@ -1,11 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/command/exchange/cross_chain_offer_exchange.dart';
 import 'package:tuple/tuple.dart';
 
 import '../../core/models/conditions/announcement.dart';
-import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/service/conditions_utils.dart';
 import '../../offers_ozone/utils/build_keychain.dart';
@@ -565,6 +563,7 @@ class NftWallet extends BaseWalletService {
     Map<Bytes, int> offeredRoyaltyPercentages = {};
 
     for (var asset in royaltyNftAssetDict.keys) {
+      final amount = royaltyNftAssetDict[asset]!;
       var transferInfo = driverDict[asset]!.also!.also!;
 
       var royaltyPercentageRaw = transferInfo["transfer_program"]["royalty_percentage"];
@@ -580,7 +579,7 @@ class NftWallet extends BaseWalletService {
       } else {
         royaltyPercentage = int.parse(royaltyPercentageRaw);
       }
-      var amount = royaltyNftAssetDict[asset]!;
+
       if (amount > 0) {
         requiredRoyaltyInfo.add(Tuple3(
           asset,
@@ -595,7 +594,7 @@ class NftWallet extends BaseWalletService {
     Map<Bytes?, List<Tuple2<Bytes, Payment>>> royaltyPayments = {};
     for (var asset in fungibleAssetDict.keys) {
       // offered fungible items
-      var amount = fungibleAssetDict[asset]!;
+      final amount = fungibleAssetDict[asset]!;
       if (amount < 0 && requestSideRoyaltySplit > 0) {
         List<Tuple2<Bytes, Payment>> paymentList = [];
         for (var royaltyInfo in requiredRoyaltyInfo) {
@@ -603,7 +602,7 @@ class NftWallet extends BaseWalletService {
           var address = Puzzlehash(royaltyInfo.item2);
           var percentage = royaltyInfo.item3;
           int extraRoyaltyAmount =
-              (amount.abs() / requestSideRoyaltySplit).floor() * (percentage / 10000).floor();
+              ((amount.abs() / requestSideRoyaltySplit).floor() * (percentage / 10000)).floor();
           if (extraRoyaltyAmount == amount.abs()) {
             throw Exception("Amount offered and amount paid in royalties are equal");
           }
@@ -751,9 +750,8 @@ class NftWallet extends BaseWalletService {
               royPayments.isEmpty ? 0 : royPayments.map((p) => p.amount).reduce((a, b) => a + b);
           final coins = offeredCoinsByAsset[assetId];
           final payments = [
-            (royPaymentSum > 0 || old)
-                ? Payment(royPaymentSum.abs(), DESIRED_OFFER_MOD_HASH)
-                : Payment(amount.abs(), DESIRED_OFFER_MOD_HASH),
+            Payment(amount.abs(), DESIRED_OFFER_MOD_HASH),
+            if (royPaymentSum > 0 || old) Payment(royPaymentSum.abs(), DESIRED_OFFER_MOD_HASH)
           ];
 
           final standarBundle = wallet.createSpendBundle(
@@ -764,12 +762,6 @@ class NftWallet extends BaseWalletService {
             puzzleAnnouncementsToAssert: announcementsToAssert,
             changePuzzlehash: changePuzzlehash,
           );
-
-          //TODO: Remove test coin spends
-          for (final cs in standarBundle.coinSpends) {
-            final conditions = await cs.outputProgram;
-            print(conditions);
-          }
 
           txs = [standarBundle];
         } else if (fungibleAssetDict[assetId] == null && wallet is NftWallet) {
@@ -802,11 +794,6 @@ class NftWallet extends BaseWalletService {
             puzzleAnnouncementsToAssert: announcementsToAssert,
             changePuzzlehash: changePuzzlehash,
           );
-          //TODO: Remove test coin spends
-          for (final cs in nftBundles.coinSpends) {
-            final conditions = await cs.outputProgram;
-            print(conditions);
-          }
 
           txs = [nftBundles];
         } else if (wallet is CatWalletService) {
@@ -837,12 +824,6 @@ class NftWallet extends BaseWalletService {
             changePuzzlehash: changePuzzlehash,
           );
 
-          //TODO: Remove test coin spends
-          for (final cs in catBundle.coinSpends) {
-            final conditions = await cs.outputProgram;
-            print(conditions);
-          }
-
           txs = [catBundle];
         }
         allTransactions.addAll(txs);
@@ -854,10 +835,8 @@ class NftWallet extends BaseWalletService {
 
           // Skip it if we're paying 0 royalties
           var payments = royaltyPayments[assetId] ?? [];
-          if ((!old &&
-                  payments.isNotEmpty &&
-                  payments.map((p) => p.item2.amount).reduce((a, b) => a + b) == 0) ||
-              payments.isEmpty) {
+          final paymentsSum = payments.map((p) => p.item2.amount).reduce((a, b) => a + b);
+          if ((!old && paymentsSum == 0) || payments.isEmpty) {
             continue;
           }
 
@@ -971,19 +950,10 @@ class NftWallet extends BaseWalletService {
                 CoinSpend(coin: royaltyCoin, puzzleReveal: offerPuzzle, solution: royaltySol);
             additionalBundles.add(SpendBundle(coinSpends: [newCoinSpend]));
 
-            //TODO: Remove test coin spends
-            final conditions = await newCoinSpend.outputProgram;
-            print(conditions);
-
             if (duplicatePayments.isNotEmpty) {
               payments = duplicatePayments;
               royaltyCoin = newCoinSpend.additions.where((c) => c.puzzlehash == royaltyPh).first;
               parentSpend = newCoinSpend;
-              //TODO: Remove test coin spends
-
-              final conditions = await newCoinSpend.outputProgram;
-              print(conditions);
-
               continue;
             } else {
               break;
@@ -995,6 +965,7 @@ class NftWallet extends BaseWalletService {
     // Finalmente, ensambla los registros de transacciones correctamente
     SpendBundle txsBundle = SpendBundle.aggregate(allTransactions);
     SpendBundle aggregateBundle = SpendBundle.aggregate([txsBundle, ...additionalBundles]);
+
     Offer offer = Offer(
         requestedPayments: notarizedPayments,
         bundle: aggregateBundle,
@@ -1034,7 +1005,7 @@ class NftWallet extends BaseWalletService {
 
     WalletKeychain? keychainForNft;
 
-    Program innerPuzzle;
+    Program innerPuzzle = nftUncurried.innerPuzzle;
     if (buildKeychain != null) {
       keychainForNft = await buildKeychain({p2PuzzleHash});
       final vector = keychainForNft?.getWalletVector(p2PuzzleHash);
@@ -1042,16 +1013,6 @@ class NftWallet extends BaseWalletService {
         throw Exception("Could not find keychain for NFT ${nftInfo.launcherId}");
       }
       innerPuzzle = getPuzzleFromPk(vector.childPublicKey);
-    } else {
-      final driver = OuterPuzzleDriver.matchPuzzle(coinSpend.puzzleReveal);
-      final foundedInnerPuzzle = OuterPuzzleDriver.getInnerPuzzle(
-        constructor: driver!,
-        puzzleReveal: nftFullCoin.parentCoinSpend!.puzzleReveal,
-      );
-      if (foundedInnerPuzzle == null) {
-        throw Exception("Could not find inner puzzle for NFT ${nftInfo.launcherId}");
-      }
-      innerPuzzle = foundedInnerPuzzle;
     }
 
     if (nftUncurried.supportDid) {
