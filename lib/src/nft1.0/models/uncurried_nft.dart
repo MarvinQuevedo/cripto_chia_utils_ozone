@@ -189,7 +189,7 @@ class UncurriedNFT {
 
       Bytes? currentDid;
       Program? transferProgram;
-      Program? transferProgramArgs;
+      List<Program>? transferProgramArgs;
       late Program p2Puzzle;
       Puzzlehash? royaltyPuzzlehash;
       int? royaltyPercentage;
@@ -210,7 +210,7 @@ class UncurriedNFT {
         p2Puzzle = olArgsList[3];
         final uncurriedTransferProgram = transferProgram.uncurry();
         //final transferProgramMod = uncurriedTransferProgram.program;
-        final transferProgramArgs = uncurriedTransferProgram.arguments;
+        transferProgramArgs = uncurriedTransferProgram.arguments;
         final royaltyAddressP = transferProgramArgs[1];
         final royaltyPercentageP = transferProgramArgs[2];
         royaltyPercentage = royaltyPercentageP.toInt();
@@ -245,7 +245,8 @@ class UncurriedNFT {
           ownerDid: currentDid,
           supportDid: supportsDid,
           transferProgram: transferProgram,
-          transferProgramCurryParams: transferProgramArgs,
+          transferProgramCurryParams:
+              transferProgramArgs != null ? Program.list(transferProgramArgs) : null,
           royaltyPuzzlehash: royaltyPuzzlehash,
           tradePricePercentage: royaltyPercentage,
           nftInnerPuzzleHash: nftInnerPuzzleMod);
