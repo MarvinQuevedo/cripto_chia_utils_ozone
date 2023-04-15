@@ -22,20 +22,19 @@ DeconstructedOwnershipOuterPuzzle? mathOwnershipLayerPuzzle(Program puzzle) {
 /// [currentOwner] Can be Program, Bytes, Hex String or CLVM program String
 Program puzzleForOwnershipLayer(
     {required currentOwner, required Program transferProgram, required Program innerPuzzle}) {
-  Program _currentOwner;
+  Program _currentOwner = Program.nil;
   if (currentOwner is Program) {
     _currentOwner = currentOwner;
   } else if (currentOwner is Bytes) {
     _currentOwner = Program.fromBytes(currentOwner);
-  } else if (currentOwner == null) {
-    _currentOwner = Program.nil;
+  } else if (currentOwner is String && (currentOwner).contains("0x")) {
+    _currentOwner = Program.fromHex(currentOwner);
   } else {
-    if ((currentOwner as String).contains("0x")) {
-      _currentOwner = Program.fromHex(currentOwner);
-    } else {
+    try {
       _currentOwner = Program.parse(currentOwner);
-    }
+    } catch (e) {}
   }
+
   return NFT_OWNERSHIP_LAYER.curry(
     [
       Program.fromBytes(NFT_OWNERSHIP_LAYER_HASH),
@@ -118,15 +117,16 @@ class OwnershipOuterPuzzle extends OuterPuzzle {
       required Solver solver,
       required Program innerPuzzle,
       required Program innerSolution}) {
+    Program deepSolution = innerSolution;
     if (constructor.also != null) {
-      innerSolution = OuterPuzzleDriver.solvePuzzle(
+      deepSolution = OuterPuzzleDriver.solvePuzzle(
           constructor: constructor.also!,
           solver: solver,
           innerPuzzle: innerPuzzle,
           innerSolution: innerSolution);
     }
 
-    return solutionForOwnershipLayer(innerSolution: innerSolution);
+    return solutionForOwnershipLayer(innerSolution: deepSolution);
   }
 
   @override
@@ -135,11 +135,11 @@ class OwnershipOuterPuzzle extends OuterPuzzle {
     if (matched != null) {
       final innerPuzzle = matched.innerPuzzle;
       if (constructor.also != null) {
-        final deopInnerPuzzle = OuterPuzzleDriver.getInnerPuzzle(
+        final deepInnerPuzzle = OuterPuzzleDriver.getInnerPuzzle(
           constructor: constructor.also!,
           puzzleReveal: innerPuzzle,
         );
-        return deopInnerPuzzle;
+        return deepInnerPuzzle;
       }
       return innerPuzzle;
     } else {
@@ -150,6 +150,7 @@ class OwnershipOuterPuzzle extends OuterPuzzle {
   @override
   Program? getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
     final myInnerSolution = solution.first();
+
     if (constructor.also != null) {
       final deepInnerSolution = OuterPuzzleDriver.getInnerSolution(
         constructor: constructor.also!,

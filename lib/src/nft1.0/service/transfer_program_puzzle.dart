@@ -7,20 +7,20 @@ DeconstructedTransferProgramPuzzle? mathTransferProgramPuzzle(Program puzzle) {
     final nftArgs = uncurried.arguments;
 
     final singletonStruct = nftArgs[0];
-    final royaltyAddressP = nftArgs[1];
+    final royaltyPuzzleHash = nftArgs[1];
     final royaltyPercentage = nftArgs[2];
 
     return DeconstructedTransferProgramPuzzle(
       singletonStruct: singletonStruct,
       royaltyPercentage: royaltyPercentage.toInt(),
-      royaltyAddressP: royaltyAddressP,
+      royaltyAddressP: royaltyPuzzleHash,
     );
   }
   return null;
 }
 
 Program puzzleForTransferProgram(
-    {required Bytes launcherId, required Puzzlehash royaltyAddress, required int percentage}) {
+    {required Bytes launcherId, required Puzzlehash royaltyPuzzleHash, required int percentage}) {
   final sinletonStruct = Program.cons(
     Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
     Program.cons(
@@ -28,8 +28,13 @@ Program puzzleForTransferProgram(
       Program.fromBytes(SINGLETON_LAUNCHER_HASH),
     ),
   );
-  return NFT_TRANSFER_PROGRAM_DEFAULT
-      .curry([sinletonStruct, Program.fromBytes(royaltyAddress), Program.fromInt(percentage)]);
+  return TRANSFER_PROGRAM_MOD.curry(
+    [
+      sinletonStruct,
+      Program.fromBytes(royaltyPuzzleHash),
+      Program.fromInt(percentage),
+    ],
+  );
 }
 
 Program solutionForTransferProgram(
@@ -49,9 +54,7 @@ Program solutionForTransferProgram(
     Program.list([
       Program.fromBytes(newDid),
       tradePricesList,
-      Program.fromBytes(
-        newDidInnerHash,
-      ),
+      Program.fromBytes(newDidInnerHash),
     ])
   ]);
 }
@@ -61,7 +64,7 @@ class TransferProgramOuterPuzzle extends OuterPuzzle {
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     return puzzleForTransferProgram(
       launcherId: Puzzlehash.fromHex(constructor["launcher_id"]),
-      royaltyAddress: Puzzlehash.fromHex(constructor["royalty_address"]),
+      royaltyPuzzleHash: Puzzlehash.fromHex(constructor["royalty_address"]),
       percentage: constructor["royalty_percentage"] as int,
     );
   }
@@ -93,14 +96,6 @@ class TransferProgramOuterPuzzle extends OuterPuzzle {
       required Solver solver,
       required Program innerPuzzle,
       required Program innerSolution}) {
-    if (constructor.also != null) {
-      innerSolution = OuterPuzzleDriver.solvePuzzle(
-          constructor: constructor.also!,
-          solver: solver,
-          innerPuzzle: innerPuzzle,
-          innerSolution: innerSolution);
-    }
-
     return Program.nil;
   }
 
