@@ -113,12 +113,13 @@ class SingletonOuterPuzzle extends OuterPuzzle {
     final coin = CoinPrototype.fromBytes(coinBytes);
     CoinSpend parentSpend;
     if (solver["parent_spend"] is String) {
-      parentSpend =
-          CoinSpend.fromProgram(Program.deserialize(Bytes.fromHex(solver["parent_spend"])));
+      parentSpend = CoinSpend.fromProgram(
+        Program.deserializeHex(solver["parent_spend"]),
+      );
     } else if (solver["parent_spend"] is Bytes) {
       parentSpend = CoinSpend.fromProgram(Program.deserialize(solver["parent_spend"]));
     } else {
-      parentSpend = solver["parent_spend"];
+      parentSpend = solver["parent_spend"] as CoinSpend;
     }
 
     final parentCoin = parentSpend.coin;
@@ -130,15 +131,16 @@ class SingletonOuterPuzzle extends OuterPuzzle {
           innerPuzzle: innerPuzzle,
           innerSolution: innerSolution);
     }
-    final mathced = mathSingletonPuzzle(parentSpend.puzzleReveal);
-    if (mathced == null) {
+    final matched = mathSingletonPuzzle(parentSpend.puzzleReveal);
+    if (matched == null) {
       throw Exception("Math fail SingletonPuzzle");
     }
+    final parentInnerPuzzle = matched.innerPuzzle;
 
     return solutionForSingleton(
       lineageProof: LineageProof(
           parentName: Puzzlehash(parentCoin.parentCoinInfo),
-          innerPuzzleHash: mathced.innerPuzzle.hash(),
+          innerPuzzleHash: parentInnerPuzzle.hash(),
           amount: parentCoin.amount),
       amount: coin.amount,
       innerSolution: innerSolution,
