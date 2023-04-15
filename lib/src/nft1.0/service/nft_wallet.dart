@@ -232,6 +232,7 @@ class NftWallet extends BaseWalletService {
       puzzleReveal: nftCoin.fullPuzzle,
       solution: singletonSolution,
     );
+
     SpendBundle nftSpendBundle = SpendBundle(
       coinSpends: [
         coinSpend,
@@ -337,13 +338,12 @@ class NftWallet extends BaseWalletService {
 
     print("Generating NFT with launcher coin %s and metadata:  ${launcherCoin}, ${metadata}");
 
-    late Program innerPuzzle;
-
     final targetWalletVector = keychain.getWalletVector(targetPuzzleHash);
     final p2InnerPuzzle = getPuzzleFromPk(targetWalletVector!.childPublicKey);
     print("Attempt to generate a new NFT to ${targetPuzzleHash.toHex()}");
     print("address = ${Address.fromPuzzlehash(targetPuzzleHash, "txch").address}");
 
+    Program innerPuzzle = p2InnerPuzzle;
     if (didInfo != null) {
       print("Creating provenant NFT");
       // eve coin DID can be set to whatever so we keep it empty
@@ -359,7 +359,7 @@ class NftWallet extends BaseWalletService {
       print("Got back ownership inner puzzle: ${(innerPuzzle).toSource()}");
     } else {
       print("Creating standard NFT");
-      innerPuzzle = p2InnerPuzzle;
+      //innerPuzzle = p2InnerPuzzle;
     }
 
     final eveFullPuz = NftService.createFullPuzzle(
@@ -368,6 +368,7 @@ class NftWallet extends BaseWalletService {
       metadataUpdaterHash: NFT_METADATA_UPDATER_HASH,
       innerPuzzle: innerPuzzle,
     );
+
     final eveFullPuzzleHash = eveFullPuz.hash();
     final Set<AssertCoinAnnouncementCondition> announcementSet = {};
 
@@ -467,6 +468,7 @@ class NftWallet extends BaseWalletService {
       newDidInnerhash: didInnerHash,
       changePuzzlehash: changePuzzlehash,
     );
+
     return signedSpendBundle;
   }
 
@@ -634,11 +636,7 @@ class NftWallet extends BaseWalletService {
     // Find all the coins we're offering
     Map<Bytes?, Set<FullCoin>> offeredCoinsByAsset = {};
     Set<CoinPrototype> allOfferedCoins = {};
-    /*  selectedCoins.forEach((asset, fullCoins) {
-      final coins = fullCoins.map((e) => e.toCoin()).toSet();
-      offeredCoinsByAsset[asset?.assetId] = coins;
-      allOfferedCoins.addAll(coins);
-    }); */
+
     for (var asset in offerDict.keys) {
       var amount = offerDict[asset];
 
@@ -835,8 +833,11 @@ class NftWallet extends BaseWalletService {
 
           // Skip it if we're paying 0 royalties
           var payments = royaltyPayments[assetId] ?? [];
+          if ((!old) || payments.isEmpty) {
+            continue;
+          }
           final paymentsSum = payments.map((p) => p.item2.amount).reduce((a, b) => a + b);
-          if ((!old && paymentsSum == 0) || payments.isEmpty) {
+          if ((paymentsSum == 0)) {
             continue;
           }
 
