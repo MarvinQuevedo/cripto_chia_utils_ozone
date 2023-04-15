@@ -61,8 +61,9 @@ class NftWallet extends BaseWalletService {
     required NFTCoinInfo nftCoin,
     List<SpendBundle>? additionalBundles,
   }) {
+    final uncurriedNft = UncurriedNFT.uncurry(nftCoin.fullPuzzle);
     print(
-      "p2puzzleNew = ${UncurriedNFT.uncurry(nftCoin.fullPuzzle).p2PuzzleHash.toHex()} ",
+      "p2puzzleNew = ${uncurriedNft.p2PuzzleHash.toHex()} ",
     );
     final generateSpendsTuple = generateUnsignedSpendbundle(
       payments: payments,
