@@ -117,7 +117,7 @@ class SingletonOuterPuzzle extends OuterPuzzle {
         Bytes.fromHex(solver["parent_spend"]),
       );
     } else if (solver["parent_spend"] is Bytes) {
-      parentSpend = CoinSpend.fromBytes(Bytes.fromHex(solver["parent_spend"]));
+      parentSpend = CoinSpend.fromBytes(solver["parent_spend"]);
     } else {
       parentSpend = solver["parent_spend"] as CoinSpend;
     }
@@ -126,10 +126,11 @@ class SingletonOuterPuzzle extends OuterPuzzle {
 
     if (constructor.also != null) {
       innerSolution = OuterPuzzleDriver.solvePuzzle(
-          constructor: constructor.also!,
-          solver: solver,
-          innerPuzzle: innerPuzzle,
-          innerSolution: innerSolution);
+        constructor: constructor.also!,
+        solver: solver,
+        innerPuzzle: innerPuzzle,
+        innerSolution: innerSolution,
+      );
     }
     final matched = mathSingletonPuzzle(parentSpend.puzzleReveal);
     if (matched == null) {
