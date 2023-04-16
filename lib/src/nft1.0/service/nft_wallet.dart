@@ -709,7 +709,10 @@ class NftWallet extends BaseWalletService {
             announcementsToAssert.add(
               Announcement(
                 royaltyPh,
-                Program.cons(Program.fromBytes(launcherId), Program.list([p])).hash(),
+                Program.cons(
+                  Program.fromBytes(launcherId),
+                  Program.list([p]),
+                ).hash(),
               ),
             );
           }
