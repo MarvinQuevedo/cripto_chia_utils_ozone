@@ -136,8 +136,11 @@ class TradeManagerService extends BaseWalletService {
           fullCoin: coin,
           keychain: keychain,
         );
-        groupedCoins[assetData] ??= [];
-        groupedCoins[assetData]!.add(nftCoin);
+        final nftAssetData = OfferAssetData.singletonNft(
+          launcherPuzhash: nftCoin.launcherId,
+        );
+        groupedCoins[nftAssetData] ??= [];
+        groupedCoins[nftAssetData]!.add(nftCoin);
       } else if (assetData?.type == SpendType.cat2) {
         groupedCoins[assetData] ??= [];
         groupedCoins[assetData]!.add(coin);
@@ -319,7 +322,10 @@ class TradeManagerService extends BaseWalletService {
       final preparedCoins = prepareFullCoins(coins, keychain: keychain);
       FullNFTCoinInfo? nftCoin;
       if (preparedData.nftOfferedLauncher != null) {
-        final nftCoins = preparedCoins[preparedData.nftOfferedLauncher!] ?? [];
+        final nftOfferedAsset = OfferAssetData.singletonNft(
+          launcherPuzhash: preparedData.nftOfferedLauncher!,
+        );
+        final nftCoins = preparedCoins[nftOfferedAsset] ?? [];
         if (nftCoins.isNotEmpty) {
           nftCoin = nftCoins.first as FullNFTCoinInfo;
         } else {
