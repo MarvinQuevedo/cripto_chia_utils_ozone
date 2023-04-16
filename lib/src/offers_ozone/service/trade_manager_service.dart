@@ -152,6 +152,36 @@ class TradeManagerService extends BaseWalletService {
     return groupedCoins;
   }
 
+  int? calculateRoyalty(PuzzleInfo puzzleInfo) {
+    bool isRoyalty = puzzleInfo.checkType(types: [
+      AssetType.SINGLETON,
+      AssetType.METADATA,
+      AssetType.OWNERSHIP,
+    ]);
+
+    if (isRoyalty) {
+      var transferInfo = puzzleInfo.also!.also!;
+      var royaltyPercentageRaw = transferInfo["transfer_program"]["royalty_percentage"];
+      if (royaltyPercentageRaw == null) {
+        throw Exception("Royalty percentage is not found in the transfer program");
+      }
+      // clvm encodes large ints as bytes
+
+      if (royaltyPercentageRaw is Bytes) {
+        return bytesToInt(royaltyPercentageRaw, Endian.big);
+      } else if (royaltyPercentageRaw is int) {
+        return royaltyPercentageRaw;
+      } else {
+        return int.parse(royaltyPercentageRaw);
+      }
+    }
+    return null;
+  }
+
+  int calculateRoyaltyAmount(int fungibleAmount, int percentageRaw) {
+    return (fungibleAmount.abs() * (percentageRaw / 10000)).floor();
+  }
+
   Future<AnalizedOffer?> analizeOffer({
     required int fee,
     required Puzzlehash targetPuzzleHash,
@@ -185,55 +215,6 @@ class TradeManagerService extends BaseWalletService {
       }
     });
 
-    final offerOfferedAmounts = offer.getOfferedAmounts();
-    Map<OfferAssetData?, List<int>> requestedAmounts = {};
-    final payments = <Bytes?, List<Payment>>{};
-    offerOfferedAmounts.forEach((assetId, amount) {
-      if (payments[assetId] == null) {
-        payments[assetId] = [];
-      }
-      payments[assetId]!.add(
-        Payment(amount.abs(), targetPuzzleHash),
-      );
-      if (assetId == null) {
-        requestedAmounts[OfferAssetData.standart()] = [amount.abs()];
-      } else {
-        final assetType = offerDriverDict[assetId]!.type;
-        if (assetType == AssetType.CAT) {
-          requestedAmounts[OfferAssetData.cat(tailHash: assetId)] = [amount.abs()];
-        } else if (assetType == AssetType.SINGLETON) {
-          bool isRoyalty = offerDriverDict[assetId]!.checkType(types: [
-            AssetType.SINGLETON,
-            AssetType.METADATA,
-            AssetType.OWNERSHIP,
-          ]);
-
-          if (isRoyalty) {
-            var transferInfo = offerDriverDict[assetId]!.also!.also!;
-            var royaltyPercentageRaw = transferInfo["transfer_program"]["royalty_percentage"];
-            if (royaltyPercentageRaw == null) {
-              throw Exception("Royalty percentage is not found in the transfer program");
-            }
-            // clvm encodes large ints as bytes
-
-            if (royaltyPercentageRaw is Bytes) {
-              royaltyPercentage = bytesToInt(royaltyPercentageRaw, Endian.big);
-            } else if (royaltyPercentageRaw is int) {
-              royaltyPercentage = royaltyPercentageRaw;
-            } else {
-              royaltyPercentage = int.parse(royaltyPercentageRaw);
-            }
-          }
-
-          requestedAmounts[OfferAssetData.singletonNft(launcherPuzhash: assetId)] = [amount.abs()];
-        }
-      }
-    });
-    if (royaltyPercentage != null && fungibleAssetAmount.length == 1) {
-      final fungibleAmount = fungibleAssetAmount.values.first;
-      royaltyAmount = (fungibleAmount.abs() * (royaltyPercentage! / 10000)).floor();
-    }
-
     offerRequestedAmounts.forEach((assetId, amount) {
       takeOfferDict[assetId] = -(amount.abs());
 
@@ -246,18 +227,53 @@ class TradeManagerService extends BaseWalletService {
           final totalCat = amount;
           offerredAmounts[OfferAssetData.cat(tailHash: assetId)] = -(totalCat.abs());
         } else if (assetType == AssetType.SINGLETON) {
+          royaltyPercentage = royaltyPercentage ?? calculateRoyalty(offerDriverDict[assetId]!);
+
           offerredAmounts[OfferAssetData.singletonNft(launcherPuzhash: assetId)] = -(amount.abs());
         }
       }
     });
 
+    final offerOfferedAmounts = offer.getOfferedAmounts();
+    Map<OfferAssetData?, List<int>> requestedAmounts = {};
+    final payments = <Bytes?, List<Payment>>{};
+    offerOfferedAmounts.forEach((assetId, amount) {
+      if (payments[assetId] == null) {
+        payments[assetId] = [];
+      }
+      payments[assetId]!.add(
+        Payment(amount.abs(), targetPuzzleHash),
+      );
+      if (assetId == null) {
+        fungibleAssetAmount[assetId] = amount.abs();
+        requestedAmounts[OfferAssetData.standart()] = [amount.abs()];
+      } else {
+        final assetType = offerDriverDict[assetId]!.type;
+        if (assetType == AssetType.CAT) {
+          fungibleAssetAmount[assetId] = amount.abs();
+          requestedAmounts[OfferAssetData.cat(tailHash: assetId)] = [amount.abs()];
+        } else if (assetType == AssetType.SINGLETON) {
+          royaltyPercentage = royaltyPercentage ?? calculateRoyalty(offerDriverDict[assetId]!);
+          requestedAmounts[OfferAssetData.singletonNft(launcherPuzhash: assetId)] = [amount.abs()];
+        }
+      }
+    });
+
+    if (royaltyPercentage != null && fungibleAssetAmount.length == 1) {
+      final fungibleAmount = fungibleAssetAmount.values.first;
+      royaltyAmount = calculateRoyaltyAmount(fungibleAmount, royaltyPercentage!);
+    }
+
+    final invertOfferred = convertRequestedToOffered(requestedAmounts);
+    final invertRequested = convertOfferedToRequested(offerredAmounts);
+
     return AnalizedOffer(
-      offered: convertRequestedToOffered(requestedAmounts),
-      requested: convertOfferedToRequested(offerredAmounts),
-      isOld: isOld,
-      royaltyAmount: royaltyAmount,
-      royaltyPer: royaltyPercentage,
-    );
+        offered: invertOfferred,
+        requested: invertRequested,
+        isOld: isOld,
+        royaltyAmount: royaltyAmount,
+        royaltyPer: royaltyPercentage,
+        fungibleAmounts: fungibleAssetAmount);
   }
 
   Map<OfferAssetData?, int> convertRequestedToOffered(Map<OfferAssetData?, List<int>> requested) {
@@ -286,6 +302,8 @@ class TradeManagerService extends BaseWalletService {
     required Puzzlehash changePuzzlehash,
     List<Coin>? standardCoinsForFee,
     required Offer offer,
+    int? royaltyPercentage,
+    int? royaltyAmount,
   }) async {
     final isOld = offer.old;
 
@@ -310,12 +328,15 @@ class TradeManagerService extends BaseWalletService {
     final requestedAmounts = convertOfferedToRequested(analizedOffer!.offered);
 
     final preparedData = await _prepareOfferData(
-        coins: groupedCoins,
-        requestedAmounts: requestedAmounts,
-        offerredAmounts: convertRequestedToOffered(analizedOffer.requested),
-        fee: fee,
-        targetPuzzleHash: targetPuzzleHash,
-        offerDriverDict: offerDriverDict);
+      coins: groupedCoins,
+      requestedAmounts: requestedAmounts,
+      offerredAmounts: convertRequestedToOffered(analizedOffer.requested),
+      fee: fee,
+      targetPuzzleHash: targetPuzzleHash,
+      offerDriverDict: offerDriverDict,
+      royaltyPercentage: royaltyPercentage,
+      royaltyAmount: royaltyAmount,
+    );
 
     if (preparedData.nftOfferedLauncher != null || preparedData.requestedLauncher) {
       Map<Bytes?, int> offerDict = {};
@@ -546,10 +567,35 @@ class TradeManagerService extends BaseWalletService {
       required int fee,
       required Map<OfferAssetData?, List<FullCoin>> coins,
       required Puzzlehash targetPuzzleHash,
-      Map<Bytes, PuzzleInfo>? offerDriverDict}) async {
+      Map<Bytes, PuzzleInfo>? offerDriverDict,
+      int? royaltyPercentage,
+      int? royaltyAmount}) async {
     FullNFTCoinInfo? nftCoin;
     Bytes? nftOfferedLauncher;
     bool requestedLauncher = false;
+
+    /*  if (royaltyAmount != null) {
+      for (final offerAsset in offerredAmounts.keys) {
+        final oldAmount = offerredAmounts[offerAsset]!;
+        if (offerAsset?.assetId == null || offerAsset?.type == SpendType.cat2) {
+          final amount = oldAmount + royaltyAmount;
+          print(
+              "Add offer royalty amount $royaltyAmount to $oldAmount for $offerAsset = ${amount}");
+          offerredAmounts[offerAsset] = oldAmount + royaltyAmount;
+        }
+      }
+      for (final requestAsset in requestedAmounts.keys) {
+        var oldAmount = requestedAmounts[requestAsset]!
+            .fold(0, (previousValue, element) => previousValue + element);
+
+        if (requestAsset?.assetId == null || requestAsset?.type == SpendType.cat2) {
+          final amount = oldAmount + royaltyAmount;
+          print(
+              "Add request royalty amount $royaltyAmount to $oldAmount for $requestAsset = ${amount}");
+          requestedAmounts[requestAsset] = [amount];
+        }
+      }
+    } */
 
     coins.forEach((assetId, coins) {
       if (assetId != null) {
