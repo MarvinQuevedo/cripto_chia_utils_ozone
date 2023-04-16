@@ -12,10 +12,7 @@ class OfferAssetData extends Equatable {
     if (type == SpendType.cat2) {
       assetId = coin.parentCoinSpend!.getTailHash();
     } else if (type == SpendType.nft) {
-      final uncurriedNft = UncurriedNFT.tryUncurry(coin.parentCoinSpend!.puzzleReveal);
-      if (uncurriedNft != null) {
-        assetId = uncurriedNft.launcherPuzhash.atom;
-      }
+      // The nft info will be completed for  prepareFullCoins
     } else {
       return OfferAssetData.standart();
     }
