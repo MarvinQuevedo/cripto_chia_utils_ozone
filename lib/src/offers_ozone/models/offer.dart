@@ -76,9 +76,10 @@ class Offer {
       } else {
         settlementPh = (old) ? OFFER_MOD_V1_HASH : OFFER_MOD_HASH;
       }
+      final paymentsPrograms = payments.map((e) => e.toProgram()).toList();
       final msgProgram = Program.cons(
         Program.fromBytes(payments.first.nonce),
-        Program.list(payments.map((e) => e.toProgram()).toList()),
+        Program.list(paymentsPrograms),
       );
 
       Bytes msg = msgProgram.hash();
@@ -249,8 +250,11 @@ class Offer {
       pendingDict[name] = 0;
       for (var coin in coins) {
         final rootRemoval = getRootRemoval(coin);
-        final pocessableAdditions =
-            allAdittions.where((element) => element.parentCoinInfo == rootRemoval.id).toList();
+        final pocessableAdditions = allAdittions
+            .where(
+              (element) => element.parentCoinInfo == rootRemoval.id,
+            )
+            .toList();
         pocessableAdditions.forEach((addition) {
           final lastAmount = pendingDict[name]!;
           pendingDict[name] = lastAmount + addition.amount;
@@ -259,12 +263,15 @@ class Offer {
     });
 
     // Then we gather anything else as unknown
-    final sumOfadditionssoFar =
-        pendingDict.values.fold<int>(0, (previousValue, element) => previousValue + element);
+    final sumOfadditionssoFar = pendingDict.values.fold<int>(
+      0,
+      (previousValue, element) => previousValue + element,
+    );
 
-    final nonEphimeralsSum = notEphomeralRemovals
-        .map((e) => e.amount)
-        .fold<int>(0, (previousValue, element) => previousValue + element);
+    final nonEphimeralsSum = notEphomeralRemovals.map((e) => e.amount).fold<int>(
+          0,
+          (previousValue, element) => previousValue + element,
+        );
 
     final unknownAmount = nonEphimeralsSum - sumOfadditionssoFar;
     if (unknownAmount > 0) {
@@ -399,6 +406,7 @@ class Offer {
     final completionSpends = <CoinSpend>[];
     final allOfferredCoins = getOfferedCoins();
     final totalArbitrageAmount = arbitrage();
+
     requestedPayments.forEach((Bytes? assetId, List<NotarizedPayment> payments) {
       final List<CoinPrototype> offerredCoins = allOfferredCoins[assetId]!;
 
@@ -434,21 +442,15 @@ class Offer {
 
           final noncesValues = cleanDuplicatesValues(nonces);
           for (var nonce in noncesValues) {
-            final List<NotarizedPayment> noncePayments = allPayments
-                .where(
-                  (p) => p.nonce == nonce,
-                )
-                .toList();
+            // List<NotarizedPayment>
+            final noncePayments = allPayments.where((p) => p.nonce == nonce).toList();
 
             innerSolutions.add(Program.cons(
-                Program.fromBytes(nonce),
-                Program.list(
-                  noncePayments
-                      .map(
-                        (e) => e.toProgram(),
-                      )
-                      .toList(),
-                )));
+              Program.fromBytes(nonce),
+              Program.list(
+                noncePayments.map((e) => e.toProgram()).toList(),
+              ),
+            ));
           }
         }
         coinToSolutionDict[coin] = Program.list(innerSolutions);
@@ -473,12 +475,13 @@ class Offer {
           String siblingsSpends = "(";
           String silblingsPuzzles = "(";
           String silblingsSolutions = "(";
+
           String disassembledOfferMod = offerMod.toSource();
+
           for (var siblingCoin in offerredCoins) {
             if (siblingCoin != coin) {
               siblings += siblingCoin.toBytes().toHexWithPrefix();
-              siblingsSpends +=
-                  coinToSpendDict[siblingCoin]!.toProgram().serialize().toHexWithPrefix();
+              siblingsSpends += coinToSpendDict[siblingCoin]!.toBytes().toHexWithPrefix();
               silblingsPuzzles += disassembledOfferMod;
               silblingsSolutions += coinToSolutionDict[siblingCoin]!.serialize().toHexWithPrefix();
             }
@@ -489,7 +492,7 @@ class Offer {
           silblingsSolutions += ")";
           final solverDict = {
             "coin": coin.toBytes().toHexWithPrefix(),
-            "parent_spend": coinToSpendDict[coin]!.toProgram().serialize().toHexWithPrefix(),
+            "parent_spend": coinToSpendDict[coin]!.toBytes().toHexWithPrefix(),
             "siblings": siblings,
             "sibling_spends": siblingsSpends,
             "sibling_puzzles": silblingsPuzzles,

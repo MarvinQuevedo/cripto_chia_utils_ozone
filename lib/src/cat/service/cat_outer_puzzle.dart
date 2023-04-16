@@ -62,7 +62,7 @@ class CATOuterPuzzle extends OuterPuzzle {
     ]);
 
     final coinProgram = Program.fromBytes(solver["coin"]);
-    final _parentSpendProgram = Program.deserialize(solver["parent_spend"]);
+    final _parentSpendProgram = Program.fromHex(solver["parent_spend"]);
     //final parentSpend = CoinSpend.fromProgramList(_parentSpendProgram);
 
     final base = [
@@ -84,7 +84,7 @@ class CATOuterPuzzle extends OuterPuzzle {
       if (coinBytes == solver["coin"]) {
         targetCoin = coin;
       }
-      final parentSpend = CoinSpend.fromProgram(spendProg);
+      final parentSpend = CoinSpend.fromBytes(spendProg.toBytes());
 
       // final parentCoin = parentSpend.coin;
       if (constructor.also != null) {
