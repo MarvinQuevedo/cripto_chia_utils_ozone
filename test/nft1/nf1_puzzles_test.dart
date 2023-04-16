@@ -83,8 +83,8 @@ Future<void> main() async {
   });
 
   test('Transfer Layer puzzle', () async {
-    final _puzzleForTransferProgram =
-        puzzleForTransferProgram(launcherId: puzzleHash, percentage: 5, royaltyAddress: puzzleHash);
+    final _puzzleForTransferProgram = puzzleForTransferProgram(
+        launcherId: puzzleHash, percentage: 5, royaltyPuzzleHash: puzzleHash);
     print("puzzleForTransferProgram");
     expect(_puzzleForTransferProgram.hash().toHex(), spectedPuzzleForTransferHash);
 
