@@ -6,18 +6,18 @@ import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 class SingletonService extends BaseWalletService {
   /// Return the puzzle reveal of a singleton with specific ID and innerpuz
-  static Program puzzleForSingleton(
+  static Program puzzleForSingletonV1(
     Bytes launcherId,
     Program innerPuzzle, {
     Bytes? launcherHash,
   }) {
     return SINGLETON_MOD_V1.curry([
       Program.cons(
-        Program.fromBytes(SINGLETON_MOD_V1.hash()),
+        Program.fromBytes(SINGLETON_MOD_V1_HASH),
         Program.cons(
           Program.fromBytes(launcherId),
           Program.fromBytes(
-            launcherHash ?? SINGLETON_MOD_V1.hash(),
+            launcherHash ?? LAUNCHER_PUZZLE_HASH,
           ),
         ),
       ),
@@ -25,7 +25,7 @@ class SingletonService extends BaseWalletService {
     ]);
   }
 
-  static Program makeSingletonStructureProgram(Bytes coinId) => Program.cons(
+  static Program makeSingletonStructureProgramV1(Bytes coinId) => Program.cons(
         Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
         Program.cons(
           Program.fromBytes(coinId),
@@ -33,7 +33,7 @@ class SingletonService extends BaseWalletService {
         ),
       );
 
-  static Program makeSingletonLauncherSolution(
+  static Program makeSingletonLauncherSolutionV1(
     int amount,
     Puzzlehash puzzlehash,
   ) =>

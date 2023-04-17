@@ -29,7 +29,7 @@ class PlotNftWalletService extends BaseWalletService {
       isInitialState: true,
     );
 
-    final fullPoolingPuzzle = SingletonService.puzzleForSingleton(launcherCoin.id, innerPuzzle);
+    final fullPoolingPuzzle = SingletonService.puzzleForSingletonV1(launcherCoin.id, innerPuzzle);
     final puzzlehash = fullPoolingPuzzle.hash();
 
     final plotNftExtraData = PlotNftExtraData(
@@ -214,7 +214,7 @@ class PlotNftWalletService extends BaseWalletService {
       delayTime: delayTime,
     );
 
-    final fullPuzzle = SingletonService.puzzleForSingleton(launcherId, innerPuzzle);
+    final fullPuzzle = SingletonService.puzzleForSingletonV1(launcherId, innerPuzzle);
 
     if (fullPuzzle.hash() != singletonPuzzlehash) {
       throw InvalidPoolSingletonException();

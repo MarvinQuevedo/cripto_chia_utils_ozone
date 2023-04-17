@@ -1,6 +1,25 @@
 import '../../../chia_crypto_utils.dart';
 import '../models/deconstructed_singleton_puzzle.dart';
 
+Program puzzleForSingletonV1_1(
+  Bytes launcherId,
+  Program innerPuzzle, {
+  Bytes? launcherHash,
+}) {
+  return SINGLETON_TOP_LAYER_MOD_v1_1.curry([
+    Program.cons(
+      Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
+      Program.cons(
+        Program.fromBytes(launcherId),
+        Program.fromBytes(
+          launcherHash ?? LAUNCHER_PUZZLE_HASH,
+        ),
+      ),
+    ),
+    innerPuzzle
+  ]);
+}
+
 DeconstructedSingletonPuzzle? mathSingletonPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
   if (uncurried.program.hash() == SINGLETON_TOP_LAYER_MOD_V1_1_HASH) {
@@ -66,7 +85,7 @@ class SingletonOuterPuzzle extends OuterPuzzle {
     if (constructor["launcher_ph"] != null) {
       launcherHash = Bytes.fromHex(constructor["launcher_ph"]);
     }
-    return SingletonService.puzzleForSingleton(
+    return puzzleForSingletonV1_1(
       launcherId,
       innerPuzzle,
       launcherHash: launcherHash,

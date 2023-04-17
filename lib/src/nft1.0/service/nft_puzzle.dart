@@ -40,7 +40,7 @@ class NftService {
     required Bytes singletonId,
     required Program innerPuzzle,
   }) {
-    return SingletonService.puzzleForSingleton(
+    return puzzleForSingletonV1_1(
       singletonId,
       innerPuzzle,
       launcherHash: LAUNCHER_PUZZLE_HASH,
