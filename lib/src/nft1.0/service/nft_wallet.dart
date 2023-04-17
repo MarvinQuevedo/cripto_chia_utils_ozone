@@ -1000,10 +1000,13 @@ class NftWallet extends BaseWalletService {
     final nftInfo = NFTInfo.fromUncurried(
       uncurriedNFT: nftUncurried,
       currentCoin: coin,
-      mintHeight: 0,
+      mintHeight: nftFullCoin.coin.confirmedBlockIndex,
     );
 
-    final data = NftService().getMetadataAndPhs(nftUncurried, coinSpend.solution);
+    final data = NftService().getMetadataAndPhs(
+      nftUncurried,
+      coinSpend.solution,
+    );
     final metadata = data.item1;
 
     final p2PuzzleHash = Puzzlehash(data.item2);
@@ -1014,10 +1017,11 @@ class NftWallet extends BaseWalletService {
     if (buildKeychain != null) {
       keychainForNft = await buildKeychain({p2PuzzleHash});
       final vector = keychainForNft?.getWalletVector(p2PuzzleHash);
-      if (vector == null) {
-        throw Exception("Could not find keychain for NFT ${nftInfo.launcherId}");
+      if (vector != null) {
+        innerPuzzle = getPuzzleFromPk(vector.childPublicKey);
+      } else {
+        print("User parent spend innerPuzzle for ${nftInfo.launcherId}");
       }
-      innerPuzzle = getPuzzleFromPk(vector.childPublicKey);
     }
 
     if (nftUncurried.supportDid) {

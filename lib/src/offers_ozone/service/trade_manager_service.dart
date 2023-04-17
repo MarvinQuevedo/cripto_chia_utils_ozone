@@ -8,6 +8,7 @@ import '../../standard/index.dart';
 import '../../utils.dart';
 import '../index.dart';
 import '../../core/models/outer_puzzle.dart' as outerPuzzle;
+import '../utils/build_keychain.dart';
 
 class TradeManagerService extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
@@ -124,17 +125,17 @@ class TradeManagerService extends BaseWalletService {
     return chiaOffer;
   }
 
-  Map<OfferAssetData?, List<FullCoin>> prepareFullCoins(
+  Future<Map<OfferAssetData?, List<FullCoin>>> prepareFullCoins(
     List<FullCoin> coins, {
-    required WalletKeychain keychain,
-  }) {
+    required BuildKeychain? buildKeychain,
+  }) async {
     final groupedCoins = <OfferAssetData?, List<FullCoin>>{};
     for (final coin in coins) {
       final assetData = OfferAssetData.fromFullCoin(coin);
       if (assetData?.type == SpendType.nft) {
-        final FullNFTCoinInfo nftCoin = constructFullNftCoin(
+        final FullNFTCoinInfo nftCoin = await constructFullNftCoin(
           fullCoin: coin,
-          keychain: keychain,
+          buildKeychain: buildKeychain,
         );
         final nftAssetData = OfferAssetData.singletonNft(
           launcherPuzhash: nftCoin.launcherId,
@@ -304,10 +305,9 @@ class TradeManagerService extends BaseWalletService {
     required Offer offer,
     int? royaltyPercentage,
     int? royaltyAmount,
+    required BuildKeychain buildKeychainForNft,
   }) async {
     final isOld = offer.old;
-
-    final offerDriverDict = offer.driverDict;
 
     final analizedOffer = await analizeOffer(
       fee: fee,
@@ -326,9 +326,11 @@ class TradeManagerService extends BaseWalletService {
       }
     }
     final requestedAmounts = convertOfferedToRequested(analizedOffer!.offered);
+    final preparedCoins = await prepareFullCoins(coins, buildKeychain: buildKeychainForNft);
 
+    Map<Bytes, PuzzleInfo> offerDriverDict = offer.driverDict;
     final preparedData = await _prepareOfferData(
-      coins: groupedCoins,
+      coins: preparedCoins,
       requestedAmounts: requestedAmounts,
       offerredAmounts: convertRequestedToOffered(analizedOffer.requested),
       fee: fee,
@@ -337,10 +339,11 @@ class TradeManagerService extends BaseWalletService {
       royaltyPercentage: royaltyPercentage,
       royaltyAmount: royaltyAmount,
     );
+    offerDriverDict = preparedData.driverDict;
 
     if (preparedData.nftOfferedLauncher != null || preparedData.requestedLauncher) {
       Map<Bytes?, int> offerDict = {};
-      final preparedCoins = prepareFullCoins(coins, keychain: keychain);
+
       FullNFTCoinInfo? nftCoin;
       if (preparedData.nftOfferedLauncher != null) {
         final nftOfferedAsset = OfferAssetData.singletonNft(
@@ -369,7 +372,7 @@ class TradeManagerService extends BaseWalletService {
 
       final nftOffer = await nftWallet.makeNft1Offer(
         offerDict: offerDict,
-        driverDict: preparedData.driverDict,
+        driverDict: offerDriverDict,
         changePuzzlehash: changePuzzlehash,
         keychain: keychain,
         old: isOld,
@@ -379,6 +382,9 @@ class TradeManagerService extends BaseWalletService {
         targetPuzzleHash: targetPuzzleHash,
         nftCoin: nftCoin,
       );
+
+      nftOffer.toSpendBundle();
+      offer.toSpendBundle();
       final completedOffer = Offer.aggregate([offer, nftOffer]);
       return completedOffer;
     } else {
@@ -682,61 +688,12 @@ class TradeManagerService extends BaseWalletService {
         requestedLauncher: requestedLauncher);
   }
 
-  FullNFTCoinInfo constructFullNftCoin({
-    required FullCoin fullCoin,
-    required WalletKeychain keychain,
-  }) {
-    final coin = fullCoin.toCoin();
-    final coinSpend = fullCoin.parentCoinSpend!;
-
-    final nftUncurried = UncurriedNFT.uncurry(coinSpend.puzzleReveal);
-    final nftInfo = NFTInfo.fromUncurried(
-      uncurriedNFT: nftUncurried,
-      currentCoin: coin,
-      mintHeight: fullCoin.coin.confirmedBlockIndex,
+  Future<FullNFTCoinInfo> constructFullNftCoin(
+      {required FullCoin fullCoin, required BuildKeychain? buildKeychain}) async {
+    final result = await NftWallet().getNFTFullCoinInfo(
+      fullCoin,
+      buildKeychain: buildKeychain,
     );
-
-    final data = NftService().getMetadataAndPhs(
-      nftUncurried,
-      coinSpend.solution,
-    );
-    final metadata = data.item1;
-
-    final p2PuzzleHash = Puzzlehash(data.item2);
-
-    final vector = keychain.getWalletVector(p2PuzzleHash);
-    Program innerPuzzle = getPuzzleFromPk(vector!.childPublicKey);
-
-    if (nftUncurried.supportDid) {
-      innerPuzzle = NftService().recurryNftPuzzle(
-        unft: nftUncurried,
-        solution: coinSpend.solution,
-        newInnerPuzzle: innerPuzzle,
-      );
-    }
-
-    Program fullPuzzle = NftService.createFullPuzzle(
-      singletonId: nftUncurried.singletonLauncherId.atom,
-      metadata: metadata,
-      metadataUpdaterHash: nftUncurried.metadataUpdaterHash.atom,
-      innerPuzzle: innerPuzzle,
-    );
-
-    FullNFTCoinInfo nftCoin = FullNFTCoinInfo(
-      coin: coin,
-      fullPuzzle: fullPuzzle,
-      latestHeight: coin.confirmedBlockIndex,
-      mintHeight: nftInfo.mintHeight,
-      minterDid: nftUncurried.ownerDid,
-      nftId: nftUncurried.singletonLauncherId.atom,
-      pendingTransaction: false,
-      nftLineageProof: LineageProof(
-        amount: coinSpend.coin.amount,
-        innerPuzzleHash: nftUncurried.nftStateLayer.hash(),
-        parentName: Puzzlehash(coinSpend.coin.parentCoinInfo),
-      ),
-      parentCoinSpend: fullCoin.parentCoinSpend,
-    );
-    return nftCoin;
+    return result.item1;
   }
 }
