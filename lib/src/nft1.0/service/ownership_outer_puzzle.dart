@@ -28,7 +28,7 @@ Program puzzleForOwnershipLayer(
   } else if (currentOwner is Bytes) {
     _currentOwner = Program.fromBytes(currentOwner);
   } else if (currentOwner is String && (currentOwner).contains("0x")) {
-    _currentOwner = Program.fromHex(currentOwner);
+    _currentOwner = Program.fromBytes(Bytes.fromHex(currentOwner));
   } else {
     try {
       _currentOwner = Program.parse(currentOwner);
