@@ -14,6 +14,7 @@ class Offer {
 
   ///  asset_id -> asset driver
   final Map<Bytes, PuzzleInfo> driverDict;
+  late final Map<CoinPrototype, List<CoinPrototype>> _additions;
 
   final bool old;
 
@@ -22,7 +23,41 @@ class Offer {
     required this.bundle,
     required this.driverDict,
     required this.old,
-  });
+    Map<CoinPrototype, List<CoinPrototype>>? additions,
+  }) {
+    _additions = additions ?? _calculateAdditions();
+  }
+  Map<CoinPrototype, List<CoinPrototype>> _calculateAdditions() {
+    // Verify that there are no duplicate payments
+    for (var payments in requestedPayments.values) {
+      var paymentPrograms = payments.map((e) => e.toProgram().hash());
+      if (paymentPrograms.toSet().length != paymentPrograms.length) {
+        throw ArgumentError('Bundle has duplicate requested payments');
+      }
+    }
+    // Verify we have a type for every kind of asset
+    for (var assetId in requestedPayments.keys) {
+      if (assetId != null && !driverDict.containsKey(assetId)) {
+        throw ArgumentError(
+            'Offer does not have enough driver information about the requested payments');
+      }
+    }
+    // populate the _additions cache
+    var adds = <CoinPrototype, List<CoinPrototype>>{};
+
+    for (var cs in bundle.coinSpends) {
+      // you can't spend the same coin twice in the same SpendBundle
+      assert(!adds.containsKey(cs.coin));
+      try {
+        var coins = cs.additions;
+
+        adds[cs.coin] = coins;
+      } catch (e) {
+        continue;
+      }
+    }
+    return adds;
+  }
 
   static Puzzlehash ph(bool old) => old ? OFFER_MOD_V1_HASH : OFFER_MOD_HASH;
 
@@ -95,11 +130,7 @@ class Offer {
 
       final parentPuzzle = parentSpend.puzzleReveal;
       final parentSolution = parentSpend.solution;
-      final additions = bundle.additions
-          .where(
-            (element) => !bundle.removals.contains(element),
-          )
-          .toList();
+      final additions = _additions[parentSpend.coin]!;
 
       final puzzleDriver = OuterPuzzleDriver.matchPuzzle(parentPuzzle);
 
@@ -619,13 +650,14 @@ class Offer {
         leftoverCoinSpends.add(coinSpend);
       }
     }
+    final offerBundle = SpendBundle(
+      coinSpends: leftoverCoinSpends,
+      aggregatedSignature: bundle.aggregatedSignature,
+    );
 
     return Offer(
         requestedPayments: requestedPayments,
-        bundle: SpendBundle(
-          coinSpends: leftoverCoinSpends,
-          aggregatedSignature: bundle.aggregatedSignature,
-        ),
+        bundle: offerBundle,
         old: old,
         driverDict: driverDict);
   }
