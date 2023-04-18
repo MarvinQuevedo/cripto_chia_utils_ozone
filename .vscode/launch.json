@@ -6,6 +6,11 @@
     "configurations": [
         
         {
+            "name": "trade service test",
+            "request": "launch",
+            "program": "test/offers/trade_service_test.dart"
+        },
+        {
             "name": "offer cicle2",
             "request": "launch",
             "program": "test/offers/offer_life_cicle2_test.dart"
