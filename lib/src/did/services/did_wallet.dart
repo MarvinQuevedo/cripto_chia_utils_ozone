@@ -7,7 +7,6 @@ import '../../clvm.dart';
 import '../../core/index.dart';
 import '../../core/service/conditions_utils.dart';
 import '../../nft1.0/index.dart';
-import '../../offers_ozone/index.dart';
 import '../../singleton/index.dart';
 import '../../standard/index.dart';
 import '../../utils/key_derivation.dart';
@@ -26,7 +25,6 @@ class DidWallet extends BaseWalletService {
       required DidInfo didInfo}) async {
     // divide coins into origin and standard coins for fee
     final origin = coins.first;
-    final standardCoinsForFee = coins.sublist(1);
 
     Program genesisLauncherPuz = LAUNCHER_PUZZLE;
 
