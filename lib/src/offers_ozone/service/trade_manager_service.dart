@@ -303,8 +303,6 @@ class TradeManagerService extends BaseWalletService {
     required Puzzlehash changePuzzlehash,
     List<Coin>? standardCoinsForFee,
     required Offer offer,
-    int? royaltyPercentage,
-    int? royaltyAmount,
     required BuildKeychain buildKeychainForNft,
   }) async {
     final isOld = offer.old;
@@ -326,42 +324,50 @@ class TradeManagerService extends BaseWalletService {
       }
     }
     final requestedAmounts = convertOfferedToRequested(analizedOffer!.offered);
+    final offeredAmounts = convertRequestedToOffered(analizedOffer.requested);
     final preparedCoins = await prepareFullCoins(coins, buildKeychain: buildKeychainForNft);
 
     Map<Bytes, PuzzleInfo> offerDriverDict = offer.driverDict;
     final preparedData = await _prepareOfferData(
       coins: preparedCoins,
       requestedAmounts: requestedAmounts,
-      offerredAmounts: convertRequestedToOffered(analizedOffer.requested),
+      offerredAmounts: offeredAmounts,
       fee: fee,
       targetPuzzleHash: targetPuzzleHash,
       offerDriverDict: offerDriverDict,
-      royaltyPercentage: royaltyPercentage,
-      royaltyAmount: royaltyAmount,
+      royaltyPercentage: analizedOffer.royaltyPer,
+      royaltyAmount: analizedOffer.royaltyAmount,
     );
     offerDriverDict = preparedData.driverDict;
+
+    /*  if (analizedOffer.royaltyAmount != null && analizedOffer.royaltyPer != null) {
+      for (final asset in offeredAmounts.keys) {
+        if (asset?.assetId == null || (asset?.assetId != null && asset?.type == SpendType.cat2)) {
+          final amount = offeredAmounts[asset]!;
+          final newAmount = amount.abs() - analizedOffer.royaltyAmount!;
+          offeredAmounts[asset] = -(newAmount.abs());
+        }
+      }
+    } */
 
     if (preparedData.nftOfferedLauncher != null || preparedData.requestedLauncher) {
       Map<Bytes?, int> offerDict = {};
 
-      FullNFTCoinInfo? nftCoin;
       if (preparedData.nftOfferedLauncher != null) {
         final nftOfferedAsset = OfferAssetData.singletonNft(
           launcherPuzhash: preparedData.nftOfferedLauncher!,
         );
         final nftCoins = preparedCoins[nftOfferedAsset] ?? [];
-        if (nftCoins.isNotEmpty) {
-          nftCoin = nftCoins.first as FullNFTCoinInfo;
-        } else {
+        if (!(nftCoins.isNotEmpty && nftCoins.first is FullNFTCoinInfo)) {
           throw Exception("Offered NFT coin not found ${preparedData.nftOfferedLauncher!.toHex()}");
         }
       }
       final nftWallet = NftWallet();
-      if (standardCoinsForFee == null && preparedData.offerredAmounts[null] == null && fee > 0) {
+      if (standardCoinsForFee == null && offeredAmounts[null] == null && fee > 0) {
         throw Exception("Standard coins for fee not found for NFT Offer");
       }
-      preparedData.offerredAmounts.forEach((Bytes? assetId, int amount) {
-        offerDict[assetId] = -(amount.abs());
+      offeredAmounts.forEach((OfferAssetData? asset, int amount) {
+        offerDict[asset?.assetId] = -(amount.abs());
       });
       requestedAmounts.forEach((OfferAssetData? asset, List<int> amounts) {
         final amount = amounts.fold(0, (previousValue, element) => previousValue + element);
@@ -380,11 +386,11 @@ class TradeManagerService extends BaseWalletService {
         selectedCoins: preparedCoins,
         standardCoinsForFee: standardCoinsForFee ?? [],
         targetPuzzleHash: targetPuzzleHash,
-        nftCoin: nftCoin,
       );
 
-      nftOffer.toSpendBundle();
-      offer.toSpendBundle();
+      print(offer.summary());
+      print(nftOffer.summary());
+
       final completedOffer = Offer.aggregate([offer, nftOffer]);
       return completedOffer;
     } else {
@@ -478,16 +484,15 @@ class TradeManagerService extends BaseWalletService {
     });
     if (nftOfferedLauncher != null || nftRequestedLauncher != null) {
       Map<Bytes?, int> offerDict = {};
-      FullNFTCoinInfo? nftCoin;
+
       if (nftOfferedLauncher != null) {
-        final coins = preparedCoins[OfferAssetData.singletonNft(
-          launcherPuzhash: nftOfferedLauncher!,
-        )];
-        if ((coins?.isNotEmpty ?? false) && coins!.first is FullNFTCoinInfo) {
-          nftCoin = coins.first as FullNFTCoinInfo;
-        }
-        if (nftCoin == null) {
-          throw Exception("Offered NFT coin not found ${nftOfferedLauncher!.toHex()}");
+        final nftCoins = preparedCoins[OfferAssetData.singletonNft(
+              launcherPuzhash: nftOfferedLauncher!,
+            )] ??
+            [];
+
+        if (!(nftCoins.isNotEmpty && nftCoins.first is FullNFTCoinInfo)) {
+          throw Exception("Offered NFT coin not found ${preparedData.nftOfferedLauncher!.toHex()}");
         }
 
         if (standardCoinsForFee == null && fee > 0) {
@@ -523,7 +528,6 @@ class TradeManagerService extends BaseWalletService {
         selectedCoins: preparedCoins,
         standardCoinsForFee: standardCoinsForFee ?? [],
         targetPuzzleHash: targetPuzzleHash,
-        nftCoin: nftCoin,
       );
       return nftOffer;
     } else {
@@ -545,7 +549,7 @@ class TradeManagerService extends BaseWalletService {
   Future<Map<Bytes, PuzzleInfo>> _createDict(
       {required Map<OfferAssetData?, List<int>> requestedAmounts,
       required Map<OfferAssetData?, int> offerredAmounts,
-      NFTCoinInfo? nftCoin}) async {
+      required Map<OfferAssetData, FullNFTCoinInfo> nftCoins}) async {
     Map<Bytes, PuzzleInfo> driverDict = {};
     final uniqueAssetsData =
         (requestedAmounts.keys.toList() + offerredAmounts.keys.toList()).toSet();
@@ -559,7 +563,7 @@ class TradeManagerService extends BaseWalletService {
             "tail": tailHash.toHexWithPrefix(),
           });
         } else if (assetData.type == SpendType.nft) {
-          final puzzleInfo = await NftWallet().getPuzzleInfo(nftCoin!);
+          final puzzleInfo = await NftWallet().getPuzzleInfo(nftCoins[assetData]!.toNftCoinInfo());
           driverDict[assetData.assetId!] = puzzleInfo;
         }
       }
@@ -576,9 +580,9 @@ class TradeManagerService extends BaseWalletService {
       Map<Bytes, PuzzleInfo>? offerDriverDict,
       int? royaltyPercentage,
       int? royaltyAmount}) async {
-    FullNFTCoinInfo? nftCoin;
     Bytes? nftOfferedLauncher;
     bool requestedLauncher = false;
+    Map<OfferAssetData, FullNFTCoinInfo> nftCoins = {};
 
     /*  if (royaltyAmount != null) {
       for (final offerAsset in offerredAmounts.keys) {
@@ -603,12 +607,13 @@ class TradeManagerService extends BaseWalletService {
       }
     } */
 
-    coins.forEach((assetId, coins) {
-      if (assetId != null) {
-        if (assetId.type == SpendType.nft) {
+    coins.forEach((asset, coins) {
+      if (asset != null) {
+        if (asset.type == SpendType.nft) {
           final founded = coins.where((element) => element is FullNFTCoinInfo).toList();
           if (founded.isNotEmpty) {
-            nftCoin = founded.first as FullNFTCoinInfo;
+            final nftCoin = founded.first as FullNFTCoinInfo;
+            nftCoins[asset] = nftCoin;
           }
         }
       }
@@ -617,7 +622,7 @@ class TradeManagerService extends BaseWalletService {
         await _createDict(
           requestedAmounts: requestedAmounts,
           offerredAmounts: offerredAmounts,
-          nftCoin: nftCoin?.toNftCoinInfo(),
+          nftCoins: nftCoins,
         );
 
     offerredAmounts.forEach((OfferAssetData? asset, int amount) {
