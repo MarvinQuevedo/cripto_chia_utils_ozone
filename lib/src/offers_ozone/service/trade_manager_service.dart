@@ -220,7 +220,7 @@ class TradeManagerService extends BaseWalletService {
       takeOfferDict[assetId] = -(amount.abs());
 
       if (assetId == null) {
-        final totalChia = amount + fee;
+        final totalChia = amount;
         offerredAmounts[OfferAssetData.standart()] = -(totalChia.abs());
       } else {
         final assetType = offerDriverDict[assetId]!.type;
@@ -340,16 +340,6 @@ class TradeManagerService extends BaseWalletService {
     );
     offerDriverDict = preparedData.driverDict;
 
-    /*  if (analizedOffer.royaltyAmount != null && analizedOffer.royaltyPer != null) {
-      for (final asset in offeredAmounts.keys) {
-        if (asset?.assetId == null || (asset?.assetId != null && asset?.type == SpendType.cat2)) {
-          final amount = offeredAmounts[asset]!;
-          final newAmount = amount.abs() - analizedOffer.royaltyAmount!;
-          offeredAmounts[asset] = -(newAmount.abs());
-        }
-      }
-    } */
-
     if (preparedData.nftOfferedLauncher != null || preparedData.requestedLauncher) {
       Map<Bytes?, int> offerDict = {};
 
@@ -388,10 +378,8 @@ class TradeManagerService extends BaseWalletService {
         targetPuzzleHash: targetPuzzleHash,
       );
 
-      print(offer.summary());
-      print(nftOffer.summary());
-
       final completedOffer = Offer.aggregate([offer, nftOffer]);
+
       return completedOffer;
     } else {
       final offerWallet = TradeManagerService();
@@ -462,7 +450,6 @@ class TradeManagerService extends BaseWalletService {
       if (amount < 0) {
         if (assetId != null) {
           // check if asset is an NFT
-
           final offerringNft = preparedData.driverDict[assetId]?.type == AssetType.SINGLETON;
           if (offerringNft) {
             nftOfferedLauncher = assetId;
@@ -583,29 +570,6 @@ class TradeManagerService extends BaseWalletService {
     Bytes? nftOfferedLauncher;
     bool requestedLauncher = false;
     Map<OfferAssetData, FullNFTCoinInfo> nftCoins = {};
-
-    /*  if (royaltyAmount != null) {
-      for (final offerAsset in offerredAmounts.keys) {
-        final oldAmount = offerredAmounts[offerAsset]!;
-        if (offerAsset?.assetId == null || offerAsset?.type == SpendType.cat2) {
-          final amount = oldAmount + royaltyAmount;
-          print(
-              "Add offer royalty amount $royaltyAmount to $oldAmount for $offerAsset = ${amount}");
-          offerredAmounts[offerAsset] = oldAmount + royaltyAmount;
-        }
-      }
-      for (final requestAsset in requestedAmounts.keys) {
-        var oldAmount = requestedAmounts[requestAsset]!
-            .fold(0, (previousValue, element) => previousValue + element);
-
-        if (requestAsset?.assetId == null || requestAsset?.type == SpendType.cat2) {
-          final amount = oldAmount + royaltyAmount;
-          print(
-              "Add request royalty amount $royaltyAmount to $oldAmount for $requestAsset = ${amount}");
-          requestedAmounts[requestAsset] = [amount];
-        }
-      }
-    } */
 
     coins.forEach((asset, coins) {
       if (asset != null) {
