@@ -999,6 +999,7 @@ class NftWallet extends BaseWalletService {
     final coinSpend = nftFullCoin.parentCoinSpend!;
 
     final nftUncurried = UncurriedNFT.uncurry(coinSpend.puzzleReveal);
+
     final nftInfo = NFTInfo.fromUncurried(
       uncurriedNFT: nftUncurried,
       currentCoin: coin,
@@ -1014,13 +1015,14 @@ class NftWallet extends BaseWalletService {
 
     WalletKeychain? keychainForNft;
 
-    Program innerPuzzle = nftUncurried.innerPuzzle;
+    Program innerPuzzle = nftUncurried.p2Puzzle;
     if (buildKeychain != null) {
       keychainForNft = await buildKeychain({p2PuzzleHash});
       final vector = keychainForNft?.getWalletVector(p2PuzzleHash);
       if (vector != null) {
         innerPuzzle = getPuzzleFromPk(vector.childPublicKey);
       } else {
+        //innerPuzzle = nftUncurried.p2Puzzle;
         print("User parent spend innerPuzzle for ${nftInfo.launcherId}");
       }
     }
