@@ -505,7 +505,6 @@ class NftWallet extends BaseWalletService {
       int? mintCoinAmount,
       Puzzlehash? changePuzzlehash,
       required List<Coin> standardCoinsForFee,
-      FullNFTCoinInfo? nftCoin,
       required bool old}) async {
     final DESIRED_OFFER_MOD = old ? OFFER_MOD_V1 : OFFER_MOD_V2;
     final DESIRED_OFFER_MOD_HASH = old ? OFFER_MOD_V1_HASH : OFFER_MOD_V2_HASH;
@@ -562,7 +561,8 @@ class NftWallet extends BaseWalletService {
       }
     });
 
-    List<Tuple3<Bytes, Bytes, int>> requiredRoyaltyInfo = [];
+    List<Tuple3<Bytes, Bytes, int>> requiredRoyaltyInfo =
+        []; // [(launcher_id, address, percentage)]
     Map<Bytes, int> offeredRoyaltyPercentages = {};
 
     for (var asset in royaltyNftAssetDict.keys) {
@@ -645,7 +645,7 @@ class NftWallet extends BaseWalletService {
         int royaltyAmount = 0;
         if (royaltyPayments.containsKey(asset)) {
           royaltyAmount =
-              royaltyPayments[asset]!.map((p) => p.item2.amount).reduce((a, b) => a + b);
+              royaltyPayments[asset]!.map((p) => p.item2.amount).fold(0, (a, b) => a + b);
         }
 
         int coinAmountNeeded;
@@ -786,8 +786,10 @@ class NftWallet extends BaseWalletService {
           ];
           final nftBundles = wallet.generateSignedSpendBundle(
             payments: payments,
-            nftCoin: (selectedCoins[OfferAssetData.singletonNft(launcherPuzhash: assetId)]!.first
-                    as FullNFTCoinInfo)
+            nftCoin: (selectedCoins[OfferAssetData.singletonNft(
+              launcherPuzhash: assetId,
+            )]!
+                    .first as FullNFTCoinInfo)
                 .toNftCoinInfo(),
             standardCoinsForFee: standardCoinsForFee,
             fee: feeLeftToPay,
@@ -1008,7 +1010,6 @@ class NftWallet extends BaseWalletService {
       coinSpend.solution,
     );
     final metadata = data.item1;
-
     final p2PuzzleHash = Puzzlehash(data.item2);
 
     WalletKeychain? keychainForNft;
