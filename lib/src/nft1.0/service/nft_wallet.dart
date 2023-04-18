@@ -839,7 +839,7 @@ class NftWallet extends BaseWalletService {
 
           // Skip it if we're paying 0 royalties
           var payments = royaltyPayments[assetId] ?? [];
-          if ((!old) || payments.isEmpty) {
+          if ((!old) && payments.isEmpty) {
             continue;
           }
           final paymentsSum = payments.map((p) => p.item2.amount).reduce((a, b) => a + b);
