@@ -130,16 +130,7 @@ class SingletonOuterPuzzle extends OuterPuzzle {
     }
 
     final coin = CoinPrototype.fromBytes(coinBytes);
-    CoinSpend parentSpend;
-    if (solver["parent_spend"] is String) {
-      parentSpend = CoinSpend.fromBytes(
-        Bytes.fromHex(solver["parent_spend"]),
-      );
-    } else if (solver["parent_spend"] is Bytes) {
-      parentSpend = CoinSpend.fromBytes(solver["parent_spend"]);
-    } else {
-      parentSpend = solver["parent_spend"] as CoinSpend;
-    }
+    CoinSpend parentSpend = CoinSpend.fromProgram(Program.deserialize(solver["parent_spend"]));
 
     final parentCoin = parentSpend.coin;
 

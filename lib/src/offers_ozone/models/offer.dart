@@ -1,8 +1,6 @@
 import 'package:bech32m/bech32m.dart';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/utils/check_set_overlay.dart';
 import 'package:quiver/iterables.dart';
-import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/models/conditions/announcement.dart';
 
@@ -492,7 +490,7 @@ class Offer {
           silblingsSolutions += ")";
           final solverDict = {
             "coin": coin.toBytes().toHexWithPrefix(),
-            "parent_spend": coinToSpendDict[coin]!.toBytes().toHexWithPrefix(),
+            "parent_spend": coinToSpendDict[coin]!.toProgram().serialize().toHexWithPrefix(),
             "siblings": siblings,
             "sibling_spends": siblingsSpends,
             "sibling_puzzles": silblingsPuzzles,
@@ -528,6 +526,7 @@ class Offer {
           puzzleReveal: puzzleReveal,
           solution: solution,
         );
+
         completionSpends.add(coinSpend);
       }
     });
@@ -565,14 +564,17 @@ class Offer {
                   .toList(),
             )));
       });
-      aditionalCoinSpends.add(CoinSpend(
-          coin: CoinPrototype(
-            parentCoinInfo: ZERO_32,
-            puzzlehash: puzzleReveal.hash(),
-            amount: 0,
-          ),
-          puzzleReveal: puzzleReveal,
-          solution: Program.list(innerSolutions)));
+      final cs = CoinSpend(
+        coin: CoinPrototype(
+          parentCoinInfo: ZERO_32,
+          puzzlehash: puzzleReveal.hash(),
+          amount: 0,
+        ),
+        puzzleReveal: puzzleReveal,
+        solution: Program.list(innerSolutions),
+      );
+
+      aditionalCoinSpends.add(cs);
     });
 
     return SpendBundle(coinSpends: aditionalCoinSpends) + this.bundle;

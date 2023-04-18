@@ -50,10 +50,10 @@ class CATOuterPuzzle extends OuterPuzzle {
     final spendableCatsList = <SpendableCat>[];
 
     CoinPrototype? targetCoin;
-    final siblingsIter = Program.parse(solver["siblings"]).toList();
-    final siblingSpends = Program.parse(solver["sibling_spends"]).toList();
-    final siblingPuzzles = Program.parse(solver["sibling_puzzles"]).toList();
-    final siblingSolutions = Program.parse(solver["sibling_solutions"]).toList();
+    final siblingsIter = (solver["siblings"] as Program).toList();
+    final siblingSpends = (solver["sibling_spends"] as Program).toList();
+    final siblingPuzzles = (solver["sibling_puzzles"] as Program).toList();
+    final siblingSolutions = (solver["sibling_solutions"] as Program).toList();
     final zipped = zip([
       siblingsIter,
       siblingSpends,
@@ -61,8 +61,8 @@ class CATOuterPuzzle extends OuterPuzzle {
       siblingSolutions,
     ]);
 
-    final coinProgram = Program.fromHex(solver["coin"]);
-    final _parentSpendProgram = Program.fromHex(solver["parent_spend"]);
+    final coinProgram = Program.fromBytes(solver["coin"]);
+    final _parentSpendProgram = Program.deserialize(solver["parent_spend"]);
 
     final base = [
       coinProgram,
@@ -83,7 +83,7 @@ class CATOuterPuzzle extends OuterPuzzle {
       if (coinBytes == solver["coin"]) {
         targetCoin = coin;
       }
-      final parentSpend = CoinSpend.fromBytes(spendProg.toBytes());
+      final parentSpend = CoinSpend.fromProgram(spendProg);
 
       // final parentCoin = parentSpend.coin;
       if (constructor.also != null) {
