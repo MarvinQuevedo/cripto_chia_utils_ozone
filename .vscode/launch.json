@@ -31,10 +31,16 @@
             "program": "test/offers/offer_versions_test.dart"
         },
         {
-            "name": "offer_parse",
+            "name": "offer_parse1",
             "type": "dart",
             "request": "launch",
             "program": "test/offers/offer_parse_1.dart"
+        },
+        {
+            "name": "offer_parse",
+            "type": "dart",
+            "request": "launch",
+            "program": "test/offers/offer_parse_test.dart"
         },
         {
             "name": "DidPuzzleTest",
