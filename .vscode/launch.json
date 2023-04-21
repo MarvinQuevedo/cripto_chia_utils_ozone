@@ -4,35 +4,39 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        
         {
             "name": "trade service test",
+            "type": "dart",
             "request": "launch",
             "program": "test/offers/trade_service_test.dart"
         },
-
         {
             "name": "nft1_transfer_test",
+            "type": "dart",
             "request": "launch",
             "program": "test/nft1/nft1_transfer_test.dart"
         },
         {
             "name": "offer cicle2",
+            "type": "dart",
             "request": "launch",
             "program": "test/offers/offer_life_cicle2_test.dart"
         },
         {
             "name": "dis puzzle test",
+            "type": "dart",
             "request": "launch",
             "program": "test/did/did_puzzles_test.dart"
         },
         {
             "name": "offer cicle2",
+            "type": "dart",
             "request": "launch",
             "program": "test/offers/offer_life_cicle2_test.dart"
         },
         {
             "name": "offer v1 v2 test",
+            "type": "dart",
             "request": "launch",
             "program": "test/offers/offer_versions_test.dart"
         },
@@ -54,7 +58,6 @@
             "request": "launch",
             "program": "test/did/did_puzzles_test.dart"
         },
-        
         {
             "name": "NFT test",
             "type": "dart",
@@ -79,7 +82,6 @@
             "request": "launch",
             "program": "lib/main.dart"
         },
-   
         {
             "name": "chia-crypto-utils",
             "request": "launch",
