@@ -151,7 +151,7 @@ class DidWallet extends BaseWalletService {
   }
 
   Future<Tuple2<SpendBundle, DidInfo>?> createNewDid({
-    required int amount,
+    int amount = 1,
     List<Puzzlehash> backupsIds = const [],
     int? numOfBackupIdsNeeded,
     Map<String, String> metadata = const {},
