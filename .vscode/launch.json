@@ -10,6 +10,12 @@
             "request": "launch",
             "program": "test/offers/trade_service_test.dart"
         },
+
+        {
+            "name": "nft1_transfer_test",
+            "request": "launch",
+            "program": "test/nft1/nft1_transfer_test.dart"
+        },
         {
             "name": "offer cicle2",
             "request": "launch",
