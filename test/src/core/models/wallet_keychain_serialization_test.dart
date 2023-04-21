@@ -22,12 +22,12 @@ void main() async {
     ..getNextSingletonWalletVector(keychainSecret.masterPrivateKey);
 
   test('should correctly serialize and deserialize a WalletKeychain', () {
-    final walletKeychainSerialized = walletKeychain.toBytes();
-    final walletKeychainDeserialized = WalletKeychain.fromBytes(walletKeychainSerialized);
+    final walletKeychainSerialized = walletKeychain.toMap();
+    final walletKeychainDeserialized = WalletKeychain.fromMap(walletKeychainSerialized);
 
     expect(
       walletKeychainDeserialized.hardenedWalletVectors.length,
-      equals(20),
+      equals(60),
     );
     expect(
       walletKeychainDeserialized.hardenedWalletVectors.length,
