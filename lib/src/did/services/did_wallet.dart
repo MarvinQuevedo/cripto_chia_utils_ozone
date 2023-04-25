@@ -155,7 +155,6 @@ class DidWallet extends BaseWalletService {
     List<Puzzlehash> backupsIds = const [],
     int? numOfBackupIdsNeeded,
     Map<String, String> metadata = const {},
-    String? name,
     int fee = 0,
     required List<CoinPrototype> coins,
     required WalletKeychain keychain,

@@ -196,6 +196,13 @@ enum SpendType {
   final String value;
 }
 
+SpendType? spendTypeFromString(String? value) {
+  if (value == null) {
+    return null;
+  }
+  return SpendType.values.firstWhere((element) => element.value == value);
+}
+
 class PaymentsAndAdditions {
   final List<Payment> payments;
   final List<CoinPrototype> additions;

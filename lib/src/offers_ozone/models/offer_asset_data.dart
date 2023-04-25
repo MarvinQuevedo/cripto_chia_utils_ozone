@@ -41,6 +41,20 @@ class OfferAssetData extends Equatable {
 
   @override
   List<Object?> get props => [type, assetId];
+
+  Map<String, dynamic> toMap() {
+    return {
+      'assetId': assetId?.toHex(),
+      'type': type.value,
+    };
+  }
+
+  factory OfferAssetData.fromMap(Map<String, dynamic> map) {
+    return OfferAssetData(
+      assetId: map['assetId'] == null ? null : Bytes.fromHex(map['assetId']),
+      type: spendTypeFromString(map['type']) ?? SpendType.unknown,
+    );
+  }
 }
 
 class PreparedTradeData {

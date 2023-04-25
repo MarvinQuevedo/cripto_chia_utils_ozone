@@ -86,12 +86,12 @@ Tuple5<Program, Program, Program, Program, Program>? uncurryInnerpuz(Program puz
 
   final args = uncurried.arguments;
   final p2Puzzle = args[0];
-  final id_list = args[1];
+  final idList = args[1];
   final numOfBackupIdsNeeded = args[2];
   final singletonStruct = args[3];
   final metadata = args[4];
 
-  return Tuple5(p2Puzzle, id_list, numOfBackupIdsNeeded, singletonStruct, metadata);
+  return Tuple5(p2Puzzle, idList, numOfBackupIdsNeeded, singletonStruct, metadata);
 }
 
 bool isDidInnerPuz(Program innerPuzzle) {
