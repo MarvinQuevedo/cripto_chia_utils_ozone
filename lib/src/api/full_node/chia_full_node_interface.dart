@@ -124,6 +124,35 @@ class ChiaFullNodeInterface {
     int? startHeight,
     int? endHeight,
     bool includeSpentCoins = false,
+  }) =>
+      getFullCoinsByInnerPuzzleHashes(
+        puzzlehashes,
+        [SpendType.nft],
+        startHeight: startHeight,
+        endHeight: endHeight,
+        includeSpentCoins: includeSpentCoins,
+      );
+
+  Future<List<FullCoin>> getDidCoinsByInnerPuzzleHashes(
+    List<Puzzlehash> puzzlehashes, {
+    int? startHeight,
+    int? endHeight,
+    bool includeSpentCoins = false,
+  }) =>
+      getFullCoinsByInnerPuzzleHashes(
+        puzzlehashes,
+        [SpendType.did],
+        startHeight: startHeight,
+        endHeight: endHeight,
+        includeSpentCoins: includeSpentCoins,
+      );
+
+  Future<List<FullCoin>> getFullCoinsByInnerPuzzleHashes(
+    List<Puzzlehash> puzzlehashes,
+    List<SpendType> types, {
+    int? startHeight,
+    int? endHeight,
+    bool includeSpentCoins = false,
   }) async {
     final List<Coin> allCoins = [];
 
@@ -138,7 +167,8 @@ class ChiaFullNodeInterface {
       allCoins.addAll(coins);
     }
 
-    return hydrateFullCoins(allCoins);
+    final founded = await hydrateFullCoins(allCoins);
+    return founded.where((element) => types.contains(element.type)).toList();
   }
 
   Future<List<FullCoin>> hydrateFullCoins(List<Coin> unHydratedCatCoins) async {

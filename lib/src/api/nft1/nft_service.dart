@@ -27,7 +27,7 @@ class NftService {
   }
 
   /// Get the coins of the keychain(balance)
-  Future<List<FullCoin>> getNFtCoins({
+  Future<List<FullCoin>> getNFTCoins({
     int? startHeight,
     int? endHeight,
     bool includeSpentCoins = false,
@@ -41,7 +41,7 @@ class NftService {
   }
 
   /// Allow prepare nft coin for transfer of requested in Offer
-  Future<FullNFTCoinInfo?> getNFtFullCoinByLauncherId(
+  Future<FullNFTCoinInfo?> getNFTFullCoinByLauncherId(
     Puzzlehash launcherId,
   ) async {
     final mainChildrens = await fullNode.getCoinsByParentIds(
