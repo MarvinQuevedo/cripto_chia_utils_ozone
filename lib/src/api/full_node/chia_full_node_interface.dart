@@ -138,10 +138,10 @@ class ChiaFullNodeInterface {
       allCoins.addAll(coins);
     }
 
-    return _hydrateFullCoins(allCoins);
+    return hydrateFullCoins(allCoins);
   }
 
-  Future<List<FullCoin>> _hydrateFullCoins(List<Coin> unHydratedCatCoins) async {
+  Future<List<FullCoin>> hydrateFullCoins(List<Coin> unHydratedCatCoins) async {
     final catCoins = <FullCoin>[];
     for (final coin in unHydratedCatCoins) {
       final parentCoin = await getCoinById(coin.parentCoinInfo);
@@ -156,6 +156,25 @@ class ChiaFullNodeInterface {
     }
 
     return catCoins;
+  }
+
+  Future<FullCoin> getLasUnespentSingletonCoin(FullCoin parentCoin) async {
+    Coin lastCoin = parentCoin.coin;
+
+    while (lastCoin.spentBlockIndex == 0) {
+      final children = await getCoinsByParentIds([lastCoin.id]);
+      if (children.isEmpty) {
+        throw Exception("Can't found the children of coin ${lastCoin.id.toHex()}");
+      }
+      if (children.length == 1) {
+        lastCoin = children.first;
+      } else {
+        print("Warning: would not be more than one children");
+        lastCoin = children.first;
+      }
+    }
+    final hydrated = await hydrateFullCoins([lastCoin]);
+    return hydrated.first;
   }
 
   Future<CoinSpend?> getCoinSpend(Coin coin) async {
