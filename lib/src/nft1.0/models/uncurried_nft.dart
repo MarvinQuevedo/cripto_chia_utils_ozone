@@ -193,7 +193,7 @@ class UncurriedNFT {
       late Program p2Puzzle;
       Puzzlehash? royaltyPuzzlehash;
       int? royaltyPercentage;
-      Bytes? nftInnerPuzzleMod;
+      //Bytes? nftInnerPuzzleMod;
 
       final innerPuzzleUncurried = innerPuzzle.uncurry();
       final mod = innerPuzzleUncurried.program;
