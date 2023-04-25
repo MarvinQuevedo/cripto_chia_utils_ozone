@@ -82,7 +82,7 @@ class DidService {
       int? numOfBackupIdsNeeded,
       List<Puzzlehash>? backupsIds,
       Map<String, String> metadata = const {},
-      required Puzzlehash tarjetPuzzlehash}) async {
+      required Puzzlehash targePuzzlehash}) async {
     final didWallet = DidWallet();
 
     final result = await didWallet.createNewDid(
@@ -92,7 +92,7 @@ class DidService {
       amount: amount,
       backupsIds: backupsIds ?? [],
       changePuzzlehash: changePuzzlehash,
-      p2Puzlehash: tarjetPuzzlehash,
+      p2Puzlehash: targePuzzlehash,
       metadata: metadata,
       numOfBackupIdsNeeded: numOfBackupIdsNeeded,
     );
