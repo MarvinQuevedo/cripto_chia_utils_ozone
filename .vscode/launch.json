@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Test DID service",
+            "type": "dart",
+            "request": "launch",
+            "program": "integration_test/did/did_service_test.dart"
+        },
+        {
+            "name": "Test nft service",
+            "type": "dart",
+            "request": "launch",
+            "program": "integration_test/nft1/nft1_service_test.dart"
+        },
+        {
             "name": "trade service test",
             "type": "dart",
             "request": "launch",

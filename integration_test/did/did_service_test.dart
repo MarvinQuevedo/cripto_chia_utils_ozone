@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/api/nft1/nft_service.dart';
+import 'package:chia_crypto_utils/src/api/did/did_service.dart';
 import 'package:test/test.dart';
 
 Future<void> main() async {
@@ -34,41 +34,34 @@ Future<void> main() async {
   );
 
   final fullNode = ChiaFullNodeInterface(fullNodeRpc);
-  final nftService = NftNodeWalletService(fullNode: fullNode, keychain: keychain);
+  final didService = DidService(fullNode: fullNode, keychain: keychain);
 
-  List<FullCoin>? nftCoins;
+  List<FullCoin>? didCoins;
 
-  FullNFTCoinInfo? nftFullCoin;
+  DidInfo? didInfo;
   test('Get NFT Coins', () async {
-    nftCoins = await nftService.getNFTCoins();
-    print(nftCoins!);
-    expect(nftCoins!, isNotEmpty);
+    didCoins = await didService.getDIDCoins();
+    print(didCoins!);
+    expect(didCoins!, isNotEmpty);
   });
 
-  test('Get full coin for transfer', () async {
-    final nftCoin = nftCoins![1];
-    nftFullCoin = await nftService.convertFullCoin(nftCoin);
-    final nftInfo = nftFullCoin!.toNftCoinInfo();
-    final uncurriedNft = UncurriedNFT.uncurry(nftInfo.fullPuzzle);
-    final walletVector = keychain.getWalletVector(uncurriedNft.p2PuzzleHash);
-    expect(walletVector, isNotNull);
+  test('Get Did info', () async {
+    if (didCoins!.isNotEmpty) {
+      final nftCoin = didCoins![1];
+      didInfo = await didService.getDidInfo(nftCoin);
+
+      expect(didInfo, isNotNull);
+    }
   });
 
-  test('Get  third full coin with launcher ID', () async {
-    final nftId = NftAddress("nft1aqpjrv8vyyq0djhp2s0nzks4qyvh2tf6kq8r20d0plsujdj08waqe5glhc");
-    final thirdFullCoin = await nftService.getNFTFullCoinByLauncherId(nftId.toPuzzlehash());
-
-    expect(thirdFullCoin, isNotNull);
-  });
-
-  test('Transfer NFT', () async {
+  test('Created DID', () async {
     List<CoinPrototype> xchCoins = await fullNode.getCoinsByPuzzleHashes(keychain.puzzlehashes);
     final targePuzzlehash = keychain.puzzlehashes[3];
     final changePuzzlehash = keychain.puzzlehashes[2];
-    final response = await nftService.transferNFt(
+    final response = await didService.createDid(
       targePuzzlehash: targePuzzlehash,
-      nftCoinInfo: nftFullCoin!,
-      standardCoinsForFee: xchCoins,
+      coins: xchCoins,
+      fee: 1000000,
       changePuzzlehash: changePuzzlehash,
     );
     expect(response.success, true);
