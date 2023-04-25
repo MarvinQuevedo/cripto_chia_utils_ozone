@@ -49,25 +49,11 @@ class NftNodeWalletService {
       includeSpentCoins: true,
     );
     final mainHidratedCoins = await fullNode.hydrateFullCoins(mainChildrens);
-    FullCoin? nftCoin;
-    final nftCoins = mainHidratedCoins.where((e) => e.type == SpendType.nft).toList();
-    if (nftCoins.length == 1) {
-      nftCoin = nftCoins.first;
-    } else {
-      for (final coin in nftCoins) {
-        final uncurriedNft = UncurriedNFT.tryUncurry(coin.parentCoinSpend!.puzzleReveal);
-        if (uncurriedNft != null) {
-          if (uncurriedNft.singletonLauncherId.toBytes().toHex() == launcherId.toHex()) {
-            nftCoin = coin;
-            break;
-          }
-        }
-      }
-    }
 
-    if (nftCoin == null) {
+    if (mainHidratedCoins.isEmpty) {
       throw Exception("Can't be found the NFT coin with launcher ${launcherId}");
     }
+    FullCoin nftCoin = mainHidratedCoins.first;
     final lastCoin = await fullNode.getLasUnespentSingletonCoin(nftCoin);
     return convertFullCoin(lastCoin);
   }

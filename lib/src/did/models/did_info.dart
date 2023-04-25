@@ -13,7 +13,7 @@ class DidInfo extends Equatable {
   final Program? currentInner;
   final Coin? tempCoin;
   final Puzzlehash? tempPuzzlehash;
-  final Puzzlehash? didId;
+  final Bytes? didId;
   final Bytes? tempPubKey;
   final bool sentRecoveryTransaction;
   final String metadata;
@@ -114,35 +114,42 @@ class DidInfo extends Equatable {
     CoinPrototype? originCoin,
     List<Tuple2<Puzzlehash, LineageProof?>>? parentInfo,
   }) {
-    final uncurried = didPuzzles.uncurryInnerpuz(fullpuzzleReveal);
+    final uncurriedFull = fullpuzzleReveal.uncurry();
+    final uncurried = didPuzzles.uncurryInnerpuz(uncurriedFull.arguments[1]);
     if (uncurried == null) {
       return null;
     }
     final args = List<Program>.from(uncurried.toList());
     final p2Puzzle = args[0];
-    final recoveryListHash = args[1];
+    final recoveryListHash = args[1].toBytes();
     final numOfBackupIdsNeeded = args[2];
     final singletonStruct = args[3];
     final metadata = args[4];
     final launcherId = singletonStruct.rest().first().toBytes();
     final innerSolution = solution.rest().rest().first();
     final recoveryList = <Puzzlehash>[];
-
-    if (recoveryListHash != Program.nil) {
-      final listProgram = innerSolution.rest().rest().rest().rest().rest().toList();
-      recoveryList.addAll(listProgram.map((e) => Puzzlehash(e.toBytes())));
+    final empythHash = Program.list([]).hash();
+    if (recoveryListHash.toHex() != empythHash.toHex()) {
+      try {
+        final listProgram = innerSolution.rest().rest().rest().rest().rest().toList();
+        recoveryList.addAll(listProgram.map((e) => Puzzlehash(e.toBytes())));
+      } catch (e) {}
     }
 
-    return DidInfo(
-        originCoin: originCoin,
-        backupsIds: recoveryList,
-        numOfBackupIdsNeeded: numOfBackupIdsNeeded.toInt(),
-        parentInfo: parentInfo ?? [],
-        sentRecoveryTransaction: false,
-        currentInner: p2Puzzle,
-        tempPuzzlehash: p2Puzzle.hash(),
-        didId: Puzzlehash(launcherId),
-        tempCoin: actualCoin,
-        metadata: metadata.toSource());
+    try {
+      return DidInfo(
+          originCoin: originCoin,
+          backupsIds: recoveryList,
+          numOfBackupIdsNeeded: numOfBackupIdsNeeded.toInt(),
+          parentInfo: parentInfo ?? [],
+          sentRecoveryTransaction: false,
+          currentInner: p2Puzzle,
+          tempPuzzlehash: p2Puzzle.hash(),
+          didId: launcherId,
+          tempCoin: actualCoin,
+          metadata: metadata.toSource());
+    } catch (e) {
+      return null;
+    }
   }
 }
