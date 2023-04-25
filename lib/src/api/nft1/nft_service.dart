@@ -1,9 +1,9 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
-class NftService {
+class NftNodeWalletService {
   final ChiaFullNodeInterface fullNode;
   final WalletKeychain keychain;
-  NftService({
+  NftNodeWalletService({
     required this.fullNode,
     required this.keychain,
   });
