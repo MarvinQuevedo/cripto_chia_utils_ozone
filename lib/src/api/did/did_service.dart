@@ -73,4 +73,34 @@ class DidService {
 
     return uncurriedInfo;
   }
+
+  Future<ChiaBaseResponse> createDid(
+      {required List<CoinPrototype> coins,
+      required Puzzlehash changePuzzlehash,
+      int fee = 0,
+      int amount = 1,
+      int? numOfBackupIdsNeeded,
+      List<Puzzlehash>? backupsIds,
+      Map<String, String> metadata = const {},
+      required Puzzlehash tarjetPuzzlehash}) async {
+    final didWallet = DidWallet();
+
+    final result = await didWallet.createNewDid(
+      coins: coins,
+      keychain: keychain,
+      fee: fee,
+      amount: amount,
+      backupsIds: backupsIds ?? [],
+      changePuzzlehash: changePuzzlehash,
+      p2Puzlehash: tarjetPuzzlehash,
+      metadata: metadata,
+      numOfBackupIdsNeeded: numOfBackupIdsNeeded,
+    );
+    if (result == null) {
+      throw Exception('Error creating DID');
+    }
+    final spendBundle = result.item1;
+    final response = await fullNode.pushTransaction(spendBundle);
+    return response;
+  }
 }
