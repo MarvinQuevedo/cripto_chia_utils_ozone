@@ -13,6 +13,22 @@ class OffersService {
 
   StandardWalletService get walletService => StandardWalletService();
 
+  Future<AnalizedOffer?> analizeOffer({
+    required int fee,
+    required Puzzlehash targetPuzzleHash,
+    required Puzzlehash changePuzzlehash,
+    required Offer offer,
+  }) async {
+    final tradeManager = TradeManagerService();
+    final analizedOffer = await tradeManager.analizeOffer(
+      fee: fee,
+      targetPuzzleHash: targetPuzzleHash,
+      changePuzzlehash: changePuzzlehash,
+      offer: offer,
+    );
+    return analizedOffer;
+  }
+
   Future<Tuple2<ChiaBaseResponse, Offer>> responseOffer({
     required int fee,
     required Puzzlehash targetPuzzleHash,
@@ -57,13 +73,13 @@ class OffersService {
     }
   }
 
-  Future<Offer> createNftOffer({
+  Future<Offer> createOffer({
     required Puzzlehash targetPuzzleHash,
     int fee = 0,
     required List<FullCoin> coins,
     required Map<OfferAssetData?, List<int>> requesteAmounts,
     required Map<OfferAssetData?, int> offerredAmounts,
-    required bool isOld,
+    bool isOld = false,
     required Puzzlehash changePuzzlehash,
   }) async {
     final preparedData = await _prepareOfferDataForTrade(
