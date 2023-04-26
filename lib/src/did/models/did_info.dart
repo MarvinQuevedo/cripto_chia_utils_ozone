@@ -13,7 +13,7 @@ class DidInfo extends Equatable {
   final Program? currentInner;
   final Coin? tempCoin;
   final Puzzlehash? tempPuzzlehash;
-  final Bytes? didId;
+  final Puzzlehash? didId;
   final Bytes? tempPubKey;
   final bool sentRecoveryTransaction;
   final String metadata;
@@ -125,7 +125,7 @@ class DidInfo extends Equatable {
     final numOfBackupIdsNeeded = args[2];
     final singletonStruct = args[3];
     final metadata = args[4];
-    final launcherId = singletonStruct.rest().first().toBytes();
+    final launcherId = Puzzlehash(singletonStruct.rest().first().atom);
     final innerSolution = solution.rest().rest().first();
     final recoveryList = <Puzzlehash>[];
     final empythHash = Program.list([]).hash();
