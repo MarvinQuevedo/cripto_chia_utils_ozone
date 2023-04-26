@@ -5,6 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Test Offer service",
+            "type": "dart",
+            "request": "launch",
+            "program": "integration_test/offers/offer_service_test.dart"
+        },
+        {
             "name": "Test DID service",
             "type": "dart",
             "request": "launch",
