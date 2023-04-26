@@ -111,4 +111,13 @@ class StandardWalletService extends BaseWalletService {
       }
     }
   }
+
+  List<FullCoin> convertXchCoinsToFull(List<Coin> coins) {
+    return coins
+        .map((coin) => FullCoin(
+              coin: coin,
+              parentCoinSpend: null,
+            ))
+        .toList();
+  }
 }

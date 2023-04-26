@@ -1,8 +1,8 @@
-import 'dart:io';
-
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/api/did/did_service.dart';
 import 'package:test/test.dart';
+
+import '../nft1/nft1_service_test.dart';
 
 Future<void> main() async {
   final fullNodeUtils = FullNodeUtilsWindows(Network.testnet10);
@@ -66,44 +66,4 @@ Future<void> main() async {
     );
     expect(response.success, true);
   });
-}
-
-class FullNodeUtilsWindows {
-  static const String defaultUrl = 'https://localhost:8555';
-
-  final String url;
-  final Network network;
-
-  FullNodeUtilsWindows(this.network, {this.url = defaultUrl});
-
-  Bytes get certBytes {
-    return _getAuthFileBytes('$sslPath\\private_full_node.crt');
-  }
-
-  String get checkNetworkMessage => 'Check if your full node is runing on $network';
-
-  Bytes get keyBytes {
-    return _getAuthFileBytes('$sslPath\\private_full_node.key');
-  }
-
-  String get sslPath => '${Platform.environment['HOME']}\\.chia\\mainnet\\config\\ssl\\full_node';
-
-  Future<void> checkIsRunning() async {
-    final fullNodeRpc = FullNodeHttpRpc(
-      url,
-      certBytes: certBytes,
-      keyBytes: keyBytes,
-    );
-
-    final fullNode = ChiaFullNodeInterface(fullNodeRpc);
-    await fullNode.getBlockchainState();
-  }
-
-  static Bytes _getAuthFileBytes(String pathToFile) {
-    LoggingContext()
-      ..info(null, highLog: 'auth file loaded: $pathToFile')
-      ..info(null, highLog: 'file contents:')
-      ..info(null, highLog: File(pathToFile).readAsStringSync());
-    return Bytes(File(pathToFile).readAsBytesSync());
-  }
 }
