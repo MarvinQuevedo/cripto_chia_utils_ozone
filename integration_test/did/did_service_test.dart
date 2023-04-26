@@ -47,8 +47,8 @@ Future<void> main() async {
 
   test('Get Did info', () async {
     if (didCoins!.isNotEmpty) {
-      final nftCoin = didCoins![1];
-      didInfo = await didService.getDidInfo(nftCoin);
+      final didCoin = didCoins![2];
+      didInfo = await didService.getDidInfo(didCoin);
 
       expect(didInfo, isNotNull);
     }

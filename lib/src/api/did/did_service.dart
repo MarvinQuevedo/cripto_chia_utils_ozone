@@ -34,11 +34,17 @@ class DidService {
     DidInfo? uncurriedInfo = DidInfo.uncurry(
       fullpuzzleReveal: parendSpend.puzzleReveal,
       solution: parendSpend.solution,
+      actualCoin: didCoin.coin,
     );
     if (uncurriedInfo == null) {
       throw Exception('Coin is not DID');
     }
-    final originCoins = await fullNode.getCoinsByParentIds([didCoin.coin.parentCoinInfo]);
+    final originCoins = await fullNode.getCoinsByParentIds(
+      [
+        uncurriedInfo.didId!,
+      ],
+      includeSpentCoins: true,
+    );
     if (originCoins.isEmpty) {
       throw Exception("Can't find origin coin");
     }
@@ -47,8 +53,10 @@ class DidService {
 
     uncurriedInfo = uncurriedInfo.copyWith(originCoin: originCoins.first);
     var actualCoinId = uncurriedInfo.originCoin!.id;
-    while (true) {
-      final children = await fullNode.getCoinsByParentIds([actualCoinId]);
+    Coin actualCoin = uncurriedInfo.tempCoin!;
+
+    while (actualCoin.spentBlockIndex != 0) {
+      final children = await fullNode.getCoinsByParentIds([actualCoinId], includeSpentCoins: true);
       if (children.isEmpty) {
         break;
       }
@@ -67,9 +75,15 @@ class DidService {
                   future_parent,
                 ),
               ));
-        actualCoinId = coin.id;
+
+        actualCoin = coin;
+        actualCoinId = coin.parentCoinInfo;
+        if (coin.spentBlockIndex == 0) {
+          break;
+        }
       }
     }
+    uncurriedInfo = uncurriedInfo.copyWith(tempCoin: actualCoin);
 
     return uncurriedInfo;
   }
