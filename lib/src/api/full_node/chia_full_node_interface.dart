@@ -191,8 +191,8 @@ class ChiaFullNodeInterface {
   Future<FullCoin> getLasUnespentSingletonCoin(FullCoin parentCoin) async {
     Coin lastCoin = parentCoin.coin;
 
-    while (lastCoin.spentBlockIndex == 0) {
-      final children = await getCoinsByParentIds([lastCoin.id]);
+    while (lastCoin.spentBlockIndex != 0) {
+      final children = await getCoinsByParentIds([lastCoin.id], includeSpentCoins: true);
       if (children.isEmpty) {
         throw Exception("Can't found the children of coin ${lastCoin.id.toHex()}");
       }
