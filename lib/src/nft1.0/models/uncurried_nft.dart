@@ -106,7 +106,6 @@ class UncurriedNFT {
     try {
       return UncurriedNFT.uncurry(puzzle);
     } catch (e) {
-      print(e);
       return null;
     }
   }
@@ -203,7 +202,7 @@ class UncurriedNFT {
 
       if (mod.toSource() == nftOwnershipLayer.toSource()) {
         supportsDid = true;
-        print("parsing ownership layer");
+
         final olArgsList = olArgs;
         final currentDidP = olArgsList[1];
         transferProgram = olArgsList[2];
