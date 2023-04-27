@@ -533,7 +533,7 @@ class TradeManagerService extends BaseWalletService {
     }
   }
 
-  Future<Map<Bytes, PuzzleInfo>> _createDict(
+  Future<Map<Bytes, PuzzleInfo>> createDict(
       {required Map<OfferAssetData?, List<int>> requestedAmounts,
       required Map<OfferAssetData?, int> offerredAmounts,
       required Map<OfferAssetData, FullNFTCoinInfo> nftCoins}) async {
@@ -583,7 +583,7 @@ class TradeManagerService extends BaseWalletService {
       }
     });
     Map<Bytes, PuzzleInfo> driverDict = offerDriverDict ??
-        await _createDict(
+        await createDict(
           requestedAmounts: requestedAmounts,
           offerredAmounts: offerredAmounts,
           nftCoins: nftCoins,
