@@ -207,6 +207,27 @@ class ChiaFullNodeInterface {
     return hydrated.first;
   }
 
+  Future<List<FullCoin>> getAllLinageSingletonCoin(FullCoin parentCoin) async {
+    Coin lastCoin = parentCoin.coin;
+    List<Coin> allCoins = [];
+
+    while (lastCoin.spentBlockIndex != 0) {
+      final children = await getCoinsByParentIds([lastCoin.id], includeSpentCoins: true);
+      if (children.isEmpty) {
+        throw Exception("Can't found the children of coin ${lastCoin.id.toHex()}");
+      }
+      if (children.length == 1) {
+        lastCoin = children.first;
+      } else {
+        print("Warning: would not be more than one children");
+        lastCoin = children.first;
+      }
+      allCoins.add(lastCoin);
+    }
+    final hydrated = await hydrateFullCoins(allCoins);
+    return hydrated;
+  }
+
   Future<CoinSpend?> getCoinSpend(Coin coin) async {
     final coinSpendResponse = await fullNode.getPuzzleAndSolution(coin.id, coin.spentBlockIndex);
     mapResponseToError(coinSpendResponse);

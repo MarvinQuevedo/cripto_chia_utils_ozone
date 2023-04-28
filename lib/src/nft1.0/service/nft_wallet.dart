@@ -438,18 +438,18 @@ class NftWallet extends BaseWalletService {
     }
 
     final nftCoin = NFTCoinInfo(
-      nftId: launcherCoin.id,
-      coin: eveCoin,
-      lineageProof: LineageProof(
-        parentName: Puzzlehash(launcherCoin.parentCoinInfo),
-        amount: launcherCoin.amount,
-      ),
-      fullPuzzle: eveFullPuz,
-      mintHeight: 0,
-      latestHeight: 0,
-      pendingTransaction: true,
-      minterDid: (didInfo != null && didInfo.didId != null) ? didInfo.didId : null,
-    );
+        nftId: launcherCoin.id,
+        coin: eveCoin,
+        lineageProof: LineageProof(
+          parentName: Puzzlehash(launcherCoin.parentCoinInfo),
+          amount: launcherCoin.amount,
+        ),
+        fullPuzzle: eveFullPuz,
+        mintHeight: 0,
+        latestHeight: 0,
+        pendingTransaction: true,
+        minterDid: (didInfo != null && didInfo.didId != null) ? didInfo.didId : null,
+        ownerDid: null);
 
     final signedSpendBundle = generateSignedSpendBundle(
       payments: [
@@ -1051,7 +1051,8 @@ class NftWallet extends BaseWalletService {
       pendingTransaction: false,
       parentCoinSpend: nftFullCoin.parentCoinSpend,
       confirmedBlockIndex: nftFullCoin.coin.confirmedBlockIndex,
-      minterDid: nftUncurried.ownerDid,
+      ownerDid: nftUncurried.ownerDid,
+      minterDid: null,
       nftLineageProof: LineageProof(
         amount: coinSpend.coin.amount,
         innerPuzzleHash: nftUncurried.nftStateLayer.hash(),

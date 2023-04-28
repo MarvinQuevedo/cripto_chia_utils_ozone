@@ -88,6 +88,24 @@ class DidService {
     return uncurriedInfo;
   }
 
+  Future<DidInfo?> getDidInfoByLauncherId(
+    Puzzlehash launcherId,
+  ) async {
+    final mainChildrens = await fullNode.getCoinsByParentIds(
+      [launcherId],
+      includeSpentCoins: true,
+    );
+    final mainHidratedCoins = await fullNode.hydrateFullCoins(mainChildrens);
+
+    if (mainHidratedCoins.isEmpty) {
+      throw Exception("Can't be found the NFT coin with launcher ${launcherId}");
+    }
+    FullCoin nftCoin = mainHidratedCoins.first;
+    final lastCoin = await fullNode.getLasUnespentSingletonCoin(nftCoin);
+
+    return getDidInfo(lastCoin);
+  }
+
   Future<ChiaBaseResponse> createDid(
       {required List<CoinPrototype> coins,
       required Puzzlehash changePuzzlehash,

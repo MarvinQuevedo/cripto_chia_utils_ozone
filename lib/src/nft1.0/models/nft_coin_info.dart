@@ -8,6 +8,7 @@ class NFTCoinInfo extends Coin {
   final Program fullPuzzle;
   final int mintHeight;
   final Bytes? minterDid;
+  final Bytes? ownerDid;
   final int latestHeight;
   final bool pendingTransaction;
 
@@ -21,7 +22,8 @@ class NFTCoinInfo extends Coin {
     required this.mintHeight,
     required this.latestHeight,
     this.pendingTransaction = false,
-    this.minterDid,
+    required this.minterDid,
+    required this.ownerDid,
     int confirmedBlockIndex = 0,
     int spentBlockIndex = 0,
   }) : super(
@@ -73,6 +75,7 @@ class FullNFTCoinInfo extends FullCoin {
   final Program fullPuzzle;
   final int mintHeight;
   final Bytes? minterDid;
+  final Bytes? ownerDid;
   final int latestHeight;
   final bool pendingTransaction;
 
@@ -86,7 +89,8 @@ class FullNFTCoinInfo extends FullCoin {
     required this.mintHeight,
     required this.latestHeight,
     this.pendingTransaction = false,
-    this.minterDid,
+    required this.minterDid,
+    required this.ownerDid,
     int confirmedBlockIndex = 0,
     int spentBlockIndex = 0,
     required CoinSpend? parentCoinSpend,
@@ -125,6 +129,36 @@ class FullNFTCoinInfo extends FullCoin {
         pendingTransaction.hashCode;
   }
 
+  FullNFTCoinInfo copyWith({
+    Bytes? nftId,
+    Coin? coin,
+    LineageProof? lineageProof,
+    Program? fullPuzzle,
+    int? mintHeight,
+    int? latestHeight,
+    bool? pendingTransaction,
+    Bytes? minterDid,
+    Bytes? ownerDid,
+    int? confirmedBlockIndex,
+    int? spentBlockIndex,
+    CoinSpend? parentCoinSpend,
+  }) {
+    return FullNFTCoinInfo(
+      nftId: nftId ?? this.nftId,
+      coin: coin ?? this.coin,
+      nftLineageProof: lineageProof ?? this.nftLineageProof,
+      fullPuzzle: fullPuzzle ?? this.fullPuzzle,
+      mintHeight: mintHeight ?? this.mintHeight,
+      latestHeight: latestHeight ?? this.latestHeight,
+      pendingTransaction: pendingTransaction ?? this.pendingTransaction,
+      minterDid: minterDid ?? this.minterDid,
+      ownerDid: ownerDid ?? this.ownerDid,
+      confirmedBlockIndex: confirmedBlockIndex ?? this.coin.confirmedBlockIndex,
+      spentBlockIndex: spentBlockIndex ?? this.coin.spentBlockIndex,
+      parentCoinSpend: parentCoinSpend ?? this.parentCoinSpend,
+    );
+  }
+
   NFTCoinInfo toNftCoinInfo() {
     return NFTCoinInfo(
       nftId: nftId,
@@ -135,8 +169,9 @@ class FullNFTCoinInfo extends FullCoin {
       latestHeight: latestHeight,
       pendingTransaction: pendingTransaction,
       minterDid: minterDid,
-      confirmedBlockIndex: 0,
-      spentBlockIndex: 0,
+      ownerDid: ownerDid,
+      confirmedBlockIndex: coin.confirmedBlockIndex,
+      spentBlockIndex: coin.spentBlockIndex,
     );
   }
 }

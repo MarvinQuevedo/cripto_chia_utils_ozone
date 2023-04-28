@@ -1,4 +1,5 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/api/did/did_service.dart';
 
 class NftNodeWalletService {
   final ChiaFullNodeInterface fullNode;
@@ -23,7 +24,15 @@ class NftNodeWalletService {
       }
       return null;
     });
-    return nftInfo.item1;
+    FullNFTCoinInfo nftFullInfo = nftInfo.item1;
+    if (nftInfo.item1.minterDid == null) {
+      final did = await getMinterNft(Puzzlehash(nftInfo.item1.launcherId));
+      if (did != null) {
+        nftFullInfo = nftFullInfo.copyWith(minterDid: did.didId);
+      }
+      print("Minter DID is null");
+    }
+    return nftFullInfo;
   }
 
   /// Get the coins of the keychain(balance)
@@ -56,6 +65,35 @@ class NftNodeWalletService {
     FullCoin nftCoin = mainHidratedCoins.first;
     final lastCoin = await fullNode.getLasUnespentSingletonCoin(nftCoin);
     return convertFullCoin(lastCoin);
+  }
+
+  Future<DidInfo?> getMinterNft(
+    Puzzlehash launcherId,
+  ) async {
+    final mainChildrens = await fullNode.getCoinsByParentIds(
+      [launcherId],
+      includeSpentCoins: true,
+    );
+    final mainHidratedCoins = await fullNode.hydrateFullCoins(mainChildrens);
+
+    if (mainHidratedCoins.isEmpty) {
+      throw Exception("Can't be found the NFT coin with launcher ${launcherId}");
+    }
+    FullCoin nftCoin = mainHidratedCoins.first;
+    print(nftCoin.type);
+    final foundedCoins = await fullNode.getAllLinageSingletonCoin(nftCoin);
+    final eveCcoin = foundedCoins.first;
+    final uncurriedNft = UncurriedNFT.tryUncurry(eveCcoin.parentCoinSpend!.puzzleReveal);
+    if (uncurriedNft!.supportDid) {
+      final minterDid = NftService()
+          .getnewOwnerDid(unft: uncurriedNft, solution: eveCcoin.parentCoinSpend!.solution);
+      if (minterDid != null) {
+        return DidService(fullNode: fullNode, keychain: keychain)
+            .getDidInfoByLauncherId(Puzzlehash(minterDid));
+      }
+    }
+
+    return null;
   }
 
   /// Allow transfer a NFT to other wallet

@@ -49,7 +49,11 @@ Future<void> main() async {
     final nftCoin = nftCoins![1];
     nftFullCoin = await nftService.convertFullCoin(nftCoin);
     final nftInfo = nftFullCoin!.toNftCoinInfo();
+
     final uncurriedNft = UncurriedNFT.uncurry(nftInfo.fullPuzzle);
+    if (uncurriedNft.supportDid) {
+      expect(nftInfo.minterDid, isNotNull);
+    }
     final walletVector = keychain.getWalletVector(uncurriedNft.p2PuzzleHash);
     expect(walletVector, isNotNull);
   });
@@ -93,7 +97,8 @@ class FullNodeUtilsWindows {
     return _getAuthFileBytes('$sslPath\\private_full_node.key');
   }
 
-  String get sslPath => '${Platform.environment['HOME']}\\.chia\\mainnet\\config\\ssl\\full_node';
+  String get sslPath =>
+      '${Platform.environment['HOMEPATH']}\\.chia\\mainnet\\config\\ssl\\full_node';
 
   Future<void> checkIsRunning() async {
     final fullNodeRpc = FullNodeHttpRpc(
