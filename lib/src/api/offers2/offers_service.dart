@@ -186,8 +186,9 @@ class OffersService {
     }
     if (coins[null] == null && fee > 0) {
       final xchCoins = _filterCoins(coinsToUse, null);
+      final selectedCoins = _getCoinsForAmount(xchCoins, fee);
 
-      coins[null] = xchCoins.map((e) {
+      coins[null] = selectedCoins.map((e) {
         return e;
       }).toList();
     }
