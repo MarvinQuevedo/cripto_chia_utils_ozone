@@ -62,7 +62,7 @@ class CATOuterPuzzle extends OuterPuzzle {
     ]);
 
     final coinProgram = Program.fromBytes(solver["coin"]);
-    final _parentSpendProgram = Program.deserialize(solver["parent_spend"]);
+    final _parentSpendProgram = Program.fromBytes(solver["parent_spend"]);
 
     final base = [
       coinProgram,
@@ -80,10 +80,11 @@ class CATOuterPuzzle extends OuterPuzzle {
       final coinBytes = coinProg.atom;
 
       final coin = CoinPrototype.fromBytes(coinBytes);
-      if (coinBytes == solver["coin"]) {
+      final Bytes solverCoin = solver["coin"];
+      if (coinBytes == solverCoin) {
         targetCoin = coin;
       }
-      final parentSpend = CoinSpend.fromProgram(spendProg);
+      final parentSpend = CoinSpend.fromBytes(spendProg.atom);
 
       // final parentCoin = parentSpend.coin;
       if (constructor.also != null) {

@@ -509,10 +509,10 @@ class Offer {
 
           for (var siblingCoin in offerredCoins) {
             if (siblingCoin != coin) {
-              siblings += siblingCoin.toBytes().toHexWithPrefix();
-              siblingsSpends += coinToSpendDict[siblingCoin]!.toBytes().toHexWithPrefix();
-              silblingsPuzzles += disassembledOfferMod;
-              silblingsSolutions += coinToSolutionDict[siblingCoin]!.serialize().toHexWithPrefix();
+              siblings += siblingCoin.toBytes().toHexWithPrefix() + " ";
+              siblingsSpends += coinToSpendDict[siblingCoin]!.toBytes().hexWithBytesPrefix + " ";
+              silblingsPuzzles += disassembledOfferMod + " ";
+              silblingsSolutions += coinToSolutionDict[siblingCoin]!.toSource() + " ";
             }
           }
           siblings += ")";
@@ -521,7 +521,7 @@ class Offer {
           silblingsSolutions += ")";
           final solverDict = {
             "coin": coin.toBytes().toHexWithPrefix(),
-            "parent_spend": coinToSpendDict[coin]!.toProgram().serialize().toHexWithPrefix(),
+            "parent_spend": coinToSpendDict[coin]!.toBytes().toHexWithPrefix(),
             "siblings": siblings,
             "sibling_spends": siblingsSpends,
             "sibling_puzzles": silblingsPuzzles,

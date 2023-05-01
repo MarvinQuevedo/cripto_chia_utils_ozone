@@ -130,7 +130,8 @@ class SingletonOuterPuzzle extends OuterPuzzle {
     }
 
     final coin = CoinPrototype.fromBytes(coinBytes);
-    CoinSpend parentSpend = CoinSpend.fromProgram(Program.deserialize(solver["parent_spend"]));
+    final Bytes solverParentSpend = solver["parent_spend"];
+    CoinSpend parentSpend = CoinSpend.fromBytes(solverParentSpend);
 
     final parentCoin = parentSpend.coin;
 
