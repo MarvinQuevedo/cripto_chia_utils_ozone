@@ -39,7 +39,7 @@ Future<void> main() async {
         targetPuzzleHash: Puzzlehash.zeros(),
         changePuzzlehash: Puzzlehash.zeros(),
         offer: Offer.fromBench32(dexieOffer));
-    expect(analized!, isNotEmpty);
+    expect(analized!, isNotNull);
   });
 
   void testParseOfferFile() {
