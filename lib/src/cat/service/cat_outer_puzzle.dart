@@ -71,6 +71,7 @@ class CATOuterPuzzle extends OuterPuzzle {
       innerSolution,
     ];
     final workIterable = zipped.toList()..add(base);
+    workIterable.sort((a, b) => (a[0].toBytes()).compareTo(b[0].toBytes()));
     for (var item in workIterable) {
       final coinProg = item[0];
       final spendProg = item[1];
