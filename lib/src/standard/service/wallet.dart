@@ -120,4 +120,35 @@ class StandardWalletService extends BaseWalletService {
             ))
         .toList();
   }
+
+  SpendBundle createFeeSpendBundle({
+    required int fee,
+    required List<CoinPrototype> standardCoins,
+    required WalletKeychain keychain,
+    required Puzzlehash? changePuzzlehash,
+    List<AssertCoinAnnouncementCondition> coinAnnouncementsToAsset = const [],
+  }) {
+    assert(
+      standardCoins.isNotEmpty,
+      'If passing in a fee, you must also pass in standard coins to use for that fee.',
+    );
+
+    final totalStandardCoinsValue = standardCoins.fold(
+      0,
+      (int previousValue, standardCoin) => previousValue + standardCoin.amount,
+    );
+    assert(
+      totalStandardCoinsValue >= fee,
+      'Total value of passed in standad coins is not enough to cover fee.',
+    );
+
+    return createSpendBundle(
+      payments: [],
+      coinsInput: standardCoins,
+      changePuzzlehash: changePuzzlehash,
+      keychain: keychain,
+      fee: fee,
+      coinAnnouncementsToAssert: coinAnnouncementsToAsset,
+    );
+  }
 }
