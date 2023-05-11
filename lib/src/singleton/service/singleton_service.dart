@@ -3,22 +3,21 @@
 import 'dart:typed_data';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 
 class SingletonService extends BaseWalletService {
   /// Return the puzzle reveal of a singleton with specific ID and innerpuz
-  static Program puzzleForSingleton(
+  static Program puzzleForSingletonV1(
     Bytes launcherId,
     Program innerPuzzle, {
     Bytes? launcherHash,
   }) {
-    return singletonTopLayerV1_1Program.curry([
+    return SINGLETON_MOD_V1.curry([
       Program.cons(
-        Program.fromBytes(singletonTopLayerV1_1Program.hash()),
+        Program.fromBytes(SINGLETON_MOD_V1_HASH),
         Program.cons(
           Program.fromBytes(launcherId),
           Program.fromBytes(
-            launcherHash ?? SINGLETON_LAUNCHER_HASH,
+            launcherHash ?? LAUNCHER_PUZZLE_HASH,
           ),
         ),
       ),
@@ -26,15 +25,15 @@ class SingletonService extends BaseWalletService {
     ]);
   }
 
-  static Program makeSingletonStructureProgram(Bytes coinId) => Program.cons(
-        Program.fromBytes(singletonTopLayerV1Program.hash()),
+  static Program makeSingletonStructureProgramV1(Bytes coinId) => Program.cons(
+        Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
         Program.cons(
           Program.fromBytes(coinId),
           Program.fromBytes(singletonLauncherProgram.hash()),
         ),
       );
 
-  static Program makeSingletonLauncherSolution(
+  static Program makeSingletonLauncherSolutionV1(
     int amount,
     Puzzlehash puzzlehash,
   ) =>
@@ -51,6 +50,21 @@ class SingletonService extends BaseWalletService {
     required Puzzlehash delayedPuzzlehash,
   }) {
     return p2SingletonOrDelayedPuzhashProgram.curry([
+      Program.fromBytes(singletonModHash),
+      Program.fromBytes(launcherId),
+      Program.fromBytes(singletonLauncherProgram.hash()),
+      Program.fromBytes(intToBytesStandard(secondsDelay, Endian.big)),
+      Program.fromBytes(delayedPuzzlehash),
+    ]);
+  }
+
+  static Future<Program> createP2SingletonPuzzleAsync({
+    required Bytes singletonModHash,
+    required Bytes launcherId,
+    required int secondsDelay,
+    required Puzzlehash delayedPuzzlehash,
+  }) {
+    return p2SingletonOrDelayedPuzhashProgram.curryAsync([
       Program.fromBytes(singletonModHash),
       Program.fromBytes(launcherId),
       Program.fromBytes(singletonLauncherProgram.hash()),

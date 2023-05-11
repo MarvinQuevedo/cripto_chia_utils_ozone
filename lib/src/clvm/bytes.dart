@@ -24,13 +24,16 @@ class Puzzlehash extends Bytes {
     return Puzzlehash(iterator.extractBytesAndAdvance(bytesLength));
   }
 
+  Address toAddress(String ticker) => Address.fromPuzzlehash(this, ticker);
+  Address toAddressWithContext() => Address.fromContext(this);
+
   Puzzlehash.zeros() : super(List.filled(bytesLength, 0));
 
   static const bytesLength = 32;
   static const hexLength = 64;
 }
 
-class Bytes extends Comparable<Bytes> with ToBytesMixin implements List<int>  {
+class Bytes extends Comparable<Bytes> with ToBytesMixin implements List<int> {
   final Uint8List _byteList;
   Bytes(List<int> bytesList) : _byteList = Uint8List.fromList(bytesList);
 
@@ -419,4 +422,11 @@ extension ExtractBytesFromIterator on Iterator<int> {
     }
     return Bytes(extractedBytes);
   }
+}
+
+void decodeRoutingInfo(List<int> data) {
+  // final routeData = convertBits(dataBlob, 5, 8, pad: true);
+  // final publicKeyData = routeData.sublist(0, 33);
+  // final publicKey = convertBitsBigInt(publicKeyData, 8, 264, pad: true)[0].toRadixString(16);
+  // print(publicKey);
 }

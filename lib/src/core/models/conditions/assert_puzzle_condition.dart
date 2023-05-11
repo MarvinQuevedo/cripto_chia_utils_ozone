@@ -3,12 +3,8 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/standard/exceptions/invalid_condition_cast_exception.dart';
 
-class AssertPuzzleCondition implements Condition {
-  static int conditionCode = 63;
-
-  Bytes announcementHash;
-
-  AssertPuzzleCondition(this.announcementHash);
+class AssertPuzzleCondition extends AssertPuzzleAnnouncementCondition {
+  AssertPuzzleCondition(super.announcementHash);
 
   factory AssertPuzzleCondition.fromProgram(Program program) {
     final programList = program.toList();
@@ -18,26 +14,14 @@ class AssertPuzzleCondition implements Condition {
     return AssertPuzzleCondition(Bytes(programList[1].atom));
   }
 
-  @override
-  Program get program {
-    return Program.list([
-      Program.fromInt(conditionCode),
-      Program.fromBytes(announcementHash),
-    ]);
-  }
-
   static bool isThisCondition(Program condition) {
     final conditionParts = condition.toList();
     if (conditionParts.length != 2) {
       return false;
     }
-    if (conditionParts[0].toInt() != conditionCode) {
+    if (conditionParts[0].toInt() != AssertPuzzleAnnouncementCondition.conditionCode) {
       return false;
     }
     return true;
   }
-
-  @override
-  String toString() =>
-      'AssertPuzzleAnnouncementCondition(code: $conditionCode, announcementHash: $announcementHash)';
 }

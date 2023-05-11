@@ -3,8 +3,12 @@ import 'dart:math';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 class CoinSplittingService {
-  CoinSplittingService(this.fullNode) : blockchainUtils = BlockchainUtils(fullNode);
-  CoinSplittingService.fromContext()
+  CoinSplittingService(
+    this.fullNode, {
+    this.coinSearchWaitPeriod = _defaultCoinSearchWaitPeriod,
+    BlockchainUtils? blockchainUtils,
+  }) : blockchainUtils = blockchainUtils ?? BlockchainUtils(fullNode);
+  CoinSplittingService.fromContext({this.coinSearchWaitPeriod = _defaultCoinSearchWaitPeriod})
       : fullNode = ChiaFullNodeInterface.fromContext(),
         blockchainUtils = BlockchainUtils.fromContext();
 
@@ -13,6 +17,8 @@ class CoinSplittingService {
   final catWalletService = CatWalletService();
   final standardWalletService = StandardWalletService();
   final logger = LoggingContext().info;
+  final Duration coinSearchWaitPeriod;
+  static const _defaultCoinSearchWaitPeriod = Duration(seconds: 19);
 
   Future<int> splitCoins({
     required CatCoin catCoinToSplit,
@@ -182,24 +188,23 @@ class CoinSplittingService {
     var numberOfCoinsCreated = 0;
     final parentIdsToLookFor = <Bytes>[];
 
-    final transactionFutures = <Future>[];
+    final transactionFutures = <Future<dynamic>>[];
     var isFinished = false;
 
     for (var coinIndex = 0; coinIndex < catCoins.length; coinIndex++) {
       final catCoin = catCoins[coinIndex];
       final standardCoin = standardCoinsForFee[coinIndex];
 
-      final payments = <Payment>[];
+      final payments = <CatPayment>[];
       for (var i = 0; i < 10; i++) {
         if (numberOfCoinsCreated >= desiredNumberOfCoins) {
           isFinished = true;
           break;
         }
         payments.add(
-          Payment(
+          CatPayment(
             desiredAmountPerCoin,
             keychain.puzzlehashes[i],
-            memos: <Bytes>[keychain.puzzlehashes[i]],
           ),
         );
         numberOfCoinsCreated++;
@@ -235,7 +240,7 @@ class CoinSplittingService {
     if (standardCoinsForFee.length != catCoins.length) {
       throw ArgumentError('Should provide a standard coin for  every cat coin');
     }
-    final transactionFutures = <Future>[];
+    final transactionFutures = <Future<dynamic>>[];
     final parentIdsToLookFor = <Bytes>[];
     for (var coinIndex = 0; coinIndex < catCoins.length; coinIndex++) {
       final catCoin = catCoins[coinIndex];
@@ -327,22 +332,24 @@ class CoinSplittingService {
   }
 
   Future<int> waitForTransactionsAndGetFirstSpentIndex(List<Bytes> parentIds) async {
-    final spentCoins = await blockchainUtils.waitForTransactions(parentIds);
+    final spentCoins = await blockchainUtils.waitForTransactions(
+      parentIds,
+      coinSearchWaitPeriod: coinSearchWaitPeriod,
+    );
     return spentCoins.map((c) => c.spentBlockIndex).reduce(min);
   }
 
-  static List<Payment> makeSplittingPayments({
+  static List<CatPayment> makeSplittingPayments({
     required int coinAmount,
     required int splitWidth,
     required List<Puzzlehash> puzzlehashes,
   }) {
-    final payments = <Payment>[];
+    final payments = <CatPayment>[];
     for (var i = 0; i < splitWidth - 1; i++) {
       payments.add(
-        Payment(
+        CatPayment(
           coinAmount ~/ splitWidth,
           puzzlehashes[i],
-          memos: <Bytes>[puzzlehashes[i]],
         ),
       );
     }
@@ -350,10 +357,9 @@ class CoinSplittingService {
     final lastPaymentAmount = coinAmount - payments.totalValue;
     final lastPuzzlehash = puzzlehashes[splitWidth - 1];
     payments.add(
-      Payment(
+      CatPayment(
         lastPaymentAmount,
         lastPuzzlehash,
-        memos: <Bytes>[lastPuzzlehash],
       ),
     );
     return payments;

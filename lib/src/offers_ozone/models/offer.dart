@@ -1,13 +1,11 @@
 import 'package:bech32m/bech32m.dart';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/utils/check_set_overlay.dart';
 import 'package:quiver/iterables.dart';
-import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 import '../../core/models/conditions/announcement.dart';
-import '../../utils/from_bench32.dart';
 
 final OFFERS_HASHES = {OFFER_MOD_HASH, OFFER_MOD_V1_HASH};
+final OFFER_MOD_OLD_HASH = OFFER_MOD_V1_HASH;
 
 class Offer {
   /// The key is the asset id of the asset being requested, if is null then request XCH
@@ -15,7 +13,8 @@ class Offer {
   final SpendBundle bundle;
 
   ///  asset_id -> asset driver
-  final Map<Bytes?, PuzzleInfo> driverDict;
+  final Map<Bytes, PuzzleInfo> driverDict;
+  late final Map<CoinPrototype, List<CoinPrototype>> _additions;
 
   final bool old;
 
@@ -24,7 +23,41 @@ class Offer {
     required this.bundle,
     required this.driverDict,
     required this.old,
-  });
+    Map<CoinPrototype, List<CoinPrototype>>? additions,
+  }) {
+    _additions = additions ?? _calculateAdditions();
+  }
+  Map<CoinPrototype, List<CoinPrototype>> _calculateAdditions() {
+    // Verify that there are no duplicate payments
+    for (var payments in requestedPayments.values) {
+      var paymentPrograms = payments.map((e) => e.toProgram().hash());
+      if (paymentPrograms.toSet().length != paymentPrograms.length) {
+        throw ArgumentError('Bundle has duplicate requested payments');
+      }
+    }
+    // Verify we have a type for every kind of asset
+    for (var assetId in requestedPayments.keys) {
+      if (assetId != null && !driverDict.containsKey(assetId)) {
+        throw ArgumentError(
+            'Offer does not have enough driver information about the requested payments');
+      }
+    }
+    // populate the _additions cache
+    var adds = <CoinPrototype, List<CoinPrototype>>{};
+
+    for (var cs in bundle.coinSpends) {
+      // you can't spend the same coin twice in the same SpendBundle
+      assert(!adds.containsKey(cs.coin));
+      try {
+        var coins = cs.additions;
+
+        adds[cs.coin] = coins;
+      } catch (e) {
+        continue;
+      }
+    }
+    return adds;
+  }
 
   static Puzzlehash ph(bool old) => old ? OFFER_MOD_V1_HASH : OFFER_MOD_HASH;
 
@@ -69,18 +102,18 @@ class Offer {
           throw Exception(
               "Cannot calculate announcements without driver of requested item $assetId");
         }
-        settlementPh = outerPuzzle
-            .constructPuzzle(
-              constructor: driverDict[assetId]!,
-              innerPuzzle: old ? OFFER_MOD_V1 : OFFER_MOD,
-            )
-            .hash();
+        settlementPh = OuterPuzzleDriver.constructPuzzle(
+          constructor: driverDict[assetId]!,
+          innerPuzzle: old ? OFFER_MOD_V1 : OFFER_MOD,
+        ).hash();
       } else {
         settlementPh = (old) ? OFFER_MOD_V1_HASH : OFFER_MOD_HASH;
       }
-      final msgProgram = Program.list([
+      final paymentsPrograms = payments.map((e) => e.toProgram()).toList();
+      final msgProgram = Program.cons(
         Program.fromBytes(payments.first.nonce),
-      ]..addAll(payments.map((e) => e.toProgram()).toList()));
+        Program.list(paymentsPrograms),
+      );
 
       Bytes msg = msgProgram.hash();
 
@@ -93,71 +126,90 @@ class Offer {
     final offeredCoins = <Bytes?, List<CoinPrototype>>{};
 
     for (var parentSpend in bundle.coinSpends) {
-      final coinForThisSpend = <CoinPrototype>[];
+      var coinsForThisSpend = <CoinPrototype>[];
 
       final parentPuzzle = parentSpend.puzzleReveal;
       final parentSolution = parentSpend.solution;
-      final additions =
-          bundle.additions.where((element) => !bundle.removals.contains(element)).toList();
+      final additions = _additions[parentSpend.coin]!;
 
-      final puzzleDriver = outerPuzzle.matchPuzzle(parentPuzzle);
+      final puzzleDriver = OuterPuzzleDriver.matchPuzzle(parentPuzzle);
 
       Bytes? assetId;
 
       if (puzzleDriver != null) {
-        assetId = outerPuzzle.createAssetId(puzzleDriver);
-        final innerPuzzle = outerPuzzle.getInnerPuzzle(
+        assetId = OuterPuzzleDriver.createAssetId(puzzleDriver);
+        final innerPuzzle = OuterPuzzleDriver.getInnerPuzzle(
           constructor: puzzleDriver,
           puzzleReveal: parentPuzzle,
         );
-        final innerSolution = outerPuzzle.getInnerSolution(
+        final innerSolution = OuterPuzzleDriver.getInnerSolution(
           constructor: puzzleDriver,
           solution: parentSolution,
         );
-        assert(innerSolution != null && innerPuzzle != null);
+        if (innerPuzzle == null || innerSolution == null) {
+          throw Exception("innerPuzzle or innerSolution is null");
+        }
 
-        final conditionResult = innerPuzzle!.run(innerSolution!);
+        final conditionResult = innerPuzzle.run(innerSolution);
         final conditionResultIter = conditionResult.program.toList();
-        for (var condition in conditionResultIter) {
-          try {
-            if (condition.first().toInt() == 51 &&
-                OFFERS_HASHES.contains(condition.rest().first().atom)) {
-              final additionsWAmount = additions
-                  .where((element) => element.amount == condition.rest().rest().first().toInt())
-                  .toList();
-              if (additionsWAmount.length == 1) {
-                coinForThisSpend.add(additionsWAmount.first);
-              } else {
-                final additionsWAmountAndPuzzlehashes = additionsWAmount.where((element) => [
-                      outerPuzzle
-                          .constructPuzzle(
-                            constructor: puzzleDriver,
-                            innerPuzzle: OFFER_MOD_V1,
-                          )
-                          .hash(),
-                      outerPuzzle
-                          .constructPuzzle(
-                            constructor: puzzleDriver,
-                            innerPuzzle: OFFER_MOD,
-                          )
-                          .hash(),
-                    ].contains(element.puzzlehash));
+        int expectedNumMatches = 0;
+        List<int> offeredAmounts = [];
 
-                if (additionsWAmountAndPuzzlehashes.length == 1) {
-                  coinForThisSpend.add(additionsWAmountAndPuzzlehashes.first);
-                }
-              }
-            }
-          } catch (_) {}
+        for (var condition in conditionResultIter) {
+          if (condition.first().toInt() == 51 &&
+              OFFERS_HASHES.contains(Puzzlehash(condition.rest().first().atom))) {
+            expectedNumMatches++;
+            offeredAmounts.add(condition.rest().rest().first().toInt());
+          }
+        }
+        List<CoinPrototype> matchingSpendAdditions = additions
+            .where(
+              (a) => offeredAmounts.contains(a.amount),
+            )
+            .toList();
+
+        if (matchingSpendAdditions.length == expectedNumMatches) {
+          coinsForThisSpend.addAll(matchingSpendAdditions);
+        } else {
+          if (matchingSpendAdditions.length < expectedNumMatches) {
+            matchingSpendAdditions = additions;
+          }
+
+          matchingSpendAdditions = matchingSpendAdditions.where((a) {
+            final posiblePhs = [
+              OuterPuzzleDriver.constructPuzzle(
+                constructor: puzzleDriver,
+                innerPuzzle: OFFER_MOD_V1,
+              ).hash(),
+              OuterPuzzleDriver.constructPuzzle(
+                constructor: puzzleDriver,
+                innerPuzzle: OFFER_MOD_V2,
+              ).hash(),
+            ];
+            return posiblePhs.contains(a.puzzlehash);
+          }).toList();
+          if (matchingSpendAdditions.length == expectedNumMatches) {
+            coinsForThisSpend.addAll(matchingSpendAdditions);
+          } else {
+            throw Exception("Could not properly guess offered coins from parent spend");
+          }
         }
       } else {
         assetId = null;
-        coinForThisSpend.addAll(
-            additions.where((element) => OFFERS_HASHES.contains(element.puzzlehash)).toList());
+        coinsForThisSpend.addAll(additions
+            .where(
+              (element) => OFFERS_HASHES.contains(element.puzzlehash),
+            )
+            .toList());
       }
-      if (coinForThisSpend.isNotEmpty) {
+
+      //We only care about unspent coins
+      List<CoinPrototype> removals = this.bundle.removals;
+      coinsForThisSpend = coinsForThisSpend.where((c) => !removals.contains(c)).toList();
+
+      if (coinsForThisSpend.isNotEmpty) {
         offeredCoins[assetId] ??= [];
-        offeredCoins[assetId]!.addAll(coinForThisSpend);
+        offeredCoins[assetId]!.addAll(coinsForThisSpend);
         offeredCoins[assetId] = offeredCoins[assetId]!.toSet().toList();
       }
     }
@@ -165,17 +217,13 @@ class Offer {
   }
 
   Map<Bytes?, int> getOfferedAmounts() {
-    final offeredAmounts = <Bytes?, int>{};
-    final coins = getOfferedCoins();
-    coins.forEach((assetId, coins) {
+    final Map<Bytes?, int> offeredAmounts = {};
+    final Map<Bytes?, List<CoinPrototype>> offeredCoins = getOfferedCoins();
+    offeredCoins.forEach((assetId, coins) {
       offeredAmounts[assetId] = coins.fold(0, (a, b) => a + b.amount);
     });
     return offeredAmounts;
   }
-
-  /*  Map<Bytes?, List<NotarizedPayment>> getRequestedPayments() {
-    return requestedPayments;
-  } */
 
   Map<Bytes?, int> getRequestedAmounts() {
     final offeredAmounts = <Bytes?, int>{};
@@ -190,9 +238,9 @@ class Offer {
     final arbitrageDict = <Bytes?, int>{};
     final offered_amounts = getOfferedAmounts();
     final requested_amounts = getRequestedAmounts();
-    final keys = [...offered_amounts.keys, ...requested_amounts.keys].toSet().toList();
-    for (var tailId in keys) {
-      arbitrageDict[tailId] = (offered_amounts[tailId] ?? 0) - (requested_amounts[tailId] ?? 0);
+    final keys = [...offered_amounts.keys, ...requested_amounts.keys].toSet();
+    for (var assetId in keys) {
+      arbitrageDict[assetId] = (offered_amounts[assetId] ?? 0) - (requested_amounts[assetId] ?? 0);
     }
     return arbitrageDict;
   }
@@ -231,8 +279,11 @@ class Offer {
       pendingDict[name] = 0;
       for (var coin in coins) {
         final rootRemoval = getRootRemoval(coin);
-        final pocessableAdditions =
-            allAdittions.where((element) => element.parentCoinInfo == rootRemoval.id).toList();
+        final pocessableAdditions = allAdittions
+            .where(
+              (element) => element.parentCoinInfo == rootRemoval.id,
+            )
+            .toList();
         pocessableAdditions.forEach((addition) {
           final lastAmount = pendingDict[name]!;
           pendingDict[name] = lastAmount + addition.amount;
@@ -241,12 +292,15 @@ class Offer {
     });
 
     // Then we gather anything else as unknown
-    final sumOfadditionssoFar =
-        pendingDict.values.fold<int>(0, (previousValue, element) => previousValue + element);
+    final sumOfadditionssoFar = pendingDict.values.fold<int>(
+      0,
+      (previousValue, element) => previousValue + element,
+    );
 
-    final nonEphimeralsSum = notEphomeralRemovals
-        .map((e) => e.amount)
-        .fold<int>(0, (previousValue, element) => previousValue + element);
+    final nonEphimeralsSum = notEphomeralRemovals.map((e) => e.amount).fold<int>(
+          0,
+          (previousValue, element) => previousValue + element,
+        );
 
     final unknownAmount = nonEphimeralsSum - sumOfadditionssoFar;
     if (unknownAmount > 0) {
@@ -298,50 +352,60 @@ class Offer {
     return pCoins.toList();
   }
 
-  static Offer aggreate(List<Offer> offers) {
-    final allAreSameOlder = offers.fold<bool>(true, (previousValue, element) {
-      return previousValue && element.old == offers.first.old;
-    });
-    if (!allAreSameOlder) {
-      throw Exception("The offers are not all for the same older type");
-    }
+  static Offer aggregate(List<Offer> offers) {
+    Map<Bytes?, List<NotarizedPayment>> totalRequestedPayments = {};
+    SpendBundle totalBundle = SpendBundle(
+      coinSpends: [],
+    );
+    Map<Bytes, PuzzleInfo> totalDriverDict = {};
+    bool old = false;
 
-    final totalRequestedPayments = <Bytes?, List<NotarizedPayment>>{};
-    SpendBundle totalBundle = SpendBundle.empty;
-    final totalDriverDict = <Bytes?, PuzzleInfo>{};
-    for (var offer in offers) {
-      final totalInputs = totalBundle.coinSpends.map((e) => e.coin).toSet().toList();
-      final offerInputs = offer.bundle.coinSpends.map((e) => e.coin).toSet().toList();
-      if (totalInputs.checkOverlay(offerInputs)) {
-        throw Exception("The aggregated offers overlap inputs $offer");
+    for (int i = 0; i < offers.length; i++) {
+      Offer offer = offers[i];
+
+      // First check for any overlap in inputs
+      final totalInputs = Set<CoinPrototype>.from(totalBundle.coinSpends.map((cs) => cs.coin));
+      final offerInputs = Set<CoinPrototype>.from(offer.bundle.coinSpends.map((cs) => cs.coin));
+
+      if (totalInputs.intersection(offerInputs).isNotEmpty) {
+        throw Exception("The aggregated offers overlap inputs");
       }
 
-      // Next,  do the aggregation
-      final requestedPayments = offer.requestedPayments;
-      requestedPayments.forEach((Bytes? assetId, List<NotarizedPayment> payments) {
-        if (totalRequestedPayments[assetId] != null) {
+      // Next, do the aggregation
+      for (var entry in offer.requestedPayments.entries) {
+        Bytes? assetId = entry.key;
+        List<NotarizedPayment> payments = entry.value;
+        if (totalRequestedPayments.containsKey(assetId)) {
           totalRequestedPayments[assetId]!.addAll(payments);
         } else {
-          totalRequestedPayments[assetId] = payments.toList();
+          totalRequestedPayments[assetId] = payments;
         }
-      });
-      offer.driverDict.forEach((Bytes? key, PuzzleInfo value) {
-        if (totalDriverDict.containsKey(key) && totalDriverDict[key] != value) {
-          throw Exception(
-              "The offers to aggregate disagree on the drivers for ${key?.toHex()} ${totalDriverDict[key]} != ${totalDriverDict[key]}");
-        }
-      });
+      }
 
-      totalBundle = totalBundle + offer.bundle;
-      offer.driverDict.forEach((offerKey, offerValue) {
-        totalDriverDict.update(offerKey, (value) => offerValue, ifAbsent: () => offerValue);
-      });
+      for (var entry in offer.driverDict.entries) {
+        Bytes? key = entry.key;
+        PuzzleInfo value = entry.value;
+        if (totalDriverDict.containsKey(key) && totalDriverDict[key] != value) {
+          throw Exception("The offers to aggregate disagree on the drivers for $key");
+        }
+      }
+
+      totalBundle = SpendBundle.aggregate([totalBundle, offer.bundle]);
+      totalDriverDict.addAll(offer.driverDict);
+      if (i == 0) {
+        old = offer.old;
+      } else {
+        if (offer.old != old) {
+          throw Exception("Attempting to aggregate two offers with different mods");
+        }
+      }
     }
+
     return Offer(
         requestedPayments: totalRequestedPayments,
         bundle: totalBundle,
         driverDict: totalDriverDict,
-        old: offers.first.old);
+        old: old);
   }
 
   /// Validity is defined by having enough funds within the offer to satisfy both sidess
@@ -365,22 +429,21 @@ class Offer {
   ///  A "valid" spend means that this bundle can be pushed to the network and will succeed
   /// This differs from the `to_spend_bundle` method which deliberately creates an invalid SpendBundle
   SpendBundle toValidSpend({Bytes? arbitragePh}) {
-    Offer offer = this;
     if (!isValid()) {
       throw Exception("Offer is currently incomplete");
     }
     final completionSpends = <CoinSpend>[];
-    final allOfferredCoins = offer.getOfferedCoins();
-    final allArbitragePh = offer.arbitrage();
-    offer.requestedPayments.forEach((Bytes? assetId, List<NotarizedPayment> payments) {
+    final allOfferredCoins = getOfferedCoins();
+    final totalArbitrageAmount = arbitrage();
+
+    requestedPayments.forEach((Bytes? assetId, List<NotarizedPayment> payments) {
       final List<CoinPrototype> offerredCoins = allOfferredCoins[assetId]!;
 
       // Because of CAT supply laws, we must specify a place for the leftovers to go
-      final int? arbitrageAmount = allArbitragePh[assetId];
-      final allPayments = payments.toList();
+      final int? arbitrageAmount = totalArbitrageAmount[assetId];
+      final allPayments = List<NotarizedPayment>.from(payments.toList());
       if (arbitrageAmount == null) {
-        throw Exception(
-            "Amount can't be null when arbitrage Amount is more than 0, ${arbitrageAmount}");
+        throw Exception("arbitrageAmount is null, ${arbitrageAmount}");
       }
 
       if (arbitrageAmount > 0) {
@@ -408,17 +471,15 @@ class Offer {
 
           final noncesValues = cleanDuplicatesValues(nonces);
           for (var nonce in noncesValues) {
+            // List<NotarizedPayment>
             final noncePayments = allPayments.where((p) => p.nonce == nonce).toList();
 
-            innerSolutions.add(Program.list(<Program>[
+            innerSolutions.add(Program.cons(
               Program.fromBytes(nonce),
-            ]..addAll(
-                noncePayments
-                    .map(
-                      (e) => e.toProgram(),
-                    )
-                    .toList(),
-              )));
+              Program.list(
+                noncePayments.map((e) => e.toProgram()).toList(),
+              ),
+            ));
           }
         }
         coinToSolutionDict[coin] = Program.list(innerSolutions);
@@ -428,12 +489,10 @@ class Offer {
         Program? solution;
         Program offerMod = OFFER_MOD;
         if (assetId != null) {
-          if (outerPuzzle
-                  .constructPuzzle(
-                    constructor: offer.driverDict[assetId]!,
-                    innerPuzzle: OFFER_MOD_V1,
-                  )
-                  .hash() ==
+          if (OuterPuzzleDriver.constructPuzzle(
+                constructor: driverDict[assetId]!,
+                innerPuzzle: OFFER_MOD_V1,
+              ).hash() ==
               coin.puzzlehash) {
             print("Using OFFER V1 ${OFFER_MOD_V1.hash().toHex()}");
             offerMod = OFFER_MOD_V1;
@@ -445,38 +504,40 @@ class Offer {
           String siblingsSpends = "(";
           String silblingsPuzzles = "(";
           String silblingsSolutions = "(";
+
           String disassembledOfferMod = offerMod.toSource();
+
           for (var siblingCoin in offerredCoins) {
             if (siblingCoin != coin) {
-              siblings += siblingCoin.toBytes().toHexWithPrefix();
-              silblingsPuzzles += disassembledOfferMod;
-              silblingsSolutions += coinToSolutionDict[siblingCoin]!.serialize().toHexWithPrefix();
+              siblings += siblingCoin.toBytes().toHexWithPrefix() + " ";
+              siblingsSpends += coinToSpendDict[siblingCoin]!.toBytes().hexWithBytesPrefix + " ";
+              silblingsPuzzles += disassembledOfferMod + " ";
+              silblingsSolutions += coinToSolutionDict[siblingCoin]!.toSource() + " ";
             }
           }
           siblings += ")";
           siblingsSpends += ")";
           silblingsPuzzles += ")";
           silblingsSolutions += ")";
-          /*    print("parent spend =  " +
-              coinToSpendDict[coin]!.toProgramList().serialize().toHexWithPrefix()); */
-
-          final solver = Solver({
+          final solverDict = {
             "coin": coin.toBytes().toHexWithPrefix(),
-            "parent_spend": coinToSpendDict[coin]!.toProgram().serialize().toHexWithPrefix(),
+            "parent_spend": coinToSpendDict[coin]!.toBytes().toHexWithPrefix(),
             "siblings": siblings,
             "sibling_spends": siblingsSpends,
             "sibling_puzzles": silblingsPuzzles,
             "sibling_solutions": silblingsSolutions,
-          });
+          };
 
-          solution = outerPuzzle.solvePuzzle(
-            constructor: offer.driverDict[assetId]!,
+          final solver = Solver(solverDict);
+
+          solution = OuterPuzzleDriver.solvePuzzle(
+            constructor: driverDict[assetId]!,
             solver: solver,
             innerPuzzle: offerMod,
             innerSolution: coinToSolutionDict[coin]!,
           );
         } else {
-          if (coin.puzzlehash == OFFER_MOD_V1) {
+          if (coin.puzzlehash == OFFER_MOD_V1_HASH) {
             offerMod = OFFER_MOD_V1;
             print("2 Using OFFER V1 ${OFFER_MOD_V1.hash().toHex()}");
           } else {
@@ -486,8 +547,8 @@ class Offer {
           solution = coinToSolutionDict[coin]!;
         }
         final puzzleReveal = (assetId != null)
-            ? outerPuzzle.constructPuzzle(
-                constructor: offer.driverDict[assetId]!,
+            ? OuterPuzzleDriver.constructPuzzle(
+                constructor: driverDict[assetId]!,
                 innerPuzzle: offerMod,
               )
             : offerMod;
@@ -496,12 +557,13 @@ class Offer {
           puzzleReveal: puzzleReveal,
           solution: solution,
         );
+
         completionSpends.add(coinSpend);
       }
     });
     final completionSpendBundle = SpendBundle(coinSpends: completionSpends);
 
-    return completionSpendBundle + offer.bundle;
+    return completionSpendBundle + bundle;
   }
 
   Program get _OFFER_PROGRAM {
@@ -514,7 +576,7 @@ class Offer {
     requestedPayments.forEach((assetId, payments) {
       final puzzleReveal = (assetId == null)
           ? _OFFER_PROGRAM
-          : outerPuzzle.constructPuzzle(
+          : OuterPuzzleDriver.constructPuzzle(
               constructor: driverDict[assetId]!,
               innerPuzzle: _OFFER_PROGRAM,
             );
@@ -523,47 +585,57 @@ class Offer {
       final nonces = cleanDuplicatesValues(payments.map((e) => e.nonce).toList());
       nonces.forEach((nonce) {
         final noncePayments = payments.where((element) => element.nonce == nonce).toList();
-        innerSolutions.add(Program.list(<Program>[
-          Program.fromBytes(nonce),
-        ]..addAll(noncePayments
-            .map(
-              (e) => e.toProgram(),
-            )
-            .toList())));
+        innerSolutions.add(Program.cons(
+            Program.fromBytes(nonce),
+            Program.list(
+              noncePayments
+                  .map(
+                    (e) => e.toProgram(),
+                  )
+                  .toList(),
+            )));
       });
-      aditionalCoinSpends.add(CoinSpend(
-          coin: CoinPrototype(
-            parentCoinInfo: ZERO_32,
-            puzzlehash: puzzleReveal.hash(),
-            amount: 0,
-          ),
-          puzzleReveal: puzzleReveal,
-          solution: Program.list(innerSolutions)));
+      final cs = CoinSpend(
+        coin: CoinPrototype(
+          parentCoinInfo: ZERO_32,
+          puzzlehash: puzzleReveal.hash(),
+          amount: 0,
+        ),
+        puzzleReveal: puzzleReveal,
+        solution: Program.list(innerSolutions),
+      );
+
+      aditionalCoinSpends.add(cs);
     });
 
     return SpendBundle(coinSpends: aditionalCoinSpends) + this.bundle;
   }
 
   static Offer fromSpendBundle(SpendBundle bundle) {
-    final requestedPayments = <Bytes?, List<NotarizedPayment>>{};
-    final driverDict = <Bytes?, PuzzleInfo>{};
-    final leftoverCoinSpends = <CoinSpend>[];
+    // Because of the `to_spend_bundle` method, we need to parse the dummy CoinSpends as `requested_payments`
+    Map<Bytes?, List<NotarizedPayment>> requestedPayments = {};
+    Map<Bytes, PuzzleInfo> driverDict = {};
+    List<CoinSpend> leftoverCoinSpends = [];
     bool old = false;
-
-    for (var coinSpend in bundle.coinSpends) {
+    for (CoinSpend coinSpend in bundle.coinSpends) {
       if (!old && coinSpend.toBytes().toHex().contains(OFFER_MOD_V1.toBytes().toHex())) {
         old = true;
       }
-      final driver = outerPuzzle.matchPuzzle(coinSpend.puzzleReveal);
       Bytes? assetId;
+      final driver = OuterPuzzleDriver.matchPuzzle(coinSpend.puzzleReveal);
       if (driver != null) {
-        assetId = outerPuzzle.createAssetId(driver);
+        assetId = OuterPuzzleDriver.createAssetId(driver);
+        if (assetId == null) {
+          throw Exception("assetId is null");
+        }
 
         driverDict[assetId] = driver;
+      } else {
+        assetId = null;
       }
-
       if (coinSpend.coin.parentCoinInfo == ZERO_32) {
-        final notarizedPayments = <NotarizedPayment>[];
+        List<NotarizedPayment> notarizedPayments = [];
+
         for (var paymentGroup in coinSpend.solution.toList()) {
           final nonce = paymentGroup.first().atom;
           final paymentArgsList = paymentGroup.rest().toList();
@@ -572,21 +644,20 @@ class Offer {
             return NotarizedPayment.fromConditionAndNonce(condition: condition, nonce: nonce);
           }).toList());
         }
-        if (requestedPayments[assetId] == null) {
-          requestedPayments[assetId] = [];
-        }
-        requestedPayments[assetId]!.addAll(notarizedPayments);
+
+        requestedPayments[assetId] = notarizedPayments;
       } else {
         leftoverCoinSpends.add(coinSpend);
       }
     }
+    final offerBundle = SpendBundle(
+      coinSpends: leftoverCoinSpends,
+      aggregatedSignature: bundle.aggregatedSignature,
+    );
 
     return Offer(
         requestedPayments: requestedPayments,
-        bundle: SpendBundle(
-          coinSpends: leftoverCoinSpends,
-          aggregatedSignature: bundle.aggregatedSignature,
-        ),
+        bundle: offerBundle,
         old: old,
         driverDict: driverDict);
   }

@@ -9,23 +9,41 @@ import 'package:meta/meta.dart';
 class Payment {
   final int amount;
   final Puzzlehash puzzlehash;
-  final List<Bytes>? memos;
+  final List<Memo>? memos;
 
   Payment(this.amount, this.puzzlehash, {List<dynamic>? memos})
       : memos = memos == null
             ? null
             : memos is List<String>
-                ? memos.map((memo) => Bytes(utf8.encode(memo))).toList()
+                ? memos.map((memo) => Memo(utf8.encode(memo))).toList()
                 : memos is List<int>
-                    ? memos.map((memo) => Bytes(utf8.encode(memo.toString()))).toList()
+                    ? memos.map((memo) => Memo(utf8.encode(memo.toString()))).toList()
                     : memos is List<Bytes>
-                        ? memos
-                        : throw ArgumentError(
-                            'Unsupported type for memos. Must be Bytes, String, or int',
-                          );
+                        ? memos.map((e) => Memo(e.byteList)).toList()
+                        : memos is List<Puzzlehash>
+                            ? memos.map((e) => Memo(e.byteList)).toList()
+                            : throw ArgumentError(
+                                'Unsupported type for memos. Must be Bytes, Puzzlehash, String, or int',
+                              );
 
   CreateCoinCondition toCreateCoinCondition() {
     return CreateCoinCondition(puzzlehash, amount, memos: memos);
+  }
+
+  List<String> get memoStrings {
+    if (memos == null) {
+      return [];
+    }
+
+    final memoStrings = <String>[];
+    for (final memo in memos!) {
+      final decodedString = memo.decodedString;
+      if (decodedString != null) {
+        memoStrings.add(decodedString);
+      }
+    }
+
+    return memoStrings;
   }
 
   Program toProgram() {
@@ -68,8 +86,33 @@ class Payment {
   int get hashCode => puzzlehash.hashCode ^ amount.hashCode;
 }
 
-extension PaymentValue on List<Payment> {
+extension PaymentIterable on Iterable<Payment> {
   int get totalValue {
     return fold(0, (int previousValue, payment) => previousValue + payment.amount);
   }
+
+  List<Memo> get memos =>
+      fold(<Memo>[], (previousValue, element) => previousValue + (element.memos ?? []));
+
+  List<String> get memoStrings =>
+      fold(<String>[], (previousValue, element) => previousValue + (element.memoStrings));
+}
+
+class CatPayment extends Payment {
+  CatPayment(super.amount, super.puzzlehash, {List<Bytes> memos = const []})
+      : super(
+          memos: <Bytes>[puzzlehash, ...memos],
+        );
+
+  CatPayment.withStringMemos(super.amount, super.puzzlehash, {List<String> memos = const []})
+      : super(memos: <Bytes>[puzzlehash, ...memos.map(Bytes.encodeFromString)]);
+  CatPayment.withIntMemos(super.amount, super.puzzlehash, {List<int> memos = const []})
+      : super(
+          memos: <Bytes>[
+            puzzlehash,
+            ...memos.map(
+              (e) => Bytes.encodeFromString(e.toString()),
+            )
+          ],
+        );
 }

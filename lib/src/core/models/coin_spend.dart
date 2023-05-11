@@ -1,8 +1,7 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
-
+import '../../did/puzzles/did_puzzles.dart' as didPuzzles;
 import '../../offers_ozone/models/full_coin.dart' as fullCoin;
 
 class CoinSpend with ToBytesMixin {
@@ -16,10 +15,38 @@ class CoinSpend with ToBytesMixin {
     required this.solution,
   });
 
+  Program get outputProgram => puzzleReveal.run(solution).program;
+
+  Future<Program> get outputProgramAsync async {
+    return puzzleReveal.runAsync(solution).then((value) => value.program);
+  }
+
   List<CoinPrototype> get additions {
-    final result = puzzleReveal.run(solution).program;
     final createCoinConditions = BaseWalletService.extractConditionsFromResult(
-      result,
+      outputProgram,
+      CreateCoinCondition.isThisCondition,
+      CreateCoinCondition.fromProgram,
+    );
+
+    return createCoinConditions
+        .map(
+          (ccc) => CoinPrototype(
+            parentCoinInfo: coin.id,
+            puzzlehash: ccc.destinationPuzzlehash,
+            amount: ccc.amount,
+          ),
+        )
+        .toList();
+  }
+
+  Future<List<CoinPrototype>> get additionsAsync async {
+    final outputProgram = await outputProgramAsync;
+    return _getAdditionsFromOutputProgram(outputProgram);
+  }
+
+  List<CoinPrototype> _getAdditionsFromOutputProgram(Program outputProgram) {
+    final createCoinConditions = BaseWalletService.extractConditionsFromResult(
+      outputProgram,
       CreateCoinCondition.isThisCondition,
       CreateCoinCondition.fromProgram,
     );
@@ -98,7 +125,8 @@ class CoinSpend with ToBytesMixin {
   }
 
   SpendType get type {
-    final uncurriedPuzzleSource = puzzleReveal.uncurry().program.toSource();
+    final uncurried = puzzleReveal.uncurry();
+    final uncurriedPuzzleSource = uncurried.program.toSource();
     if (uncurriedPuzzleSource == p2DelegatedPuzzleOrHiddenPuzzleProgram.toSource()) {
       return SpendType.standard;
     }
@@ -108,15 +136,87 @@ class CoinSpend with ToBytesMixin {
     if (uncurriedPuzzleSource == LEGACY_CAT_MOD.toSource()) {
       return SpendType.cat1;
     }
-    if (uncurriedPuzzleSource == singletonTopLayerV1Program.toSource()) {
-      return SpendType.nft;
+    if (uncurriedPuzzleSource == SINGLETON_TOP_LAYER_MOD_v1_1.toSource()) {
+      final nftUncurried = UncurriedNFT.tryUncurry(puzzleReveal);
+      if (nftUncurried != null) {
+        return SpendType.nft;
+      }
+
+      final args = uncurried.arguments;
+
+      final uncurriedDid = didPuzzles.uncurryInnerpuz(args[1]);
+      if (uncurriedDid != null) {
+        return SpendType.did;
+      }
     }
     return SpendType.unknown;
     //throw UnimplementedError('Unimplemented spend type');
+  }
+
+  // TODO(nvjoshi2): make async the default
+  List<Payment> get payments => _getPaymentsFromOutputProgram(outputProgram);
+
+  Future<List<Payment>> get paymentsAsync async {
+    return _getPaymentsFromOutputProgram(await outputProgramAsync);
+  }
+
+  Future<List<Memo>> get memos async {
+    final payments = await paymentsAsync;
+    return payments.memos;
+  }
+
+  Future<List<String>> get memoStrings async {
+    final payments = await paymentsAsync;
+    final memoStrings = payments.fold(
+      <String>[],
+      (List<String> previousValue, payment) => previousValue + payment.memoStrings,
+    );
+    return memoStrings;
+  }
+
+  List<Payment> _getPaymentsFromOutputProgram(Program outputProgram) {
+    final createCoinConditions = BaseWalletService.extractConditionsFromResult(
+      outputProgram,
+      CreateCoinCondition.isThisCondition,
+      CreateCoinCondition.fromProgram,
+    );
+
+    return createCoinConditions.map((e) => e.toPayment()).toList();
+  }
+
+  Future<PaymentsAndAdditions> get paymentsAndAdditionsAsync async {
+    final outputProgram = await outputProgramAsync;
+    final additions = _getAdditionsFromOutputProgram(outputProgram);
+    final payments = _getPaymentsFromOutputProgram(outputProgram);
+    return PaymentsAndAdditions(payments, additions);
   }
 
   @override
   String toString() => 'CoinSpend(coin: $coin, puzzleReveal: $puzzleReveal, solution: $solution)';
 }
 
-enum SpendType { unknown, standard, cat1, cat2, nft }
+enum SpendType {
+  unknown("unknown"),
+  standard('xch'),
+  cat1("cat1"),
+  cat2("cat"),
+  nft("nft"),
+  did('did');
+
+  const SpendType(this.value);
+  final String value;
+}
+
+SpendType? spendTypeFromString(String? value) {
+  if (value == null) {
+    return null;
+  }
+  return SpendType.values.firstWhere((element) => element.value == value);
+}
+
+class PaymentsAndAdditions {
+  final List<Payment> payments;
+  final List<CoinPrototype> additions;
+
+  PaymentsAndAdditions(this.payments, this.additions);
+}

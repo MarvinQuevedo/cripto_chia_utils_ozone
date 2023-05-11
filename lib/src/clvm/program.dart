@@ -9,6 +9,7 @@ import 'package:chia_crypto_utils/src/clvm/ir.dart';
 import 'package:chia_crypto_utils/src/clvm/keywords.dart';
 import 'package:chia_crypto_utils/src/clvm/parser.dart';
 import 'package:chia_crypto_utils/src/clvm/printable.dart';
+import 'package:chia_crypto_utils/src/utils/spawn_and_wait_for_isolate/spawn_and_wait_for_isolate.dart';
 import 'package:crypto/crypto.dart';
 import 'package:hex/hex.dart';
 import 'package:path/path.dart' as path;
@@ -18,6 +19,15 @@ class Output {
   final Program program;
   final BigInt cost;
   Output(this.program, this.cost);
+
+  Output.fromJson(Map<String, dynamic> json)
+      : cost = BigInt.parse(json['cost'] as String),
+        program = Program.parse(json['program'] as String);
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'cost': cost.toString(),
+        'program': program.toSource(),
+      };
 }
 
 class RunOptions {
@@ -28,6 +38,23 @@ class RunOptions {
 
 typedef Validator = bool Function(Program);
 
+/// Dart representation of a clvm program
+///
+/// Here are some example translations from a chia-blockchain [Program](https://github.com/Chia-Network/chia-blockchain/blob/9a951d835e25187b988e1fcc4af69e948eacfc82/chia/types/blockchain_format/program.py) to a chia-crypto-utils Program:
+///
+/// ```dart
+/// Program.to([...]) => Program.list([...])
+/// ```
+///
+/// ```dart
+/// Program.to((...)) => Program.cons(...)
+///  ```
+/// ```dart
+/// Program.to([bytes, 1, "hello"]) => Program.list([Program.fromBytes(bytes), Program.fromInt(1)], Program.fromString("hello"),)
+/// ```
+///  ```dart
+/// program.get_tree_hash() => program.hash()
+/// ```
 class Program with ToBytesMixin {
   List<Program>? _cons;
   Bytes? _atom;
@@ -124,6 +151,21 @@ class Program with ToBytesMixin {
     return Program.deserialize(const HexDecoder().convert(_source));
   }
 
+  static Map<String, dynamic> runProgramIsolateTask(PuzzleAndSolution puzzleAndSolution) {
+    final puzzle = puzzleAndSolution.puzzle;
+    final solution = puzzleAndSolution.solution;
+    final output = puzzle.run(solution, options: puzzleAndSolution.options);
+    return output.toJson();
+  }
+
+  Future<Output> runAsync(Program args, {RunOptions? options}) async {
+    return spawnAndWaitForIsolate(
+      taskArgument: PuzzleAndSolution(puzzle: this, solution: args, options: options),
+      isolateTask: runProgramIsolateTask,
+      handleTaskCompletion: Output.fromJson,
+    );
+  }
+
   Output run(Program args, {RunOptions? options}) {
     options ??= RunOptions();
     final instructions = <Instruction>[eval];
@@ -153,6 +195,22 @@ class Program with ToBytesMixin {
       );
     }
     return Program.parse('(a (q . ${toString()}) ${current.toString()})');
+  }
+
+  static Map<String, dynamic> _curryIsolateTask(CurryIsolateArguments arguments) {
+    final curriedProgram = arguments.programToCurryTo.curry(arguments.programsToCurryIn);
+    return <String, dynamic>{
+      'program': curriedProgram.serializeHex(),
+    };
+  }
+
+  Future<Program> curryAsync(List<Program> args) async {
+    return spawnAndWaitForIsolate(
+      taskArgument: CurryIsolateArguments(args, this),
+      isolateTask: _curryIsolateTask,
+      handleTaskCompletion: (taskResultJson) =>
+          Program.deserializeHex(taskResultJson['program'] as String),
+    );
   }
 
   ProgramAndArguments uncurry() {
@@ -510,4 +568,23 @@ class ProgramAndArguments {
   Program program;
 
   ProgramAndArguments(this.arguments, this.program);
+}
+
+class PuzzleAndSolution {
+  final Program puzzle;
+  final Program solution;
+  final RunOptions? options;
+
+  PuzzleAndSolution({
+    required this.puzzle,
+    required this.solution,
+    required this.options,
+  });
+}
+
+class CurryIsolateArguments {
+  CurryIsolateArguments(this.programsToCurryIn, this.programToCurryTo);
+
+  final List<Program> programsToCurryIn;
+  final Program programToCurryTo;
 }

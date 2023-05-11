@@ -40,7 +40,7 @@ class NftService {
     required Bytes singletonId,
     required Program innerPuzzle,
   }) {
-    return SingletonService.puzzleForSingleton(
+    return puzzleForSingletonV1_1(
       singletonId,
       innerPuzzle,
       launcherHash: LAUNCHER_PUZZLE_HASH,
@@ -53,7 +53,7 @@ class NftService {
       required Bytes metadataUpdaterHash,
       required Program innerPuzzle}) {
     final singletonStruct = Program.cons(
-      Program.fromBytes(SINGLETON_MOD_HASH),
+      Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
       Program.cons(
         Program.fromBytes(singletonId),
         Program.fromBytes(
@@ -68,7 +68,7 @@ class NftService {
       innerPuzzle: innerPuzzle,
     );
 
-    return SINGLETON_TOP_LAYER_MOD.curry([singletonStruct, sinletonInnerPuzzle]);
+    return SINGLETON_TOP_LAYER_MOD_v1_1.curry([singletonStruct, sinletonInnerPuzzle]);
   }
 
   static NFTInfo getNftInfoFromPuzzle(NFTCoinInfo nftCoinInfo) {
@@ -125,7 +125,7 @@ class NftService {
   }
 
   static Program constructOwnershipLayer(
-          {required currentOwner,
+          {required Bytes? currentOwner,
           required Program transferProgram,
           required Program innerPuzzle}) =>
       puzzleForOwnershipLayer(
@@ -142,19 +142,17 @@ class NftService {
     Puzzlehash? royaltyPuzzleHash,
   }) {
     final singletonStruct = Program.cons(
-      Program.fromBytes(SINGLETON_MOD_HASH),
+      Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
       Program.cons(
         Program.fromBytes(nftId),
-        Program.fromBytes(
-          LAUNCHER_PUZZLE_HASH,
-        ),
+        Program.fromBytes(LAUNCHER_PUZZLE_HASH),
       ),
     );
     if (royaltyPuzzleHash == null) {
       royaltyPuzzleHash = p2Puzzle.hash();
     }
 
-    final transferProgram = NFT_STATE_LAYER_MOD.curry([
+    final transferProgram = NFT_TRANSFER_PROGRAM_DEFAULT.curry([
       singletonStruct,
       Program.fromBytes(royaltyPuzzleHash),
       Program.fromInt(percentage),

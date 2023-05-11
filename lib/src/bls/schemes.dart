@@ -1,12 +1,9 @@
 import 'dart:convert';
 
-import 'package:chia_crypto_utils/src/bls/ec/ec.dart';
-import 'package:chia_crypto_utils/src/bls/ec/jacobian_point.dart';
-import 'package:chia_crypto_utils/src/bls/field/extensions/fq12.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/bls/hd_keys.dart' as hd_keys;
 import 'package:chia_crypto_utils/src/bls/op_swu_g2.dart';
 import 'package:chia_crypto_utils/src/bls/pairing.dart';
-import 'package:chia_crypto_utils/src/bls/private_key.dart';
 import 'package:quiver/collection.dart';
 
 final basicSchemeDst = utf8.encode('BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_');
@@ -121,6 +118,23 @@ class AugSchemeMPL {
   static JacobianPoint sign(PrivateKey sk, List<int> message) {
     final pk = sk.getG1();
     return coreSignMpl(sk, pk.toBytes() + message, augSchemeDst);
+  }
+
+  static Map<String, dynamic> _signTask(SignArguments args) {
+    final signature = sign(args.sk, args.message);
+    return <String, dynamic>{
+      'signature': signature.toHex(),
+    };
+  }
+
+  static Future<JacobianPoint> signAsync(PrivateKey sk, List<int> message) {
+    return spawnAndWaitForIsolate(
+      taskArgument: SignArguments(sk, message),
+      isolateTask: _signTask,
+      handleTaskCompletion: (taskResultJson) {
+        return JacobianPoint.fromHexG2(taskResultJson['signature'] as String);
+      },
+    );
   }
 
   static bool verify(JacobianPoint pk, List<int> message, JacobianPoint signature) {
@@ -238,4 +252,11 @@ class PopSchemeMPL {
   static JacobianPoint deriveChildPkUnhardened(JacobianPoint pk, int index) {
     return hd_keys.deriveChildG1Unhardened(pk, index);
   }
+}
+
+class SignArguments {
+  SignArguments(this.sk, this.message);
+
+  final PrivateKey sk;
+  final List<int> message;
 }

@@ -7,7 +7,7 @@ import 'package:quiver/iterables.dart';
 final ZDICT = [
   p2DelegatedPuzzleOrHiddenPuzzleProgram.toBytes() + LEGACY_CAT_MOD.toBytes(),
   OFFER_MOD_V1.toBytes(),
-  singletonTopLayerV1Program.toBytes() +
+  SINGLETON_TOP_LAYER_MOD_v1_1.toBytes() +
       nftStateLayerProgram.toBytes() +
       nftOwnershipLayer.toBytes() +
       nftMetadataUpdaterProgram.toBytes() +

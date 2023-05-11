@@ -1,5 +1,3 @@
-// ignore_for_file: lines_longer_than_80_chars
-
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:meta/meta.dart';
 
@@ -8,25 +6,25 @@ class WalletVector with ToBytesMixin {
   WalletVector({
     required this.childPrivateKey,
     required this.puzzlehash,
+    required this.derivationIndex,
     Map<Puzzlehash, Puzzlehash>? assetIdtoOuterPuzzlehash,
   }) {
     this.assetIdtoOuterPuzzlehash = assetIdtoOuterPuzzlehash ?? {};
   }
-  late final Map<Puzzlehash, Puzzlehash> assetIdtoOuterPuzzlehash;
-
-  factory WalletVector.fromStream(Iterator<int> iterator) {
+  factory WalletVector.fromStream(Iterator<int> iterator, int derivationIndex) {
     final childPrivateKey = PrivateKey.fromStream(iterator);
     final puzzlehash = Puzzlehash.fromStream(iterator);
 
     return WalletVector(
       childPrivateKey: childPrivateKey,
       puzzlehash: puzzlehash,
+      derivationIndex: derivationIndex,
     );
   }
 
-  factory WalletVector.fromBytes(Bytes bytes) {
+  factory WalletVector.fromBytes(Bytes bytes, int derivationIndex) {
     final iterator = bytes.iterator;
-    return WalletVector.fromStream(iterator);
+    return WalletVector.fromStream(iterator, derivationIndex);
   }
 
   factory WalletVector.fromPrivateKey(
@@ -42,33 +40,8 @@ class WalletVector with ToBytesMixin {
     return WalletVector(
       childPrivateKey: childPrivateKeyHardened,
       puzzlehash: puzzlehashHardened,
+      derivationIndex: derivationIndex,
     );
-  }
-
-  final PrivateKey childPrivateKey;
-  JacobianPoint get childPublicKey => childPrivateKey.getG1();
-  final Puzzlehash puzzlehash;
-
-  @override
-  int get hashCode =>
-      runtimeType.hashCode ^
-      childPrivateKey.hashCode ^
-      childPublicKey.hashCode ^
-      puzzlehash.hashCode;
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        other is WalletVector &&
-            runtimeType == other.runtimeType &&
-            childPrivateKey == other.childPrivateKey &&
-            childPublicKey == other.childPublicKey &&
-            puzzlehash == other.puzzlehash;
-  }
-
-  @override
-  Bytes toBytes() {
-    return childPrivateKey.toBytes() + puzzlehash.byteList;
   }
 
   Map<String, dynamic> toMap() {
@@ -82,6 +55,7 @@ class WalletVector with ToBytesMixin {
     map['childPublicKey'] = childPublicKey.toHex();
     map['puzzlehash'] = puzzlehash.toHex();
     map['assetIdtoOuterPuzzlehash'] = assetIdtoOuterPuzzlehashMap;
+    map['derivationIndex'] = derivationIndex;
 
     return map;
   }
@@ -91,8 +65,8 @@ class WalletVector with ToBytesMixin {
     //final childPublicKey = childPrivateKey.getG1();
     final puzzlehash = Puzzlehash.fromHex(map['puzzlehash'] as String);
 
-    final assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
-    final assetIdtoOuterPuzzlehash = Map<String, String>.from(
+    var assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
+    var assetIdtoOuterPuzzlehash = Map<String, String>.from(
       map['assetIdtoOuterPuzzlehash'] as Map<String, dynamic>,
     );
 
@@ -103,23 +77,53 @@ class WalletVector with ToBytesMixin {
 
     return WalletVector(
       childPrivateKey: childPrivateKey,
-      //childPublicKey: childPublicKey,
+      derivationIndex: map['derivationIndex'] as int,
       puzzlehash: puzzlehash,
       assetIdtoOuterPuzzlehash: assetIdtoOuterPuzzlehashMap,
     );
+  }
+
+  final PrivateKey childPrivateKey;
+  JacobianPoint get childPublicKey => childPrivateKey.getG1();
+  final Puzzlehash puzzlehash;
+  final int derivationIndex;
+  late final Map<Puzzlehash, Puzzlehash> assetIdtoOuterPuzzlehash;
+
+  WalletPuzzlehash get walletPuzzlehash =>
+      WalletPuzzlehash.fromPuzzlehash(puzzlehash, derivationIndex);
+
+  @override
+  int get hashCode =>
+      runtimeType.hashCode ^
+      childPrivateKey.hashCode ^
+      childPublicKey.hashCode ^
+      puzzlehash.hashCode ^
+      derivationIndex.hashCode;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is WalletVector &&
+            runtimeType == other.runtimeType &&
+            childPrivateKey == other.childPrivateKey &&
+            childPublicKey == other.childPublicKey &&
+            puzzlehash == other.puzzlehash &&
+            derivationIndex == other.derivationIndex;
+  }
+
+  @override
+  Bytes toBytes() {
+    return childPrivateKey.toBytes() + puzzlehash.byteList;
   }
 }
 
 class UnhardenedWalletVector extends WalletVector {
   UnhardenedWalletVector({
-    required PrivateKey childPrivateKey,
-    required Puzzlehash puzzlehash,
-    Map<Puzzlehash, Puzzlehash>? assetIdtoOuterPuzzlehash,
-  })  : assetIdtoOuterPuzzlehash = assetIdtoOuterPuzzlehash ?? <Puzzlehash, Puzzlehash>{},
-        super(
-          childPrivateKey: childPrivateKey,
-          puzzlehash: puzzlehash,
-        );
+    required super.childPrivateKey,
+    required super.puzzlehash,
+    required super.derivationIndex,
+    super.assetIdtoOuterPuzzlehash,
+  });
 
   factory UnhardenedWalletVector.fromPrivateKey(
     PrivateKey masterPrivateKey,
@@ -135,6 +139,7 @@ class UnhardenedWalletVector extends WalletVector {
     return UnhardenedWalletVector(
       childPrivateKey: childPrivateKeyUnhardened,
       puzzlehash: puzzlehashUnhardened,
+      derivationIndex: derivationIndex,
     );
   }
 
@@ -155,7 +160,7 @@ class UnhardenedWalletVector extends WalletVector {
     return Bytes(bytesList);
   }
 
-  factory UnhardenedWalletVector.fromStream(Iterator<int> iterator) {
+  factory UnhardenedWalletVector.fromStream(Iterator<int> iterator, int derivationIndex) {
     final childPrivateKey = PrivateKey.fromStream(iterator);
     final puzzlehash = Puzzlehash.fromStream(iterator);
 
@@ -173,16 +178,16 @@ class UnhardenedWalletVector extends WalletVector {
       childPrivateKey: childPrivateKey,
       puzzlehash: puzzlehash,
       assetIdtoOuterPuzzlehash: assetIdToOuterPuzzlehashMap,
+      derivationIndex: derivationIndex,
     );
   }
-
   factory UnhardenedWalletVector.fromMap(Map<String, dynamic> map) {
     final childPrivateKey = PrivateKey.fromHex(map['childPrivateKey'] as String);
-    //final childPublicKey = childPrivateKey.getG1();
+
     final puzzlehash = Puzzlehash.fromHex(map['puzzlehash'] as String);
 
-    final assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
-    final assetIdtoOuterPuzzlehash = Map<String, String>.from(
+    var assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
+    var assetIdtoOuterPuzzlehash = Map<String, String>.from(
       map['assetIdtoOuterPuzzlehash'] as Map<String, dynamic>,
     );
 
@@ -193,14 +198,15 @@ class UnhardenedWalletVector extends WalletVector {
 
     return UnhardenedWalletVector(
       childPrivateKey: childPrivateKey,
-      // childPublicKey: childPublicKey,
+      derivationIndex: map['derivationIndex'] as int,
       puzzlehash: puzzlehash,
       assetIdtoOuterPuzzlehash: assetIdtoOuterPuzzlehashMap,
     );
   }
-  factory UnhardenedWalletVector.fromBytes(Bytes bytes) {
+
+  factory UnhardenedWalletVector.fromBytes(Bytes bytes, int derivationIndex) {
     final iterator = bytes.iterator;
-    return UnhardenedWalletVector.fromStream(iterator);
+    return UnhardenedWalletVector.fromStream(iterator, derivationIndex);
   }
 
   @override
@@ -215,7 +221,8 @@ class UnhardenedWalletVector extends WalletVector {
         runtimeType == other.runtimeType &&
         childPrivateKey == other.childPrivateKey &&
         childPublicKey == other.childPublicKey &&
-        puzzlehash == other.puzzlehash;
+        puzzlehash == other.puzzlehash &&
+        derivationIndex == other.derivationIndex;
 
     if (!firstCheck) {
       return false;
@@ -228,6 +235,4 @@ class UnhardenedWalletVector extends WalletVector {
     }
     return true;
   }
-
-  final Map<Puzzlehash, Puzzlehash> assetIdtoOuterPuzzlehash;
 }
