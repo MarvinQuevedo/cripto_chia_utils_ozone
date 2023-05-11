@@ -33,10 +33,12 @@ class LineageProof {
 
   static LineageProof fromMap(Map<String, dynamic> map) {
     return LineageProof(
-      parentName: map['parent_name'] == null ? null : Puzzlehash.fromHex(map['parent_name']),
-      innerPuzzleHash:
-          map['inner_puzzle_hash'] == null ? null : Puzzlehash.fromHex(map['inner_puzzle_hash']),
-      amount: map['amount'],
+      parentName:
+          map['parent_name'] == null ? null : Puzzlehash.fromHex(map['parent_name'] as String),
+      innerPuzzleHash: map['inner_puzzle_hash'] == null
+          ? null
+          : Puzzlehash.fromHex(map['inner_puzzle_hash'] as String),
+      amount: map['amount'] as int,
     );
   }
 

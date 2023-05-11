@@ -173,7 +173,7 @@ class TradeManagerService extends BaseWalletService {
       } else if (royaltyPercentageRaw is int) {
         return royaltyPercentageRaw;
       } else {
-        return int.parse(royaltyPercentageRaw);
+        return int.parse(royaltyPercentageRaw as String);
       }
     }
     return null;
