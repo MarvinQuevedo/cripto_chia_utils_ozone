@@ -253,7 +253,7 @@ class BaseWalletService {
   ) {
     final results = <ConditionWithArgs>[];
     try {
-      final sexpList = sexp.toList();
+      //final sexpList = sexp.toList();
       for (final item in sexp.toList()) {
         final result = parseSexpToCondition(item);
         if (result.item1 != null) {
