@@ -316,12 +316,20 @@ class WalletKeychain with ToBytesMixin {
 
   void addOuterPuzzleHashesForAssetId(Puzzlehash assetId) {
     final entriesToAdd = <Puzzlehash, UnhardenedWalletVector>{};
+    final entriesToAddHardened = <Puzzlehash, WalletVector>{};
     for (final walletVector in unhardenedMap.values) {
       final outerPuzzleHash = makeOuterPuzzleHash(walletVector.puzzlehash, assetId);
       walletVector.assetIdtoOuterPuzzlehash[assetId] = outerPuzzleHash;
       entriesToAdd[outerPuzzleHash] = walletVector;
     }
     unhardenedMap.addAll(entriesToAdd);
+
+    for (final walletVector in hardenedMap.values) {
+      final outerPuzzleHash = makeOuterPuzzleHash(walletVector.puzzlehash, assetId);
+      walletVector.assetIdtoOuterPuzzlehash[assetId] = outerPuzzleHash;
+      entriesToAddHardened[outerPuzzleHash] = walletVector;
+    }
+    hardenedMap.addAll(entriesToAddHardened);
   }
 
   static Puzzlehash makeOuterPuzzleHash(

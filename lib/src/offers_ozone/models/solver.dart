@@ -47,7 +47,7 @@ class Solver {
     if (value == "()") {
       return Program.list([]);
     }
-    final programValue = Program.parse(value);
+    final programValue = Program.parse(value as String);
 
     if (!programValue.isAtom) {
       return programValue;

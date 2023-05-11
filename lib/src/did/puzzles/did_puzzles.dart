@@ -1,6 +1,5 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-
-import '../../utils/serialization.dart';
+import 'package:tuple/tuple.dart';
 
 /// Create DID inner puzzle
 /// [p2Puzzle] Standard P2 puzzle
@@ -15,14 +14,19 @@ Program createDidInnerpuz(
     required List<Bytes> recoveryList,
     required int numOfBackupIdsNeeded,
     required Bytes launcherId,
+    Puzzlehash? recoveryListHash,
     Program? metadata}) {
   if (metadata == null) {
     metadata = Program.fromBytes(Bytes.empty);
   }
 
-  final backupIdsHash = Program.list(recoveryList.map((e) => Program.fromBytes(e)).toList()).hash();
+  Puzzlehash backupIdsHash =
+      Program.list(recoveryList.map((e) => Program.fromBytes(e)).toList()).hash();
+  if (recoveryListHash != null) {
+    backupIdsHash = recoveryListHash;
+  }
   final sinletonStruct = Program.cons(
-    Program.fromBytes(SINGLETON_MOD_HASH),
+    Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
     Program.cons(
       Program.fromBytes(launcherId),
       Program.fromBytes(LAUNCHER_PUZZLE_HASH),
@@ -44,7 +48,7 @@ Program createDidInnerpuz(
 ///
 /// Return DID full puzzle
 Program createDidFullpuz(Program innerpuz, Bytes launcherId) {
-  final mod_hash = SINGLETON_MOD_HASH;
+  final mod_hash = SINGLETON_TOP_LAYER_MOD_V1_1_HASH;
   final sinletonStruct = Program.cons(
     Program.fromBytes(mod_hash),
     Program.cons(
@@ -71,4 +75,40 @@ Program metadataToProgram(Map<Bytes, dynamic> metadata) {
   });
 
   return Program.list(kvList);
+}
+
+Tuple5<Program, Program, Program, Program, Program>? uncurryInnerpuz(Program puz) {
+  final uncurried = puz.uncurry();
+
+  if (!isDidInnerPuz(uncurried.program)) {
+    return null;
+  }
+
+  final args = uncurried.arguments;
+  final p2Puzzle = args[0];
+  final idList = args[1];
+  final numOfBackupIdsNeeded = args[2];
+  final singletonStruct = args[3];
+  final metadata = args[4];
+
+  return Tuple5(p2Puzzle, idList, numOfBackupIdsNeeded, singletonStruct, metadata);
+}
+
+bool isDidInnerPuz(Program innerPuzzle) {
+  return innerPuzzle == DID_INNERPUZ_MOD;
+}
+
+List<Program>? matchDidPuzzle({required Program mod, required Program curriedArgs}) {
+  try {
+    if (mod == SINGLETON_TOP_LAYER_MOD_v1_1) {
+      final uncurried = curriedArgs.rest().first().uncurry();
+      if (uncurried.program == DID_INNERPUZ_MOD) {
+        return uncurried.arguments;
+      }
+    }
+  } catch (e, tracert) {
+    print(e);
+    print(tracert);
+  }
+  return null;
 }

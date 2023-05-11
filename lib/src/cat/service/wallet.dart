@@ -529,6 +529,14 @@ class CatWalletService extends BaseWalletService {
       innerPuzzle: uncurried.arguments[2],
     );
   }
+
+  Future<PuzzleInfo> getPuzzleInfo(Bytes assetId) async {
+    Map<String, dynamic> puzzleInfo = {
+      'type': AssetType.CAT,
+      'tail': assetId.toHexWithPrefix(),
+    };
+    return PuzzleInfo(puzzleInfo);
+  }
 }
 
 class DeconstructedCatPuzzle {

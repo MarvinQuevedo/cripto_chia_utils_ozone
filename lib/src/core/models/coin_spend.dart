@@ -1,7 +1,7 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-
+import '../../did/puzzles/did_puzzles.dart' as didPuzzles;
 import '../../offers_ozone/models/full_coin.dart' as fullCoin;
 
 class CoinSpend with ToBytesMixin {
@@ -125,7 +125,8 @@ class CoinSpend with ToBytesMixin {
   }
 
   SpendType get type {
-    final uncurriedPuzzleSource = puzzleReveal.uncurry().program.toSource();
+    final uncurried = puzzleReveal.uncurry();
+    final uncurriedPuzzleSource = uncurried.program.toSource();
     if (uncurriedPuzzleSource == p2DelegatedPuzzleOrHiddenPuzzleProgram.toSource()) {
       return SpendType.standard;
     }
@@ -135,8 +136,18 @@ class CoinSpend with ToBytesMixin {
     if (uncurriedPuzzleSource == LEGACY_CAT_MOD.toSource()) {
       return SpendType.cat1;
     }
-    if (uncurriedPuzzleSource == singletonTopLayerV1Program.toSource()) {
-      return SpendType.nft;
+    if (uncurriedPuzzleSource == SINGLETON_TOP_LAYER_MOD_v1_1.toSource()) {
+      final nftUncurried = UncurriedNFT.tryUncurry(puzzleReveal);
+      if (nftUncurried != null) {
+        return SpendType.nft;
+      }
+
+      final args = uncurried.arguments;
+
+      final uncurriedDid = didPuzzles.uncurryInnerpuz(args[1]);
+      if (uncurriedDid != null) {
+        return SpendType.did;
+      }
     }
     return SpendType.unknown;
     //throw UnimplementedError('Unimplemented spend type');
@@ -184,7 +195,24 @@ class CoinSpend with ToBytesMixin {
   String toString() => 'CoinSpend(coin: $coin, puzzleReveal: $puzzleReveal, solution: $solution)';
 }
 
-enum SpendType { unknown, standard, cat1, cat2, nft }
+enum SpendType {
+  unknown("unknown"),
+  standard('xch'),
+  cat1("cat1"),
+  cat2("cat"),
+  nft("nft"),
+  did('did');
+
+  const SpendType(this.value);
+  final String value;
+}
+
+SpendType? spendTypeFromString(String? value) {
+  if (value == null) {
+    return null;
+  }
+  return SpendType.values.firstWhere((element) => element.value == value);
+}
 
 class PaymentsAndAdditions {
   final List<Payment> payments;

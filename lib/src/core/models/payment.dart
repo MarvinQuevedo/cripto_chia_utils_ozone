@@ -20,9 +20,11 @@ class Payment {
                     ? memos.map((memo) => Memo(utf8.encode(memo.toString()))).toList()
                     : memos is List<Bytes>
                         ? memos.map((e) => Memo(e.byteList)).toList()
-                        : throw ArgumentError(
-                            'Unsupported type for memos. Must be Bytes, String, or int',
-                          );
+                        : memos is List<Puzzlehash>
+                            ? memos.map((e) => Memo(e.byteList)).toList()
+                            : throw ArgumentError(
+                                'Unsupported type for memos. Must be Bytes, Puzzlehash, String, or int',
+                              );
 
   CreateCoinCondition toCreateCoinCondition() {
     return CreateCoinCondition(puzzlehash, amount, memos: memos);
@@ -94,4 +96,23 @@ extension PaymentIterable on Iterable<Payment> {
 
   List<String> get memoStrings =>
       fold(<String>[], (previousValue, element) => previousValue + (element.memoStrings));
+}
+
+class CatPayment extends Payment {
+  CatPayment(super.amount, super.puzzlehash, {List<Bytes> memos = const []})
+      : super(
+          memos: <Bytes>[puzzlehash, ...memos],
+        );
+
+  CatPayment.withStringMemos(super.amount, super.puzzlehash, {List<String> memos = const []})
+      : super(memos: <Bytes>[puzzlehash, ...memos.map(Bytes.encodeFromString)]);
+  CatPayment.withIntMemos(super.amount, super.puzzlehash, {List<int> memos = const []})
+      : super(
+          memos: <Bytes>[
+            puzzlehash,
+            ...memos.map(
+              (e) => Bytes.encodeFromString(e.toString()),
+            )
+          ],
+        );
 }

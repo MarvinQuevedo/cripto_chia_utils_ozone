@@ -65,7 +65,7 @@ class UncurriedNFT {
   final bool supportDid;
 
   /// Puzzle hash of the ownership layer inner puzzle
-  final Bytes? nftInnerPuzzleHash;
+  //final Bytes? nftInnerPuzzleHash;
 
   /// Curried parameters of the transfer program
   /// [royalty_address, trade_price_percentage, settlement_mod_hash, cat_mod_hash]
@@ -83,7 +83,7 @@ class UncurriedNFT {
     required this.seriesTotal,
     required this.p2Puzzle,
     required this.supportDid,
-    required this.nftInnerPuzzleHash,
+    //required this.nftInnerPuzzleHash,
     required this.transferProgram,
     required this.nftModHash,
     required this.nftStateLayer,
@@ -106,7 +106,6 @@ class UncurriedNFT {
     try {
       return UncurriedNFT.uncurry(puzzle);
     } catch (e) {
-      print(e);
       return null;
     }
   }
@@ -131,7 +130,7 @@ class UncurriedNFT {
     final mod = uncurried.program;
     final curried_args = uncurried.arguments;
     // print(mod.serializeHex());
-    if (mod.hash() != singletonTopLayerV1Program.hash()) {
+    if (mod.hash() != SINGLETON_TOP_LAYER_MOD_V1_1_HASH) {
       throw ArgumentError("Cannot uncurry NFT puzzle, failed on singleton top layer: Mod ${mod}");
     }
 
@@ -189,11 +188,11 @@ class UncurriedNFT {
 
       Bytes? currentDid;
       Program? transferProgram;
-      Program? transferProgramArgs;
+      List<Program>? transferProgramArgs;
       late Program p2Puzzle;
       Puzzlehash? royaltyPuzzlehash;
       int? royaltyPercentage;
-      Bytes? nftInnerPuzzleMod;
+      //Bytes? nftInnerPuzzleMod;
 
       final innerPuzzleUncurried = innerPuzzle.uncurry();
       final mod = innerPuzzleUncurried.program;
@@ -203,14 +202,14 @@ class UncurriedNFT {
 
       if (mod.toSource() == nftOwnershipLayer.toSource()) {
         supportsDid = true;
-        print("parsing ownership layer");
+
         final olArgsList = olArgs;
         final currentDidP = olArgsList[1];
         transferProgram = olArgsList[2];
         p2Puzzle = olArgsList[3];
         final uncurriedTransferProgram = transferProgram.uncurry();
         //final transferProgramMod = uncurriedTransferProgram.program;
-        final transferProgramArgs = uncurriedTransferProgram.arguments;
+        transferProgramArgs = uncurriedTransferProgram.arguments;
         final royaltyAddressP = transferProgramArgs[1];
         final royaltyPercentageP = transferProgramArgs[2];
         royaltyPercentage = royaltyPercentageP.toInt();
@@ -224,31 +223,33 @@ class UncurriedNFT {
       }
 
       return UncurriedNFT._(
-          nftModHash: nftModHash,
-          nftStateLayer: nftStateLayer,
-          singletonStruct: singletonStruct,
-          singletonModHash: sinletonModHash,
-          singletonLauncherId: singletonLauncherId,
-          launcherPuzhash: launcherPuzzhash,
-          metadata: metadata,
-          dataUris: dataUris,
-          dataHash: dataHash,
-          p2Puzzle: p2Puzzle,
-          metaUris: metaUris,
-          metaHash: metaHash,
-          licenseUris: licenseUris,
-          licenseHash: licenseHash,
-          seriesNumber: seriesNumber,
-          seriesTotal: seriesTotal,
-          innerPuzzle: innerPuzzle,
-          metadataUpdaterHash: metadataUpdaterHash,
-          ownerDid: currentDid,
-          supportDid: supportsDid,
-          transferProgram: transferProgram,
-          transferProgramCurryParams: transferProgramArgs,
-          royaltyPuzzlehash: royaltyPuzzlehash,
-          tradePricePercentage: royaltyPercentage,
-          nftInnerPuzzleHash: nftInnerPuzzleMod);
+        nftModHash: nftModHash,
+        nftStateLayer: nftStateLayer,
+        singletonStruct: singletonStruct,
+        singletonModHash: sinletonModHash,
+        singletonLauncherId: singletonLauncherId,
+        launcherPuzhash: launcherPuzzhash,
+        metadata: metadata,
+        dataUris: dataUris,
+        dataHash: dataHash,
+        p2Puzzle: p2Puzzle,
+        metaUris: metaUris,
+        metaHash: metaHash,
+        licenseUris: licenseUris,
+        licenseHash: licenseHash,
+        seriesNumber: seriesNumber,
+        seriesTotal: seriesTotal,
+        innerPuzzle: innerPuzzle,
+        metadataUpdaterHash: metadataUpdaterHash,
+        ownerDid: currentDid,
+        supportDid: supportsDid,
+        transferProgram: transferProgram,
+        transferProgramCurryParams:
+            transferProgramArgs != null ? Program.list(transferProgramArgs) : null,
+        royaltyPuzzlehash: royaltyPuzzlehash,
+        tradePricePercentage: royaltyPercentage,
+        // nftInnerPuzzleHash: nftInnerPuzzleMod,
+      );
     } catch (e) {
       print(e);
       throw Exception("Cannot uncurry NFT state layer: Args ${curried_args}");

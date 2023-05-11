@@ -3,12 +3,14 @@ import 'package:meta/meta.dart';
 
 @immutable
 class WalletVector with ToBytesMixin {
-  const WalletVector({
+  WalletVector({
     required this.childPrivateKey,
     required this.puzzlehash,
     required this.derivationIndex,
-    this.assetIdtoOuterPuzzlehash = const {},
-  });
+    Map<Puzzlehash, Puzzlehash>? assetIdtoOuterPuzzlehash,
+  }) {
+    this.assetIdtoOuterPuzzlehash = assetIdtoOuterPuzzlehash ?? {};
+  }
   factory WalletVector.fromStream(Iterator<int> iterator, int derivationIndex) {
     final childPrivateKey = PrivateKey.fromStream(iterator);
     final puzzlehash = Puzzlehash.fromStream(iterator);
@@ -63,8 +65,8 @@ class WalletVector with ToBytesMixin {
     //final childPublicKey = childPrivateKey.getG1();
     final puzzlehash = Puzzlehash.fromHex(map['puzzlehash'] as String);
 
-    final assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
-    final assetIdtoOuterPuzzlehash = Map<String, String>.from(
+    var assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
+    var assetIdtoOuterPuzzlehash = Map<String, String>.from(
       map['assetIdtoOuterPuzzlehash'] as Map<String, dynamic>,
     );
 
@@ -85,7 +87,7 @@ class WalletVector with ToBytesMixin {
   JacobianPoint get childPublicKey => childPrivateKey.getG1();
   final Puzzlehash puzzlehash;
   final int derivationIndex;
-  final Map<Puzzlehash, Puzzlehash> assetIdtoOuterPuzzlehash;
+  late final Map<Puzzlehash, Puzzlehash> assetIdtoOuterPuzzlehash;
 
   WalletPuzzlehash get walletPuzzlehash =>
       WalletPuzzlehash.fromPuzzlehash(puzzlehash, derivationIndex);
@@ -184,8 +186,8 @@ class UnhardenedWalletVector extends WalletVector {
 
     final puzzlehash = Puzzlehash.fromHex(map['puzzlehash'] as String);
 
-    final assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
-    final assetIdtoOuterPuzzlehash = Map<String, String>.from(
+    var assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
+    var assetIdtoOuterPuzzlehash = Map<String, String>.from(
       map['assetIdtoOuterPuzzlehash'] as Map<String, dynamic>,
     );
 

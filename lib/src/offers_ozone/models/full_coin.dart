@@ -81,4 +81,8 @@ class FullCoin extends CoinPrototype {
     final t = this.parentCoinSpend?.type;
     return t ?? SpendType.standard;
   }
+
+  Coin toCoin() {
+    return coin;
+  }
 }

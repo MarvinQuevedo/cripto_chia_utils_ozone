@@ -1,14 +1,13 @@
 import 'package:quiver/iterables.dart';
 
 import '../../../chia_crypto_utils.dart';
-import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
-class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
+class CATOuterPuzzle extends OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     if (constructor.also != null) {
-      innerPuzzle =
-          outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: innerPuzzle);
+      innerPuzzle = OuterPuzzleDriver.constructPuzzle(
+          constructor: constructor.also!, innerPuzzle: innerPuzzle);
     }
     return CatWalletService.makeCatPuzzle(createAssetId(constructor: constructor), innerPuzzle);
   }
@@ -63,8 +62,7 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
     ]);
 
     final coinProgram = Program.fromBytes(solver["coin"]);
-    final _parentSpendProgram = Program.deserialize(solver["parent_spend"]);
-    //final parentSpend = CoinSpend.fromProgramList(_parentSpendProgram);
+    final _parentSpendProgram = Program.fromBytes(solver["parent_spend"]);
 
     final base = [
       coinProgram,
@@ -73,6 +71,7 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
       innerSolution,
     ];
     final workIterable = zipped.toList()..add(base);
+    workIterable.sort((a, b) => (a[0].toBytes()).compareTo(b[0].toBytes()));
     for (var item in workIterable) {
       final coinProg = item[0];
       final spendProg = item[1];
@@ -82,15 +81,19 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
       final coinBytes = coinProg.atom;
 
       final coin = CoinPrototype.fromBytes(coinBytes);
-      if (coinBytes == solver["coin"]) {
+      final Bytes solverCoin = solver["coin"];
+      if (coinBytes == solverCoin) {
         targetCoin = coin;
       }
-      final parentSpend = CoinSpend.fromProgram(spendProg);
+      final parentSpend = CoinSpend.fromBytes(spendProg.atom);
 
       // final parentCoin = parentSpend.coin;
       if (constructor.also != null) {
-        puzzle = outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: puzzle);
-        solution = outerPuzzle.solvePuzzle(
+        puzzle = OuterPuzzleDriver.constructPuzzle(
+          constructor: constructor.also!,
+          innerPuzzle: puzzle,
+        );
+        solution = OuterPuzzleDriver.solvePuzzle(
             constructor: constructor.also!,
             solver: solver,
             innerPuzzle: innerPuzzle,
@@ -123,7 +126,7 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
     if (matched != null) {
       final innerPuzzle = matched.innerPuzzle;
       if (constructor.also != null) {
-        final deopInnerPuzzle = outerPuzzle.getInnerPuzzle(
+        final deopInnerPuzzle = OuterPuzzleDriver.getInnerPuzzle(
           constructor: constructor.also!,
           puzzleReveal: puzzleReveal,
         );
@@ -139,8 +142,10 @@ class CATOuterPuzzle extends outerPuzzle.OuterPuzzle {
   Program? getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
     final myInnerSolution = solution.first();
     if (constructor.also != null) {
-      final deepInnerSolution =
-          outerPuzzle.getInnerSolution(constructor: constructor.also!, solution: solution);
+      final deepInnerSolution = OuterPuzzleDriver.getInnerSolution(
+        constructor: constructor.also!,
+        solution: solution,
+      );
       return deepInnerSolution;
     }
     return myInnerSolution;
