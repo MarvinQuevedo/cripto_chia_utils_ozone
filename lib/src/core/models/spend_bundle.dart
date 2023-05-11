@@ -4,7 +4,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/utils/serialization.dart';
 import 'package:meta/meta.dart';
 
 @immutable
@@ -50,7 +49,7 @@ class SpendBundle with ToBytesMixin {
             .toList(),
         aggregatedSignature = JacobianPoint.fromHexG2(json['aggregated_signature'] as String);
 
-  factory SpendBundle.aggregate(List<SpendBundle> bundles) {
+  static SpendBundle aggregate(List<SpendBundle> bundles) {
     var totalBundle = SpendBundle.empty;
 
     for (final bundle in bundles) {
@@ -58,6 +57,7 @@ class SpendBundle with ToBytesMixin {
     }
     return totalBundle;
   }
+
   Bytes get id => toBytes().sha256Hash();
 
   final List<CoinSpend> coinSpends;
@@ -79,10 +79,6 @@ class SpendBundle with ToBytesMixin {
       <CoinPrototype>[],
       (previousValue, coinSpend) => previousValue + coinSpend.additions,
     );
-  }
-
-  List<CoinPrototype> get removals {
-    return coinSpends.map((e) => e.coin).toList();
   }
 
   List<CoinPrototype> get netAdditions {
@@ -219,12 +215,5 @@ class SpendBundle with ToBytesMixin {
       hc = hc ^ aggregatedSignature.hashCode;
     }
     return hc;
-  }
-
-  static SpendBundle aggregate(List<SpendBundle> bundleList) {
-    final aggregatedSpendBundle = bundleList.fold<SpendBundle>(
-        SpendBundle(coinSpends: []), (previousValue, element) => previousValue + element);
-
-    return aggregatedSpendBundle;
   }
 }

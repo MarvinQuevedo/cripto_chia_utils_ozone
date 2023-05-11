@@ -1,10 +1,10 @@
 // ignore_for_file: lines_longer_than_80_chars
 
-import '../../../clvm.dart';
-import '../../../clvm/program.dart';
+import 'package:chia_crypto_utils/src/clvm.dart';
+import 'package:chia_crypto_utils/src/clvm/program.dart';
 
 final P2_CONDITIONS_MOD = Program.deserializeHex(
-  "ff04ffff0101ff0280",
+  'ff04ffff0101ff0280',
 );
 
 Program puzzleForConditions(Program conditions) {

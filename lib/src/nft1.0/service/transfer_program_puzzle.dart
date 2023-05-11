@@ -1,5 +1,5 @@
-import '../../../chia_crypto_utils.dart';
-import '../models/deconstructed_transfer_program_puzzle.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/nft1.0/models/deconstructed_transfer_program_puzzle.dart';
 
 DeconstructedTransferProgramPuzzle? mathTransferProgramPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
@@ -19,8 +19,11 @@ DeconstructedTransferProgramPuzzle? mathTransferProgramPuzzle(Program puzzle) {
   return null;
 }
 
-Program puzzleForTransferProgram(
-    {required Bytes launcherId, required Puzzlehash royaltyPuzzleHash, required int percentage}) {
+Program puzzleForTransferProgram({
+  required Bytes launcherId,
+  required Puzzlehash royaltyPuzzleHash,
+  required int percentage,
+}) {
   final sinletonStruct = Program.cons(
     Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
     Program.cons(
@@ -37,13 +40,14 @@ Program puzzleForTransferProgram(
   );
 }
 
-Program solutionForTransferProgram(
-    {required Program conditions,
-    required Puzzlehash? currentowner,
-    required Puzzlehash newDid,
-    required Puzzlehash newDidInnerHash,
-    required Program tradePricesList}) {
-  Program currentOwnerP = Program.nil;
+Program solutionForTransferProgram({
+  required Program conditions,
+  required Puzzlehash? currentowner,
+  required Puzzlehash newDid,
+  required Puzzlehash newDidInnerHash,
+  required Program tradePricesList,
+}) {
+  var currentOwnerP = Program.nil;
   if (currentowner != null) {
     currentOwnerP = Program.fromBytes(currentowner);
   }
@@ -63,9 +67,9 @@ class TransferProgramOuterPuzzle extends OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     return puzzleForTransferProgram(
-      launcherId: Puzzlehash.fromHex(constructor["launcher_id"]),
-      royaltyPuzzleHash: Puzzlehash.fromHex(constructor["royalty_address"]),
-      percentage: constructor["royalty_percentage"] as int,
+      launcherId: Puzzlehash.fromHex(constructor['launcher_id'] as String),
+      royaltyPuzzleHash: Puzzlehash.fromHex(constructor['royalty_address'] as String),
+      percentage: constructor['royalty_percentage'] as int,
     );
   }
 
@@ -78,11 +82,11 @@ class TransferProgramOuterPuzzle extends OuterPuzzle {
   PuzzleInfo? matchPuzzle(Program puzzle) {
     final matched = mathTransferProgramPuzzle(puzzle);
     if (matched != null) {
-      final Map<String, dynamic> constructorDict = {
-        "type": AssetType.ROYALTY_TRANSFER_PROGRAM,
-        "launcher_id": matched.singletonStruct.rest().first().atom.toHexWithPrefix(),
-        "royalty_address": matched.royaltyAddressP.atom.toHexWithPrefix(),
-        "royalty_percentage": matched.royaltyPercentage
+      final constructorDict = <String, dynamic>{
+        'type': AssetType.ROYALTY_TRANSFER_PROGRAM,
+        'launcher_id': matched.singletonStruct.rest().first().atom.toHexWithPrefix(),
+        'royalty_address': matched.royaltyAddressP.atom.toHexWithPrefix(),
+        'royalty_percentage': matched.royaltyPercentage
       };
 
       return PuzzleInfo(constructorDict);
@@ -91,11 +95,12 @@ class TransferProgramOuterPuzzle extends OuterPuzzle {
   }
 
   @override
-  Program solvePuzzle(
-      {required PuzzleInfo constructor,
-      required Solver solver,
-      required Program innerPuzzle,
-      required Program innerSolution}) {
+  Program solvePuzzle({
+    required PuzzleInfo constructor,
+    required Solver solver,
+    required Program innerPuzzle,
+    required Program innerSolution,
+  }) {
     return Program.nil;
   }
 

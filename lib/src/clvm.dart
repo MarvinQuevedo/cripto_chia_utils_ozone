@@ -1,4 +1,3 @@
-library clvm;
 
 export './clvm/bytes.dart';
 export './clvm/cost.dart';

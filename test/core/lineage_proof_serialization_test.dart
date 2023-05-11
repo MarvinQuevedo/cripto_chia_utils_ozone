@@ -19,7 +19,6 @@ void main() {
     ),
     LineageProof(
       parentCoinInfo: parentCoinInfo,
-      innerPuzzlehash: null,
       amount: amount,
     ),
     LineageProof(
@@ -29,12 +28,10 @@ void main() {
     ),
     const LineageProof(
       parentCoinInfo: null,
-      innerPuzzlehash: null,
       amount: amount,
     ),
     LineageProof(
       parentCoinInfo: parentCoinInfo,
-      innerPuzzlehash: null,
       amount: null,
     ),
     LineageProof(
@@ -44,7 +41,6 @@ void main() {
     ),
     const LineageProof(
       parentCoinInfo: null,
-      innerPuzzlehash: null,
       amount: null,
     ),
   ];

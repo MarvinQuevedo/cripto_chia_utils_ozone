@@ -1,5 +1,4 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/nft1.0/index.dart';
 import 'package:tuple/tuple.dart';
 
 Program _parseValue(dynamic value) {
@@ -18,7 +17,7 @@ Program _parseValue(dynamic value) {
     valueP = Program.list(listValues);
   }
   if (valueP == null) {
-    throw Exception("Can convert to metadata ${value}");
+    throw Exception('Can convert to metadata $value');
   }
   return valueP;
 }
@@ -51,7 +50,7 @@ class NftService {
       {required Bytes singletonId,
       required Program metadata,
       required Bytes metadataUpdaterHash,
-      required Program innerPuzzle}) {
+      required Program innerPuzzle,}) {
     final singletonStruct = Program.cons(
       Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
       Program.cons(
@@ -89,7 +88,7 @@ class NftService {
       programList.add(Program.cons(
         Program.fromBytes(key),
         valueP,
-      ));
+      ),);
     });
     return Program.list(programList);
   }
@@ -98,7 +97,7 @@ class NftService {
   /// program contains the metadata return: Metadata dict
   static Map<Bytes, dynamic> programToMetadata(Program program) {
     final metadata = <Bytes, dynamic>{};
-    for (var con in program.toList()) {
+    for (final con in program.toList()) {
       metadata[con.first().atom] = con.rest().atom;
     }
     return metadata;
@@ -106,7 +105,7 @@ class NftService {
 
   /// Prepend a value to a list in the metadata
   static void prependValue(
-      {required Map<Bytes, dynamic> metadata, required Program value, required Bytes key}) {
+      {required Map<Bytes, dynamic> metadata, required Program value, required Bytes key,}) {
     if (value == Program.list([])) return;
 
     if ((metadata[key] as List?)?.isEmpty ?? true) {
@@ -127,7 +126,7 @@ class NftService {
   static Program constructOwnershipLayer(
           {required Bytes? currentOwner,
           required Program transferProgram,
-          required Program innerPuzzle}) =>
+          required Program innerPuzzle,}) =>
       puzzleForOwnershipLayer(
         currentOwner: currentOwner,
         transferProgram: transferProgram,
@@ -148,9 +147,7 @@ class NftService {
         Program.fromBytes(LAUNCHER_PUZZLE_HASH),
       ),
     );
-    if (royaltyPuzzleHash == null) {
-      royaltyPuzzleHash = p2Puzzle.hash();
-    }
+    royaltyPuzzleHash ??= p2Puzzle.hash();
 
     final transferProgram = NFT_TRANSFER_PROGRAM_DEFAULT.curry([
       singletonStruct,
@@ -175,7 +172,7 @@ class NftService {
   }) {
     final tradePricesListP = Program.list(
       tradePricesList.map((root) {
-        final innerList = root.map((e) => Program.fromInt(e)).toList();
+        final innerList = root.map(Program.fromInt).toList();
         return Program.list(innerList);
       }).toList(),
     );
@@ -213,9 +210,9 @@ class NftService {
   //get_metadata_and_phs
   Tuple2<Program, Bytes> getMetadataAndPhs(UncurriedNFT unft, Program solution) {
     final conditions = unft.p2Puzzle.run(unft.getInnermostSolution(solution)).program;
-    Program metadata = unft.metadata;
+    var metadata = unft.metadata;
     Bytes? puzzlehashForDerivation;
-    for (var condition in conditions.toList()) {
+    for (final condition in conditions.toList()) {
       final conditionList = condition.toList();
       if (conditionList.length < 2) {
         // invalid condition
@@ -232,7 +229,7 @@ class NftService {
         }
         final memo = conditionList.last.first().atom;
         puzzlehashForDerivation = memo;
-        print("Got back puzhash from solution: ${puzzlehashForDerivation.toHex()}");
+        print('Got back puzhash from solution: ${puzzlehashForDerivation.toHex()}');
       }
     }
     if (puzzlehashForDerivation == null) {
@@ -242,23 +239,23 @@ class NftService {
   }
 
   Program recurryNftPuzzle(
-      {required UncurriedNFT unft, required Program solution, required Program newInnerPuzzle}) {
-    print("Generating NFT puzzle with ownership support: ${solution.toSource()}");
+      {required UncurriedNFT unft, required Program solution, required Program newInnerPuzzle,}) {
+    print('Generating NFT puzzle with ownership support: ${solution.toSource()}');
 
     final conditions = unft.p2Puzzle.run(unft.getInnermostSolution(solution)).program;
-    Bytes? newDidId = unft.ownerDid;
+    var newDidId = unft.ownerDid;
     Bytes? newPuzhash;
 
-    for (var condition in conditions.toList()) {
+    for (final condition in conditions.toList()) {
       if (condition.first().toInt() == -10) {
         // this is the change owner magic condition
-        newDidId = condition.filterAt("rf").atom;
+        newDidId = condition.filterAt('rf').atom;
       } else if (condition.first().toInt() == 51) {
-        newPuzhash = condition.filterAt("rf").atom;
+        newPuzhash = condition.filterAt('rf').atom;
       }
     }
     print(
-      "Found NFT puzzle details: ${newDidId?.toHexWithPrefix()} ${newPuzhash?.toHexWithPrefix()}",
+      'Found NFT puzzle details: ${newDidId?.toHexWithPrefix()} ${newPuzhash?.toHexWithPrefix()}',
     );
 
     if (unft.transferProgram == null) {
@@ -276,13 +273,13 @@ class NftService {
 
   Bytes? getnewOwnerDid({required UncurriedNFT unft, required Program solution}) {
     final conditions = unft.p2Puzzle.run(unft.getInnermostSolution(solution)).program;
-    Bytes? newDidId = unft.ownerDid;
+    var newDidId = unft.ownerDid;
 
-    for (var condition in conditions.toList()) {
+    for (final condition in conditions.toList()) {
       if (condition.first().toInt() == -10) {
         // this is the change owner magic condition
 
-        newDidId = condition.filterAt("rf").atom;
+        newDidId = condition.filterAt('rf').atom;
       }
     }
     return newDidId;

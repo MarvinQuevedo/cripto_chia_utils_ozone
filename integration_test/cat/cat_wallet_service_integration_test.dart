@@ -23,7 +23,7 @@ Future<void> main() async {
   final keychain = WalletKeychain.fromCoreSecret(secret);
 
   ChiaNetworkContextWrapper().registerNetworkContext(Network.mainnet);
-  final catWalletService = Cat2WalletService();
+  final catWalletService = CatWalletService();
 
   final senderWalletSet = keychain.unhardenedMap.values.first;
   final senderPuzzlehash = senderWalletSet.puzzlehash;

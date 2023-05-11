@@ -49,7 +49,7 @@ class ChiaEnthusiast extends ChiaEnthusiastBase {
         .where((element) => element.type == SpendType.cat1)
         .toList();
     catCoins = (await fullNodeSimulator.getCatCoinsByOuterPuzzleHashes(outerPuzzlehashes))
-        .where((element) => element.type == SpendType.cat)
+        .where((element) => element.type == SpendType.cat2)
         .toList();
   }
 
@@ -78,7 +78,7 @@ class ChiaEnthusiast extends ChiaEnthusiastBase {
 
     final signature = AugSchemeMPL.sign(privateKeyForCat, curriedGenesisByCoinIdPuzzle.hash());
 
-    final spendBundle = cat1WalletService.makeIssuanceSpendbundle(
+    final spendBundle = catWalletService.makeIssuanceSpendbundle(
       tail: curriedTail,
       solution: tailSolution,
       standardCoins: [standardCoins.firstWhere((coin) => coin.amount >= 10000)],

@@ -66,7 +66,7 @@ Future<void> main() async {
         fee: 0,
         targetPuzzleHash: Puzzlehash.zeros(),
         changePuzzlehash: Puzzlehash.zeros(),
-        offer: offer);
+        offer: offer,);
     expect(analized, isNotNull);
   });
 
@@ -99,7 +99,7 @@ Future<void> main() async {
     print(summary);
     final requested = offer.requestedPayments;
     final requestedAmount = requested.values.fold<int>(
-        0, (a, b) => a + b.fold(0, (previousValue, element) => previousValue + element.amount));
+        0, (a, b) => a + b.fold(0, (previousValue, element) => previousValue + element.amount),);
     expect(requested.length, 1);
     expect(requestedAmount, 100000000000);
 
@@ -113,7 +113,7 @@ Future<void> main() async {
   });
 
   test('Create offer for request third nft', () async {
-    final nftAddress = NftAddress("nft1aqpjrv8vyyq0djhp2s0nzks4qyvh2tf6kq8r20d0plsujdj08waqe5glhc");
+    const nftAddress = NftAddress('nft1aqpjrv8vyyq0djhp2s0nzks4qyvh2tf6kq8r20d0plsujdj08waqe5glhc');
 
     final changePh = keychain.puzzlehashes[2];
     final targePh = keychain.puzzlehashes[3];
@@ -133,7 +133,7 @@ Future<void> main() async {
     print(summary);
     final requested = offer.requestedPayments;
     final requestedAmount = requested.values.fold<int>(
-        0, (a, b) => a + b.fold(0, (previousValue, element) => previousValue + element.amount));
+        0, (a, b) => a + b.fold(0, (previousValue, element) => previousValue + element.amount),);
     expect(requested.length, 1);
     expect(requestedAmount, 1);
 
@@ -153,7 +153,7 @@ Future<void> main() async {
         targetPuzzleHash: targePh,
         offer: offer,
         changePuzzlehash: changePh,
-        coinsToUse: xchCoins!);
+        coinsToUse: xchCoins!,);
     expect(responseResult.item1.success, true);
   });
 }

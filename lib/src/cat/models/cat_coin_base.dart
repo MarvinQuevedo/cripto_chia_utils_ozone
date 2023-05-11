@@ -11,12 +11,11 @@ abstract class CatCoin implements CoinPrototype {
     required CoinSpend parentCoinSpend,
     required Puzzlehash assetId,
     required Program lineageProof,
-    required Program catProgram,
     required CoinPrototype delegate,
   }) {
     return _CatCoin(
       parentCoinSpend: parentCoinSpend,
-      catProgram: catProgram,
+      catProgram: CAT_MOD,
       lineageProof: lineageProof,
       assetId: assetId,
       delegate: delegate,
@@ -25,14 +24,12 @@ abstract class CatCoin implements CoinPrototype {
   factory CatCoin.eve({
     required CoinSpend parentCoinSpend,
     required Puzzlehash assetId,
-    required Program catProgram,
     required CoinPrototype coin,
   }) =>
       CatCoin(
         parentCoinSpend: parentCoinSpend,
         assetId: assetId,
         lineageProof: Program.nil,
-        catProgram: catProgram,
         delegate: coin,
       );
 
@@ -144,7 +141,7 @@ class _CatCoin with CoinPrototypeDecoratorMixin implements CatCoin {
 extension CatFunctionality on CatCoin {
   SpendType get type {
     if (catProgram == cat2Program) {
-      return SpendType.cat;
+      return SpendType.cat2;
     }
     if (catProgram == cat1Program) {
       return SpendType.cat1;

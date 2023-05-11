@@ -2,12 +2,12 @@ import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:tuple/tuple.dart';
 
 class DidService {
-  final ChiaFullNodeInterface fullNode;
-  final WalletKeychain keychain;
   DidService({
     required this.fullNode,
     required this.keychain,
   });
+  final ChiaFullNodeInterface fullNode;
+  final WalletKeychain keychain;
 
   StandardWalletService get walletService => StandardWalletService();
 
@@ -31,7 +31,7 @@ class DidService {
     }
     final parendSpend = didCoin.parentCoinSpend!;
 
-    DidInfo? uncurriedInfo = DidInfo.uncurry(
+    var uncurriedInfo = DidInfo.uncurry(
       fullpuzzleReveal: parendSpend.puzzleReveal,
       solution: parendSpend.solution,
       actualCoin: didCoin.coin,
@@ -53,7 +53,7 @@ class DidService {
 
     uncurriedInfo = uncurriedInfo.copyWith(originCoin: originCoins.first);
     var actualCoinId = uncurriedInfo.originCoin!.id;
-    Coin actualCoin = uncurriedInfo.tempCoin!;
+    var actualCoin = uncurriedInfo.tempCoin!;
 
     while (actualCoin.spentBlockIndex != 0) {
       final children = await fullNode.getCoinsByParentIds([actualCoinId], includeSpentCoins: true);
@@ -61,20 +61,21 @@ class DidService {
         break;
       }
       for (final coin in children) {
-        final future_parent = LineageProof(
-          parentName: Puzzlehash(coin.parentCoinInfo),
-          innerPuzzleHash: singletonInnerPuzzleHash,
+        final futureParent = LineageProof(
+          parentCoinInfo: Puzzlehash(coin.parentCoinInfo),
+          innerPuzzlehash: singletonInnerPuzzleHash,
           amount: coin.amount,
         );
 
         uncurriedInfo.copyWith(
-            parentInfo: uncurriedInfo.parentInfo
-              ..add(
-                Tuple2(
-                  Puzzlehash(coin.id),
-                  future_parent,
-                ),
-              ));
+          parentInfo: uncurriedInfo.parentInfo
+            ..add(
+              Tuple2(
+                Puzzlehash(coin.id),
+                futureParent,
+              ),
+            ),
+        );
 
         actualCoin = coin;
         actualCoinId = coin.parentCoinInfo;
@@ -98,23 +99,24 @@ class DidService {
     final mainHidratedCoins = await fullNode.hydrateFullCoins(mainChildrens);
 
     if (mainHidratedCoins.isEmpty) {
-      throw Exception("Can't be found the NFT coin with launcher ${launcherId}");
+      throw Exception("Can't be found the NFT coin with launcher $launcherId");
     }
-    FullCoin nftCoin = mainHidratedCoins.first;
+    final nftCoin = mainHidratedCoins.first;
     final lastCoin = await fullNode.getLasUnespentSingletonCoin(nftCoin);
 
     return getDidInfo(lastCoin);
   }
 
-  Future<ChiaBaseResponse> createDid(
-      {required List<CoinPrototype> coins,
-      required Puzzlehash changePuzzlehash,
-      int fee = 0,
-      int amount = 1,
-      int? numOfBackupIdsNeeded,
-      List<Puzzlehash>? backupsIds,
-      Map<String, String> metadata = const {},
-      required Puzzlehash targePuzzlehash}) async {
+  Future<ChiaBaseResponse> createDid({
+    required List<CoinPrototype> coins,
+    required Puzzlehash changePuzzlehash,
+    required Puzzlehash targePuzzlehash,
+    int fee = 0,
+    int amount = 1,
+    int? numOfBackupIdsNeeded,
+    List<Puzzlehash>? backupsIds,
+    Map<String, String> metadata = const {},
+  }) async {
     final didWallet = DidWallet();
 
     final result = await didWallet.createNewDid(

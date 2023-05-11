@@ -2,22 +2,7 @@ import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:equatable/equatable.dart';
 
 class OfferAssetData extends Equatable {
-  final Bytes? assetId;
-  final SpendType type;
-
-  OfferAssetData({required this.assetId, required this.type});
-  static OfferAssetData? fromFullCoin(FullCoin coin) {
-    final type = coin.parentCoinSpend?.type ?? SpendType.standard;
-    Bytes? assetId;
-    if (type == SpendType.cat2) {
-      assetId = coin.parentCoinSpend!.getTailHash();
-    } else if (type == SpendType.nft) {
-      // The nft info will be completed for  prepareFullCoins
-    } else {
-      return OfferAssetData.standart();
-    }
-    return OfferAssetData(assetId: assetId, type: type);
-  }
+  const OfferAssetData({required this.assetId, required this.type});
 
   factory OfferAssetData.cat({
     required Bytes tailHash,
@@ -35,6 +20,28 @@ class OfferAssetData extends Equatable {
       type: SpendType.nft,
     );
   }
+
+  factory OfferAssetData.fromMap(Map<String, dynamic> map) {
+    return OfferAssetData(
+      assetId: map['assetId'] == null ? null : Bytes.fromHex(map['assetId'] as String),
+      type: spendTypeFromString(map['type'] as String) ?? SpendType.unknown,
+    );
+  }
+  final Bytes? assetId;
+  final SpendType type;
+  static OfferAssetData? fromFullCoin(FullCoin coin) {
+    final type = coin.parentCoinSpend?.type ?? SpendType.standard;
+    Bytes? assetId;
+    if (type == SpendType.cat2) {
+      assetId = coin.parentCoinSpend!.getTailHash();
+    } else if (type == SpendType.nft) {
+      // The nft info will be completed for  prepareFullCoins
+    } else {
+      return OfferAssetData.standart();
+    }
+    return OfferAssetData(assetId: assetId, type: type);
+  }
+
   static OfferAssetData? standart() {
     return null;
   }
@@ -48,22 +55,9 @@ class OfferAssetData extends Equatable {
       'type': type.value,
     };
   }
-
-  factory OfferAssetData.fromMap(Map<String, dynamic> map) {
-    return OfferAssetData(
-      assetId: map['assetId'] == null ? null : Bytes.fromHex(map['assetId']),
-      type: spendTypeFromString(map['type']) ?? SpendType.unknown,
-    );
-  }
 }
 
 class PreparedTradeData {
-  final Map<Bytes, PuzzleInfo> driverDict;
-  final Map<Bytes?, List<Payment>> payments;
-  final Map<Bytes?, int> offerredAmounts;
-  final Bytes? nftOfferedLauncher;
-  final bool requestedLauncher;
-
   const PreparedTradeData({
     required this.driverDict,
     required this.payments,
@@ -71,4 +65,9 @@ class PreparedTradeData {
     required this.nftOfferedLauncher,
     required this.requestedLauncher,
   });
+  final Map<Bytes, PuzzleInfo> driverDict;
+  final Map<Bytes?, List<Payment>> payments;
+  final Map<Bytes?, int> offerredAmounts;
+  final Bytes? nftOfferedLauncher;
+  final bool requestedLauncher;
 }

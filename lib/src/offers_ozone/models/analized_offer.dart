@@ -1,7 +1,15 @@
-import '../../clvm/bytes.dart';
-import '../index.dart';
+import 'package:chia_crypto_utils/src/clvm/bytes.dart';
+import 'package:chia_crypto_utils/src/offers_ozone/index.dart';
 
 class AnalizedOffer {
+
+  AnalizedOffer(
+      {required this.requested,
+      required this.offered,
+      required this.isOld,
+      required this.royaltyPer,
+      required this.royaltyAmount,
+      required this.fungibleAmounts,});
   /// List of payments that are requested for you
   final Map<OfferAssetData?, List<int>> requested;
 
@@ -15,12 +23,4 @@ class AnalizedOffer {
   final bool isOld;
   final int? royaltyPer;
   final int? royaltyAmount;
-
-  AnalizedOffer(
-      {required this.requested,
-      required this.offered,
-      required this.isOld,
-      required this.royaltyPer,
-      required this.royaltyAmount,
-      required this.fungibleAmounts});
 }

@@ -5,7 +5,7 @@ class EverythingWithSignatureTailService {
   EverythingWithSignatureTailService([this._catWalletService]);
 
   final CatWalletService? _catWalletService;
-  CatWalletService get catWalletService => _catWalletService ?? Cat2WalletService();
+  CatWalletService get catWalletService => _catWalletService ?? CatWalletService();
 
   StandardWalletService get standardWalletService => catWalletService.standardWalletService;
 
@@ -82,10 +82,7 @@ class EverythingWithSignatureTailService {
     required CatCoin catCoinToMelt,
     required Puzzlehash puzzlehashToClaimXchTo,
     required List<CoinPrototype> standardCoinsForXchClaimingSpendBundle,
-    int? amountToMelt,
-    required PrivateKey tailPrivateKey,
-    required Puzzlehash changePuzzlehash,
-    required WalletKeychain keychain,
+    required PrivateKey tailPrivateKey, required Puzzlehash changePuzzlehash, required WalletKeychain keychain, int? amountToMelt,
     Bytes? originId,
     Bytes? standardOriginId,
     int fee = 0,

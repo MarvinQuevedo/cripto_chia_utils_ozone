@@ -14,7 +14,7 @@ class CoinSplittingService {
 
   final ChiaFullNodeInterface fullNode;
   final BlockchainUtils blockchainUtils;
-  final catWalletService = Cat2WalletService();
+  final catWalletService = CatWalletService();
   final standardWalletService = StandardWalletService();
   final logger = LoggingContext().info;
   final Duration coinSearchWaitPeriod;

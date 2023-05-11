@@ -2,12 +2,12 @@ import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/api/did/did_service.dart';
 
 class NftNodeWalletService {
-  final ChiaFullNodeInterface fullNode;
-  final WalletKeychain keychain;
   NftNodeWalletService({
     required this.fullNode,
     required this.keychain,
   });
+  final ChiaFullNodeInterface fullNode;
+  final WalletKeychain keychain;
 
   StandardWalletService get walletService => StandardWalletService();
 
@@ -18,19 +18,19 @@ class NftNodeWalletService {
           keychain.getWalletVector(
             element,
           ) !=
-          null);
+          null,);
       if (founded.length == phs.length) {
         return keychain;
       }
       return null;
-    });
-    FullNFTCoinInfo nftFullInfo = nftInfo.item1;
+    },);
+    var nftFullInfo = nftInfo.item1;
     if (nftInfo.item1.minterDid == null) {
       final did = await getMinterNft(Puzzlehash(nftInfo.item1.launcherId));
       if (did != null) {
         nftFullInfo = nftFullInfo.copyWith(minterDid: did.didId);
       }
-      print("Minter DID is null");
+      print('Minter DID is null');
     }
     return nftFullInfo;
   }
@@ -60,9 +60,9 @@ class NftNodeWalletService {
     final mainHidratedCoins = await fullNode.hydrateFullCoins(mainChildrens);
 
     if (mainHidratedCoins.isEmpty) {
-      throw Exception("Can't be found the NFT coin with launcher ${launcherId}");
+      throw Exception("Can't be found the NFT coin with launcher $launcherId");
     }
-    FullCoin nftCoin = mainHidratedCoins.first;
+    final nftCoin = mainHidratedCoins.first;
     final lastCoin = await fullNode.getLasUnespentSingletonCoin(nftCoin);
     return convertFullCoin(lastCoin);
   }
@@ -77,9 +77,9 @@ class NftNodeWalletService {
     final mainHidratedCoins = await fullNode.hydrateFullCoins(mainChildrens);
 
     if (mainHidratedCoins.isEmpty) {
-      throw Exception("Can't be found the NFT coin with launcher ${launcherId}");
+      throw Exception("Can't be found the NFT coin with launcher $launcherId");
     }
-    FullCoin nftCoin = mainHidratedCoins.first;
+    final nftCoin = mainHidratedCoins.first;
     print(nftCoin.type);
     final foundedCoins = await fullNode.getAllLinageSingletonCoin(nftCoin);
     final eveCcoin = foundedCoins.first;
@@ -100,10 +100,8 @@ class NftNodeWalletService {
   Future<ChiaBaseResponse> transferNFt(
       {required Puzzlehash targePuzzlehash,
       required FullNFTCoinInfo nftCoinInfo,
-      int fee = 0,
-      required List<CoinPrototype> standardCoinsForFee,
-      required Puzzlehash changePuzzlehash}) async {
-    final spendBundle = await NftWallet().createTransferSpendBundle(
+      required List<CoinPrototype> standardCoinsForFee, required Puzzlehash changePuzzlehash, int fee = 0,}) async {
+    final spendBundle = NftWallet().createTransferSpendBundle(
       nftCoin: nftCoinInfo.toNftCoinInfo(),
       keychain: keychain,
       targetPuzzleHash: targePuzzlehash,

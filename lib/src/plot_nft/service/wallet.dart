@@ -10,11 +10,8 @@ class PlotNftWalletService extends BaseWalletService {
   SpendBundle createPoolNftSpendBundle({
     required Bytes genesisCoinId,
     required List<CoinPrototype> coins,
-    int fee = 0,
-    required PoolState initialTargetState,
+    required PoolState initialTargetState, required Puzzlehash p2SingletonDelayedPuzzlehash, required WalletKeychain keychain, int fee = 0,
     int p2SingletonDelayTime = defaultDelayTime,
-    required Puzzlehash p2SingletonDelayedPuzzlehash,
-    required WalletKeychain keychain,
     Puzzlehash? changePuzzlehash,
   }) {
     final launcherParent = coins.singleWhere((coin) => coin.id == genesisCoinId);

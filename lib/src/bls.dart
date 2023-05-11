@@ -1,4 +1,3 @@
-library bls;
 
 export './bls/ec/affine_point.dart';
 export './bls/ec/ec.dart' show EC, defaultEc, defaultEcTwist;
@@ -10,4 +9,4 @@ export './bls/field/field.dart';
 export './bls/field/field_base.dart';
 export './bls/field/field_ext.dart';
 export './bls/private_key.dart';
-export './bls/schemes.dart' show BasicSchemeMPL, AugSchemeMPL, PopSchemeMPL;
+export './bls/schemes.dart' show AugSchemeMPL, BasicSchemeMPL, PopSchemeMPL;

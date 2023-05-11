@@ -107,6 +107,21 @@ class ChiaFullNodeInterface {
     return coinRecordsResponse.coinRecords.map((record) => record.toCoin()).toList();
   }
 
+  Future<List<Coin>> getCoinsByHints(
+    List<Bytes> hints, {
+    int? startHeight,
+    int? endHeight,
+    bool includeSpentCoins = false,
+  }) async {
+    final results = <Coin>[];
+    for (final hint in hints) {
+      final result = await getCoinsByHint(hint,
+          startHeight: startHeight, endHeight: endHeight, includeSpentCoins: includeSpentCoins,);
+      results.addAll(result);
+    }
+    return results;
+  }
+
   Future<List<Coin>> getCoinsByHint(
     Bytes hint, {
     int? startHeight,
@@ -159,7 +174,7 @@ class ChiaFullNodeInterface {
     int? endHeight,
     bool includeSpentCoins = false,
   }) async {
-    final List<Coin> allCoins = [];
+    final allCoins = <Coin>[];
 
     for (final ph in puzzlehashes) {
       final coins = await getCoinsByHint(
@@ -194,7 +209,7 @@ class ChiaFullNodeInterface {
   }
 
   Future<FullCoin> getLasUnespentSingletonCoin(FullCoin parentCoin) async {
-    Coin lastCoin = parentCoin.coin;
+    var lastCoin = parentCoin.coin;
 
     while (lastCoin.spentBlockIndex != 0) {
       final children = await getCoinsByParentIds([lastCoin.id], includeSpentCoins: true);
@@ -204,7 +219,7 @@ class ChiaFullNodeInterface {
       if (children.length == 1) {
         lastCoin = children.first;
       } else {
-        print("Warning: would not be more than one children");
+        print('Warning: would not be more than one children');
         lastCoin = children.first;
       }
     }
@@ -213,8 +228,8 @@ class ChiaFullNodeInterface {
   }
 
   Future<List<FullCoin>> getAllLinageSingletonCoin(FullCoin parentCoin) async {
-    Coin lastCoin = parentCoin.coin;
-    List<Coin> allCoins = [];
+    var lastCoin = parentCoin.coin;
+    final allCoins = <Coin>[];
 
     while (lastCoin.spentBlockIndex != 0) {
       final children = await getCoinsByParentIds([lastCoin.id], includeSpentCoins: true);
@@ -224,7 +239,7 @@ class ChiaFullNodeInterface {
       if (children.length == 1) {
         lastCoin = children.first;
       } else {
-        print("Warning: would not be more than one children");
+        print('Warning: would not be more than one children');
         lastCoin = children.first;
       }
       allCoins.add(lastCoin);
@@ -470,6 +485,15 @@ class ChiaFullNodeInterface {
 
     final parentCoinSpend = await getParentSpend(coin);
     return NotificationCoin.fromParentSpend(parentCoinSpend: parentCoinSpend!, coin: coin);
+  }
+
+  Future<CoinSpend?> getParentSpend(Coin coin) async {
+    if (coin.coinbase) return null;
+    final coinSpendResponse =
+        await fullNode.getPuzzleAndSolution(coin.parentCoinInfo, coin.confirmedBlockIndex);
+    mapResponseToError(coinSpendResponse);
+
+    return coinSpendResponse.coinSpend;
   }
 
   Future<bool> checkForSpentCoins(List<CoinPrototype> coins) async {

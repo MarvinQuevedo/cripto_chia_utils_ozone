@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import '../../../chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 bool _isQuotedProgram(Program program) {
   try {
@@ -22,15 +22,15 @@ AtomType typeForAtom(Program program) {
     if (intToBytes(decodeInt(atom), 4, Endian.big) == atom) {
       return AtomType.integer;
     }
+    // ignore: empty_catches
   } catch (e) {}
 
   return AtomType.atom;
 }
 
 class Solver {
-  final Map<String, dynamic> info;
-
   Solver(this.info);
+  final Map<String, dynamic> info;
 
   dynamic operator [](String key) {
     final value = info[key];
@@ -40,14 +40,14 @@ class Solver {
   static dynamic decodeInfoValue(Solver solver, dynamic value) {
     if (value is Solver) {
       return value;
-    } else if (value is List && !(value is Bytes)) {
+    } else if (value is List && value is! Bytes) {
       return value.map((e) => decodeInfoValue(solver, e)).toList();
     }
     // special case
-    if (value == "()") {
+    if (value == '()') {
       return Program.list([]);
     }
-    final programValue = Program.parse(value);
+    final programValue = Program.parse(value as String);
 
     if (!programValue.isAtom) {
       return programValue;

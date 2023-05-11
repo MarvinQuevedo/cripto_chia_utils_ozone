@@ -4,9 +4,9 @@ import 'package:meta/meta.dart';
 @immutable
 class GetBlockRecordsResponse extends ChiaBaseResponse {
   const GetBlockRecordsResponse({
-    this.blockRecords,
     required super.success,
     required super.error,
+    this.blockRecords,
   });
   factory GetBlockRecordsResponse.fromJson(Map<String, dynamic> json) {
     final chiaBaseResponse = ChiaBaseResponse.fromJson(json);

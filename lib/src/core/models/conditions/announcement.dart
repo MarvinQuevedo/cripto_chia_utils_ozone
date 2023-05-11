@@ -1,4 +1,4 @@
-import '../../../../chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 class Announcement extends AssertPuzzleCondition {
   Announcement(

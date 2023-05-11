@@ -11,6 +11,20 @@ class WalletSet {
     required this.derivationIndex,
   });
 
+  factory WalletSet.fromMap(Map<String, dynamic> mapData) {
+    final derivationIndex = mapData['derivationIndex'] as int;
+    final hardenedMap = mapData['hardened'] as Map<String, dynamic>;
+    final unhardenedMap = mapData['unhardened'] as Map<String, dynamic>;
+    final hardened = WalletVector.fromMap(hardenedMap);
+    final unhardened = UnhardenedWalletVector.fromMap(unhardenedMap);
+
+    return WalletSet(
+      hardened: hardened,
+      unhardened: unhardened,
+      derivationIndex: derivationIndex,
+    );
+  }
+
   factory WalletSet.fromPrivateKey(
     PrivateKey masterPrivateKey,
     int derivationIndex,
@@ -68,20 +82,6 @@ class WalletSet {
         'unhardened': unhardened.toMap(),
         'derivationIndex': derivationIndex,
       };
-
-  factory WalletSet.fromMap(Map<String, dynamic> mapData) {
-    final derivationIndex = mapData['derivationIndex'] as int;
-    final hardenedMap = mapData['hardened'] as Map<String, dynamic>;
-    final unhardenedMap = mapData['unhardened'] as Map<String, dynamic>;
-    final _hardened = WalletVector.fromMap(hardenedMap);
-    final unhardened = UnhardenedWalletVector.fromMap(unhardenedMap);
-
-    return WalletSet(
-      hardened: _hardened,
-      unhardened: unhardened,
-      derivationIndex: derivationIndex,
-    );
-  }
 
   final WalletVector hardened;
   final UnhardenedWalletVector unhardened;

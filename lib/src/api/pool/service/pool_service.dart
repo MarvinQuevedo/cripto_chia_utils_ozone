@@ -12,8 +12,7 @@ abstract class PoolService {
     required Puzzlehash p2SingletonDelayedPuzzlehash,
     required SingletonWalletVector singletonWalletVector,
     required List<CoinPrototype> coins,
-    Bytes? genesisCoinId,
-    required WalletKeychain keychain,
+    required WalletKeychain keychain, Bytes? genesisCoinId,
     Puzzlehash? changePuzzlehash,
     int fee = 0,
   });

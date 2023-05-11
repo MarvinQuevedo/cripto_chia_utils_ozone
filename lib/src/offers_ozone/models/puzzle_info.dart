@@ -1,18 +1,19 @@
 class PuzzleInfo {
+  PuzzleInfo(this.info);
   final Map<String, dynamic> info;
 
-  PuzzleInfo(this.info);
-
-  String get type => info['type'];
-  PuzzleInfo? get also =>
-      info['also'] != null ? PuzzleInfo(Map<String, dynamic>.from(info['also'])) : null;
+  String get type => info['type'] as String;
+  PuzzleInfo? get also => info['also'] != null
+      ? PuzzleInfo(Map<String, dynamic>.from(info['also'] as Map<dynamic, dynamic>))
+      : null;
 
   @override
+  // ignore: hash_and_equals, avoid_equals_and_hash_code_on_mutable_classes
   bool operator ==(Object other) => other is PuzzleInfo && other.type == type && other.also == also;
 
   @override
   String toString() {
-    return "PuzzleInfo($info)";
+    return 'PuzzleInfo($info)';
   }
 
   bool checkType({required List<String> types}) {
@@ -36,5 +37,5 @@ class PuzzleInfo {
     }
   }
 
-  operator [](Object key) => info[key];
+  dynamic operator [](Object key) => info[key];
 }

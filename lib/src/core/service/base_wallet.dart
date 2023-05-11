@@ -3,13 +3,12 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/clvm/keywords.dart';
 import 'package:chia_crypto_utils/src/core/exceptions/change_puzzlehash_needed_exception.dart';
+import 'package:chia_crypto_utils/src/core/models/contidions_args.dart';
 import 'package:chia_crypto_utils/src/standard/exceptions/origin_id_not_in_coins_exception.dart';
 import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validation/duplicate_coin_exception.dart';
 import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validation/failed_signature_verification.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tuple/tuple.dart';
-
-import '../models/contidions_args.dart';
 
 class BaseWalletService {
   BlockchainNetwork get blockchainNetwork => GetIt.I.get<BlockchainNetwork>();
@@ -17,6 +16,8 @@ class BaseWalletService {
   SpendBundle createSpendBundleBase({
     required List<Payment> payments,
     required List<CoinPrototype> coinsInput,
+    required Program Function(Puzzlehash puzzlehash) makePuzzleRevealFromPuzzlehash,
+    required JacobianPoint Function(CoinSpend coinSpend) makeSignatureForCoinSpend,
     Puzzlehash? changePuzzlehash,
     int fee = 0,
     int surplus = 0,
@@ -24,9 +25,7 @@ class BaseWalletService {
     List<Bytes> coinIdsToAssert = const [],
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
     List<AssertPuzzleAnnouncementCondition> puzzleAnnouncementsToAssert = const [],
-    required Program Function(Puzzlehash puzzlehash) makePuzzleRevealFromPuzzlehash,
     Program Function(Program standardSolution)? transformStandardSolution,
-    required JacobianPoint Function(CoinSpend coinSpend) makeSignatureForCoinSpend,
     void Function(Bytes message)? useCoinMessage,
   }) {
     Program makeSolutionFromConditions(List<Condition> conditions) {
@@ -193,8 +192,9 @@ class BaseWalletService {
     return Tuple3(null, dictResult, result.item3);
   }
 
-  Map<ConditionOpcode, List<ConditionWithArgs>> conditionsByOpcode(
-      {required List<ConditionWithArgs> conditions}) {
+  Map<ConditionOpcode, List<ConditionWithArgs>> conditionsByOpcode({
+    required List<ConditionWithArgs> conditions,
+  }) {
     final dict = <ConditionOpcode, List<ConditionWithArgs>>{};
 
     for (final condition in conditions) {
@@ -206,8 +206,11 @@ class BaseWalletService {
     return dict;
   }
 
-  Tuple3<Exception?, List<ConditionWithArgs>?, BigInt> conditionsForSolution(
-      {required Program puzzleReveal, required Program solution, int maxCost = Program.cost}) {
+  Tuple3<Exception?, List<ConditionWithArgs>?, BigInt> conditionsForSolution({
+    required Program puzzleReveal,
+    required Program solution,
+    int maxCost = Program.cost,
+  }) {
     try {
       final result = puzzleReveal.run(solution);
       print(result.program.hash().toHex());
@@ -228,8 +231,8 @@ class BaseWalletService {
     try {
       print(sexp.toSource());
       final atoms = sexp.toList();
-      if (atoms.length < 1) {
-        return Tuple2(Exception("INVALID_CONDITION"), null);
+      if (atoms.isEmpty) {
+        return Tuple2(Exception('INVALID_CONDITION'), null);
       }
       final opCode = ConditionOpcode(atoms.first.atom);
       return Tuple2(
@@ -248,12 +251,12 @@ class BaseWalletService {
                 })
                 .map((e) => e.atom)
                 .toList(),
-          ));
+          ),);
     } catch (e, stackTrace) {
       print(stackTrace);
       print(e);
       print(sexp.toSource());
-      return Tuple2(Exception("INVALID_CONDITION"), null);
+      return Tuple2(Exception('INVALID_CONDITION'), null);
     }
   }
 
@@ -264,7 +267,7 @@ class BaseWalletService {
   ) {
     final results = <ConditionWithArgs>[];
     try {
-      final sexpList = sexp.toList();
+      //final sexpList = sexp.toList();
       for (final item in sexp.toList()) {
         final result = parseSexpToCondition(item);
         if (result.item1 != null) {
@@ -394,15 +397,15 @@ class BaseWalletService {
       }
     }
 
-    conditions.addAll(coinAnnouncements.map(
-      (coinAnnouncement) => CreateCoinAnnouncementCondition(coinAnnouncement),
-    ));
-    conditions.addAll(coinAnnouncementsToAssert);
-
-    conditions.addAll(puzzleAnnouncements.map(
-      (coinAnnouncement) => CreatePuzzleAnnouncementCondition(coinAnnouncement),
-    ));
-    conditions.addAll(puzzleAnnouncementsToAssert);
+    conditions
+      ..addAll(coinAnnouncements.map(
+        CreateCoinAnnouncementCondition.new,
+      ),)
+      ..addAll(coinAnnouncementsToAssert)
+      ..addAll(puzzleAnnouncements.map(
+        CreatePuzzleAnnouncementCondition.new,
+      ),)
+      ..addAll(puzzleAnnouncementsToAssert);
 
     return BaseWalletService.makeSolutionFromConditions(conditions);
   }

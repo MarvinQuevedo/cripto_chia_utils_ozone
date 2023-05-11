@@ -5,8 +5,8 @@ import 'package:meta/meta.dart';
 class LineageProof with ToBytesMixin, ToProgramMixin {
   const LineageProof({
     required this.parentCoinInfo,
-    required this.innerPuzzlehash,
     required this.amount,
+    this.innerPuzzlehash,
   });
 
   factory LineageProof.fromBytes(Bytes bytes) {
@@ -21,6 +21,16 @@ class LineageProof with ToBytesMixin, ToProgramMixin {
       parentCoinInfo: parentCoinInfo,
       innerPuzzlehash: innerPuzzlehash,
       amount: amount,
+    );
+  }
+  static LineageProof fromMap(Map<String, dynamic> map) {
+    return LineageProof(
+      parentCoinInfo:
+          map['parent_name'] == null ? null : Puzzlehash.fromHex(map['parent_name'] as String),
+      innerPuzzlehash: map['inner_puzzle_hash'] == null
+          ? null
+          : Puzzlehash.fromHex(map['inner_puzzle_hash'] as String),
+      amount: map['amount'] as int?,
     );
   }
 

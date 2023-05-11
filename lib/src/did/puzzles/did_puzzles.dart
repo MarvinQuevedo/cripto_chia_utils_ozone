@@ -15,13 +15,11 @@ Program createDidInnerpuz(
     required int numOfBackupIdsNeeded,
     required Bytes launcherId,
     Puzzlehash? recoveryListHash,
-    Program? metadata}) {
-  if (metadata == null) {
-    metadata = Program.fromBytes(Bytes.empty);
-  }
+    Program? metadata,}) {
+  metadata ??= Program.fromBytes(Bytes.empty);
 
-  Puzzlehash backupIdsHash =
-      Program.list(recoveryList.map((e) => Program.fromBytes(e)).toList()).hash();
+  var backupIdsHash =
+      Program.list(recoveryList.map(Program.fromBytes).toList()).hash();
   if (recoveryListHash != null) {
     backupIdsHash = recoveryListHash;
   }
@@ -48,9 +46,9 @@ Program createDidInnerpuz(
 ///
 /// Return DID full puzzle
 Program createDidFullpuz(Program innerpuz, Bytes launcherId) {
-  final mod_hash = SINGLETON_TOP_LAYER_MOD_V1_1_HASH;
+  final modHash = SINGLETON_TOP_LAYER_MOD_V1_1_HASH;
   final sinletonStruct = Program.cons(
-    Program.fromBytes(mod_hash),
+    Program.fromBytes(modHash),
     Program.cons(
       Program.fromBytes(launcherId),
       Program.fromBytes(LAUNCHER_PUZZLE_HASH),
@@ -71,7 +69,7 @@ Program metadataToProgram(Map<Bytes, dynamic> metadata) {
     kvList.add(Program.cons(
       Program.fromBytes(key),
       Program.fromBytes(serializeItem(value)),
-    ));
+    ),);
   });
 
   return Program.list(kvList);

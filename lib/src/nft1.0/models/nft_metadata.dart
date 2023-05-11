@@ -1,8 +1,19 @@
+import 'package:chia_crypto_utils/src/clvm.dart';
 import 'package:collection/collection.dart';
 
-import '../../clvm.dart';
-
 class NftMetadata {
+
+  NftMetadata({
+    required this.uris,
+    required this.hash,
+    required this.royaltyPh, this.metaUris = const [],
+    this.metaHash,
+    this.licenseUris = const [],
+    this.licenseHash,
+    this.editionNumber = 1,
+    this.editionTotal = 1,
+    this.royaltyPc = 5,
+  });
   final List<String> uris;
 
   final Bytes hash;
@@ -22,19 +33,6 @@ class NftMetadata {
   final int royaltyPc;
 
   final Puzzlehash royaltyPh;
-
-  NftMetadata({
-    required this.uris,
-    required this.hash,
-    this.metaUris = const [],
-    this.metaHash,
-    this.licenseUris = const [],
-    this.licenseHash,
-    this.editionNumber = 1,
-    this.editionTotal = 1,
-    this.royaltyPc = 5,
-    required this.royaltyPh,
-  });
 
   NftMetadata copyWith({
     List<String>? uris,
@@ -100,20 +98,20 @@ class NftMetadata {
     }
 
     final metaMap = <String, Program>{
-      "u": Program.list(uris.map((e) => Program.fromString(e)).toList()),
-      "h": Program.fromBytes(hash),
-      "mu": Program.list(metaUris.map((e) => Program.fromString(e)).toList()),
-      "lu": Program.list(licenseUris.map((e) => Program.fromString(e)).toList()),
-      "sn": Program.fromInt(editionNumber),
-      "st": Program.fromInt(editionTotal),
+      'u': Program.list(uris.map(Program.fromString).toList()),
+      'h': Program.fromBytes(hash),
+      'mu': Program.list(metaUris.map(Program.fromString).toList()),
+      'lu': Program.list(licenseUris.map(Program.fromString).toList()),
+      'sn': Program.fromInt(editionNumber),
+      'st': Program.fromInt(editionTotal),
     };
 
     if (metaUris.isNotEmpty && metaHash != null) {
-      metaMap["mh"] = Program.fromBytes(metaHash!);
+      metaMap['mh'] = Program.fromBytes(metaHash!);
     }
 
     if (licenseUris.isNotEmpty && licenseHash != null) {
-      metaMap["lh"] = Program.fromBytes(licenseHash!);
+      metaMap['lh'] = Program.fromBytes(licenseHash!);
     }
 
     final metaDataP = <Program>[];

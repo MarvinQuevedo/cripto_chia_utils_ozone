@@ -19,22 +19,8 @@ Puzzlehash? getTailHash(CoinSpend? parentCoinSpend) {
 }
 
 class FullCoin extends CoinPrototype {
-  final CoinSpend? parentCoinSpend;
-  late final Puzzlehash? assetId;
-  late final Program lineageProof;
-  late final Coin coin;
-  bool get isCatCoin {
-    try {
-      final _ = toCatCoin();
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
   FullCoin({
-    this.parentCoinSpend,
-    required this.coin,
+    required this.coin, this.parentCoinSpend,
   })  : assetId = getTailHash(parentCoinSpend),
         lineageProof = (parentCoinSpend?.puzzleReveal.uncurry().arguments.length ?? 0) > 2
             ? Program.list([
@@ -54,6 +40,22 @@ class FullCoin extends CoinPrototype {
           amount: coin.amount,
         );
 
+  factory FullCoin.fromCoin(Coin coin, CoinSpend parentCoinSpend) {
+    return FullCoin(parentCoinSpend: parentCoinSpend, coin: coin);
+  }
+  final CoinSpend? parentCoinSpend;
+  late final Puzzlehash? assetId;
+  late final Program lineageProof;
+  late final Coin coin;
+  bool get isCatCoin {
+    try {
+      final _ = toCatCoin();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   String toFormatedAmount(String symbol) {
     switch (type) {
       case SpendType.standard:
@@ -67,18 +69,14 @@ class FullCoin extends CoinPrototype {
   }
 
   CatCoin toCatCoin() {
-    return CatCoin(parentCoinSpend: parentCoinSpend!, coin: coin);
+    return CatCoin.fromParentSpend(parentCoinSpend: parentCoinSpend!, coin: coin);
   }
 
   @override
   String toString() =>
       'CatCoin(id: $id, parentCoinSpend: $parentCoinSpend, assetId: $assetId, lineageProof: $lineageProof)';
-
-  factory FullCoin.fromCoin(Coin coin, CoinSpend parentCoinSpend) {
-    return FullCoin(parentCoinSpend: parentCoinSpend, coin: coin);
-  }
   SpendType get type {
-    final t = this.parentCoinSpend?.type;
+    final t = parentCoinSpend?.type;
     return t ?? SpendType.standard;
   }
 

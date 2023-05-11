@@ -3,13 +3,19 @@ import 'dart:typed_data';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 class ConditionWithArgs {
-  final ConditionOpcode conditionOpcode;
-  final List<Bytes> vars;
 
   ConditionWithArgs({required this.conditionOpcode, required this.vars});
+  final ConditionOpcode conditionOpcode;
+  final List<Bytes> vars;
 }
 
 class ConditionOpcode extends Bytes {
+
+  ConditionOpcode(Bytes super.bytesList);
+
+  factory ConditionOpcode.fromInt(int value) {
+    return ConditionOpcode(intToBytes(value, 2, Endian.big));
+  }
   // AGG_SIG is ascii "1"
 
   // the conditions below require bls12-381 signatures
@@ -45,15 +51,9 @@ class ConditionOpcode extends Bytes {
   // block index
   static final ConditionOpcode ASSERT_HEIGHT_RELATIVE = ConditionOpcode.fromInt(82);
   static final ConditionOpcode ASSERT_HEIGHT_ABSOLUTE = ConditionOpcode.fromInt(83);
-
-  ConditionOpcode(Bytes bytesList) : super(bytesList);
-
-  factory ConditionOpcode.fromInt(int value) {
-    return ConditionOpcode(intToBytes(value, 2, Endian.big));
-  }
   @override
   String toString() {
-    return "ConditionOpcode(${bytesToInt(this, Endian.big)})";
+    return 'ConditionOpcode(${bytesToInt(this, Endian.big)})';
   }
 
   int toInt() => bytesToInt(this, Endian.big);
@@ -62,7 +62,7 @@ class ConditionOpcode extends Bytes {
   bool operator ==(Object other) {
     final first = other is ConditionOpcode;
     if (first) {
-      final second = other.toInt() == this.toInt();
+      final second = other.toInt() == toInt();
       return second;
     }
     return first;

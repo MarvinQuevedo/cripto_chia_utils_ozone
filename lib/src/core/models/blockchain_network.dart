@@ -1,10 +1,8 @@
 class BlockchainNetwork {
   BlockchainNetwork({
     required this.name,
-    this.unit,
+    required this.addressPrefix, required this.aggSigMeExtraData, this.unit,
     this.ticker,
-    required this.addressPrefix,
-    required this.aggSigMeExtraData,
     this.precision,
     this.fee,
     this.networkConfig,

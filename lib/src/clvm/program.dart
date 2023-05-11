@@ -611,6 +611,7 @@ class ModAndArguments {
 
   List<Program> arguments;
   Program mod;
+  Program get program => mod;
 
   Map<String, dynamic> toJson() =>
       <String, dynamic>{'mod': mod, 'arguments': arguments.map((e) => e.serializeHex()).toList()};

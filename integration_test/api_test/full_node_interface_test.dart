@@ -54,7 +54,7 @@ Future<void> main() async {
   final keychain = WalletKeychain.fromWalletSets(walletsSetList);
 
   ChiaNetworkContextWrapper().registerNetworkContext(Network.mainnet);
-  final catWalletService = Cat2WalletService();
+  final catWalletService = CatWalletService();
 
   final walletVector = keychain.unhardenedMap.values.first;
   final puzzlehash = walletVector.puzzlehash;

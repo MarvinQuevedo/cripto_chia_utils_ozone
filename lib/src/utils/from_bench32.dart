@@ -1,6 +1,7 @@
-import 'package:bech32m/bech32m.dart';
 import 'dart:convert';
-import '../../chia_crypto_utils.dart';
+
+import 'package:bech32m/bech32m.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 class SegwitValidations {
   bool isEmptyProgram(List<int> data) {
@@ -20,13 +21,13 @@ class SegwitValidations {
 class OfferSegwitDecoder extends Converter<String, Segwit> with SegwitValidations {
   @override
   Segwit convert(String input) {
-    var decoded = bech32.decode(input, input.length);
+    final decoded = bech32.decode(input, input.length);
 
     if (isEmptyProgram(decoded.data)) {
       throw InvalidProgramLength('empty');
     }
 
-    var program = _convertBits(decoded.data, 5, 8, false);
+    final program = _convertBits(decoded.data, 5, 8, false);
 
     if (isTooShortProgram(program)) {
       throw InvalidProgramLength('too short');
@@ -43,13 +44,13 @@ class OfferSegwitDecoder extends Converter<String, Segwit> with SegwitValidation
 class OfferSegwitEncoder extends Converter<Segwit, String> with SegwitValidations {
   @override
   String convert(Segwit input) {
-    var program = input.program;
+    final program = input.program;
 
     if (isTooShortProgram(program)) {
       throw InvalidProgramLength('too short');
     }
 
-    var data = _convertBits(program, 8, 5, true);
+    final data = _convertBits(program, 8, 5, true);
 
     return Bech32mEncoder().convert(
       Bech32m(input.hrp, data),
@@ -65,10 +66,10 @@ Bytes decodeFromBench32(String input) {
 List<int> _convertBits(List<int> data, int from, int to, bool pad) {
   var acc = 0;
   var bits = 0;
-  var result = <int>[];
-  var maxv = (1 << to) - 1;
+  final result = <int>[];
+  final maxv = (1 << to) - 1;
 
-  data.forEach((v) {
+  for (final v in data) {
     if (v < 0 || (v >> from) != 0) {
       throw Exception();
     }
@@ -78,7 +79,7 @@ List<int> _convertBits(List<int> data, int from, int to, bool pad) {
       bits -= to;
       result.add((acc >> bits) & maxv);
     }
-  });
+  }
 
   if (pad) {
     if (bits > 0) {

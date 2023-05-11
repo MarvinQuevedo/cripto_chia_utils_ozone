@@ -1,39 +1,38 @@
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:quiver/iterables.dart';
-
-import '../../../chia_crypto_utils.dart';
 
 class CATOuterPuzzle extends OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     if (constructor.also != null) {
       innerPuzzle = OuterPuzzleDriver.constructPuzzle(
-          constructor: constructor.also!, innerPuzzle: innerPuzzle);
+          constructor: constructor.also!, innerPuzzle: innerPuzzle,);
     }
     return CatWalletService.makeCatPuzzle(createAssetId(constructor: constructor), innerPuzzle);
   }
 
   @override
   Puzzlehash createAssetId({required PuzzleInfo constructor}) {
-    final tail = constructor.info["tail"]!;
+    final tail = constructor.info['tail'];
     if (tail is Bytes) {
       return Puzzlehash(tail);
     } else if (tail is Puzzlehash) {
       return tail;
     }
-    return Puzzlehash.fromHex(tail);
+    return Puzzlehash.fromHex(tail as String);
   }
 
   @override
   PuzzleInfo? matchPuzzle(Program puzzle) {
     final matched = CatWalletService.matchCatPuzzle(puzzle);
     if (matched != null) {
-      final Map<String, dynamic> constructorDict = {
-        "type": AssetType.CAT,
-        "tail": matched.assetId.toHexWithPrefix(),
+      final constructorDict = <String, dynamic>{
+        'type': AssetType.CAT,
+        'tail': matched.assetId.toHexWithPrefix(),
       };
       final next = matchPuzzle(matched.innerPuzzle);
       if (next != null) {
-        constructorDict["also"] = next.info;
+        constructorDict['also'] = next.info;
       }
       return PuzzleInfo(constructorDict);
     }
@@ -45,15 +44,15 @@ class CATOuterPuzzle extends OuterPuzzle {
       {required PuzzleInfo constructor,
       required Solver solver,
       required Program innerPuzzle,
-      required Program innerSolution}) {
+      required Program innerSolution,}) {
     //final Bytes tailHash = solver.info["tail"];
     final spendableCatsList = <SpendableCat>[];
 
     CoinPrototype? targetCoin;
-    final siblingsIter = (solver["siblings"] as Program).toList();
-    final siblingSpends = (solver["sibling_spends"] as Program).toList();
-    final siblingPuzzles = (solver["sibling_puzzles"] as Program).toList();
-    final siblingSolutions = (solver["sibling_solutions"] as Program).toList();
+    final siblingsIter = (solver['siblings'] as Program).toList();
+    final siblingSpends = (solver['sibling_spends'] as Program).toList();
+    final siblingPuzzles = (solver['sibling_puzzles'] as Program).toList();
+    final siblingSolutions = (solver['sibling_solutions'] as Program).toList();
     final zipped = zip([
       siblingsIter,
       siblingSpends,
@@ -61,27 +60,27 @@ class CATOuterPuzzle extends OuterPuzzle {
       siblingSolutions,
     ]);
 
-    final coinProgram = Program.fromBytes(solver["coin"]);
-    final _parentSpendProgram = Program.fromBytes(solver["parent_spend"]);
+    final coinProgram = Program.fromBytes(solver['coin'] as Bytes);
+    final parentSpendProgram = Program.fromBytes(solver['parent_spend'] as Bytes);
 
     final base = [
       coinProgram,
-      _parentSpendProgram,
+      parentSpendProgram,
       innerPuzzle,
       innerSolution,
     ];
     final workIterable = zipped.toList()..add(base);
-    workIterable.sort((a, b) => (a[0].toBytes()).compareTo(b[0].toBytes()));
-    for (var item in workIterable) {
+    workIterable.sort((a, b) => a[0].toBytes().compareTo(b[0].toBytes()));
+    for (final item in workIterable) {
       final coinProg = item[0];
       final spendProg = item[1];
-      Program puzzle = item[2];
-      Program solution = item[3];
+      var puzzle = item[2];
+      var solution = item[3];
 
       final coinBytes = coinProg.atom;
 
       final coin = CoinPrototype.fromBytes(coinBytes);
-      final Bytes solverCoin = solver["coin"];
+      final solverCoin = solver['coin'] as Bytes;
       if (coinBytes == solverCoin) {
         targetCoin = coin;
       }
@@ -97,12 +96,12 @@ class CATOuterPuzzle extends OuterPuzzle {
             constructor: constructor.also!,
             solver: solver,
             innerPuzzle: innerPuzzle,
-            innerSolution: innerSolution);
+            innerSolution: innerSolution,);
       }
       final matched = CatWalletService.matchCatPuzzle(parentSpend.puzzleReveal);
-      assert(matched != null, "Cat puzzle can be match");
+      assert(matched != null, 'Cat puzzle can be match');
       //final parentInnerPuzzle = matched!.innerPuzzle;
-      final catCoin = CatCoin(parentCoinSpend: parentSpend, coin: coin);
+      final catCoin = CatCoin.fromParentSpend(parentCoinSpend: parentSpend, coin: coin);
 
       // the [lineage_proof] is calc in the constructor of the [SpendableCat]
       final spendableCat = SpendableCat(
@@ -134,7 +133,7 @@ class CATOuterPuzzle extends OuterPuzzle {
       }
       return innerPuzzle;
     } else {
-      throw Exception("This driver is not for the specified puzzle reveal");
+      throw Exception('This driver is not for the specified puzzle reveal');
     }
   }
 

@@ -1,11 +1,26 @@
+// ignore_for_file: library_prefixes, directives_ordering
+
 import 'dart:convert';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:tuple/tuple.dart';
-import '../puzzles/did_puzzles.dart' as didPuzzles;
+import 'package:chia_crypto_utils/src/did/puzzles/did_puzzles.dart' as didPuzzles;
 
 class DidInfo extends Equatable {
+  const DidInfo({
+    required this.originCoin,
+    required this.backupsIds,
+    required this.numOfBackupIdsNeeded,
+    required this.parentInfo,
+    required this.sentRecoveryTransaction,
+    required this.metadata,
+    this.didId,
+    this.currentInner,
+    this.tempCoin,
+    this.tempPuzzlehash,
+    this.tempPubKey,
+  });
   final CoinPrototype? originCoin;
   final List<Puzzlehash> backupsIds;
   final int numOfBackupIdsNeeded;
@@ -18,49 +33,36 @@ class DidInfo extends Equatable {
   final bool sentRecoveryTransaction;
   final String metadata;
 
-  DidInfo({
-    this.didId,
-    required this.originCoin,
-    required this.backupsIds,
-    required this.numOfBackupIdsNeeded,
-    required this.parentInfo,
-    this.currentInner,
-    this.tempCoin,
-    this.tempPuzzlehash,
-    this.tempPubKey,
-    required this.sentRecoveryTransaction,
-    required this.metadata,
-  });
-
   @override
   List<Object> get props {
     return [
-      originCoin ?? "",
+      originCoin ?? '',
       backupsIds,
       numOfBackupIdsNeeded,
       parentInfo,
-      currentInner ?? "",
-      tempCoin ?? "",
-      tempPuzzlehash ?? "",
-      tempPubKey ?? "",
+      currentInner ?? '',
+      tempCoin ?? '',
+      tempPuzzlehash ?? '',
+      tempPubKey ?? '',
       sentRecoveryTransaction,
       metadata,
     ];
   }
 
-  DidInfo copyWith(
-      {Coin? originCoin,
-      List<Puzzlehash>? backupsIds,
-      int? numOfBackupIdsNeeded,
-      List<Tuple2<Puzzlehash, LineageProof?>>? parentInfo,
-      Program? currentInner,
-      Coin? tempCoin,
-      Puzzlehash? tempPuzzlehash,
-      Bytes? tempPubKey,
-      bool? sentRecoveryTransaction,
-      String? metadata,
-      Bytes? p2PuzzleHash,
-      Puzzlehash? didId}) {
+  DidInfo copyWith({
+    Coin? originCoin,
+    List<Puzzlehash>? backupsIds,
+    int? numOfBackupIdsNeeded,
+    List<Tuple2<Puzzlehash, LineageProof?>>? parentInfo,
+    Program? currentInner,
+    Coin? tempCoin,
+    Puzzlehash? tempPuzzlehash,
+    Bytes? tempPubKey,
+    bool? sentRecoveryTransaction,
+    String? metadata,
+    Bytes? p2PuzzleHash,
+    Puzzlehash? didId,
+  }) {
     return DidInfo(
       didId: didId ?? this.didId,
       originCoin: originCoin ?? this.originCoin,
@@ -94,12 +96,13 @@ class DidInfo extends Equatable {
       final lineageProof = e.item2;
       if (lineageProof != null) {
         return Tuple2(
-            e.item1,
-            LineageProof(
-              parentName: e.item2!.parentName,
-              innerPuzzleHash: innerPh,
-              amount: e.item2!.amount,
-            ));
+          e.item1,
+          LineageProof(
+            parentCoinInfo: e.item2!.parentCoinInfo,
+            innerPuzzlehash: innerPh,
+            amount: e.item2!.amount,
+          ),
+        );
       } else {
         return e;
       }
@@ -138,16 +141,17 @@ class DidInfo extends Equatable {
 
     try {
       return DidInfo(
-          originCoin: originCoin,
-          backupsIds: recoveryList,
-          numOfBackupIdsNeeded: numOfBackupIdsNeeded.toInt(),
-          parentInfo: parentInfo ?? [],
-          sentRecoveryTransaction: false,
-          currentInner: p2Puzzle,
-          tempPuzzlehash: p2Puzzle.hash(),
-          didId: launcherId,
-          tempCoin: actualCoin,
-          metadata: metadata.toSource());
+        originCoin: originCoin,
+        backupsIds: recoveryList,
+        numOfBackupIdsNeeded: numOfBackupIdsNeeded.toInt(),
+        parentInfo: parentInfo ?? [],
+        sentRecoveryTransaction: false,
+        currentInner: p2Puzzle,
+        tempPuzzlehash: p2Puzzle.hash(),
+        didId: launcherId,
+        tempCoin: actualCoin,
+        metadata: metadata.toSource(),
+      );
     } catch (e) {
       return null;
     }

@@ -4,9 +4,9 @@ import 'package:meta/meta.dart';
 @immutable
 class GetBlockRecordByHeightResponse extends ChiaBaseResponse {
   const GetBlockRecordByHeightResponse({
-    this.blockRecord,
     required super.success,
     required super.error,
+    this.blockRecord,
   });
 
   factory GetBlockRecordByHeightResponse.fromJson(Map<String, dynamic> json) {

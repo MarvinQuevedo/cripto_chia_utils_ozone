@@ -49,9 +49,8 @@ class XchService {
     required List<Coin> coins,
     required int amount,
     required String namesdaoName,
-    int fee = 0,
+    required NamesdaoApi namesdaoApi, int fee = 0,
     Puzzlehash? changePuzzlehash,
-    required NamesdaoApi namesdaoApi,
   }) async {
     final nameInfo = await namesdaoApi.getNameInfo(namesdaoName);
 

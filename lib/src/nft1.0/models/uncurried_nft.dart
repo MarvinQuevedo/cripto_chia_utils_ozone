@@ -1,4 +1,4 @@
-import '../../../chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 export '../puzzles/nft_ownership_layer/nft_ownership_layer.clvm.hex.dart';
 export '../puzzles/nft_state_layer/nft_state_layer.clvm.hex.dart';
@@ -7,6 +7,34 @@ export '../puzzles/singleton_top_layer_v1_1/singleton_top_layer_v1_1.clvm.hex.da
 /// A simple solution for uncurry NFT puzzle.
 
 class UncurriedNFT {
+
+  UncurriedNFT._({
+    required this.metaUris,
+    required this.metaHash,
+    required this.licenseUris,
+    required this.licenseHash,
+    required this.seriesNumber,
+    required this.seriesTotal,
+    required this.p2Puzzle,
+    required this.supportDid,
+    //required this.nftInnerPuzzleHash,
+    required this.transferProgram,
+    required this.nftModHash,
+    required this.nftStateLayer,
+    required this.singletonStruct,
+    required this.singletonModHash,
+    required this.singletonLauncherId,
+    required this.launcherPuzhash,
+    required this.ownerDid,
+    required this.metadataUpdaterHash,
+    required this.transferProgramCurryParams,
+    required this.royaltyPuzzlehash,
+    required this.tradePricePercentage,
+    required this.metadata,
+    required this.dataUris,
+    required this.dataHash,
+    required this.innerPuzzle,
+  });
   /// Initial the class with a full NFT puzzle, it will do a deep uncurry.
   /// This is the only place you need to change after modified the Chialisp curried parameters.
 
@@ -74,34 +102,6 @@ class UncurriedNFT {
   final Puzzlehash? royaltyPuzzlehash;
   final int? tradePricePercentage;
 
-  UncurriedNFT._({
-    required this.metaUris,
-    required this.metaHash,
-    required this.licenseUris,
-    required this.licenseHash,
-    required this.seriesNumber,
-    required this.seriesTotal,
-    required this.p2Puzzle,
-    required this.supportDid,
-    //required this.nftInnerPuzzleHash,
-    required this.transferProgram,
-    required this.nftModHash,
-    required this.nftStateLayer,
-    required this.singletonStruct,
-    required this.singletonModHash,
-    required this.singletonLauncherId,
-    required this.launcherPuzhash,
-    required this.ownerDid,
-    required this.metadataUpdaterHash,
-    required this.transferProgramCurryParams,
-    required this.royaltyPuzzlehash,
-    required this.tradePricePercentage,
-    required this.metadata,
-    required this.dataUris,
-    required this.dataHash,
-    required this.innerPuzzle,
-  });
-
   static UncurriedNFT? tryUncurry(Program puzzle) {
     try {
       return UncurriedNFT.uncurry(puzzle);
@@ -117,40 +117,40 @@ class UncurriedNFT {
     late Program singletonLauncherId;
     late Program launcherPuzzhash;
 
-    Program dataUris = Program.list([]);
-    Program dataHash = Program.fromInt(0);
-    Program metaUris = Program.list([]);
-    Program metaHash = Program.fromInt(0);
-    Program licenseUris = Program.list([]);
-    Program licenseHash = Program.fromInt(0);
-    Program seriesNumber = Program.fromInt(1);
-    Program seriesTotal = Program.fromInt(0);
+    var dataUris = Program.list([]);
+    var dataHash = Program.fromInt(0);
+    var metaUris = Program.list([]);
+    var metaHash = Program.fromInt(0);
+    var licenseUris = Program.list([]);
+    var licenseHash = Program.fromInt(0);
+    var seriesNumber = Program.fromInt(1);
+    var seriesTotal = Program.fromInt(0);
 
     final uncurried = puzzle.uncurry();
     final mod = uncurried.program;
-    final curried_args = uncurried.arguments;
+    final curriedArgs = uncurried.arguments;
     // print(mod.serializeHex());
     if (mod.hash() != SINGLETON_TOP_LAYER_MOD_V1_1_HASH) {
-      throw ArgumentError("Cannot uncurry NFT puzzle, failed on singleton top layer: Mod ${mod}");
+      throw ArgumentError('Cannot uncurry NFT puzzle, failed on singleton top layer: Mod $mod');
     }
 
     try {
-      singletonStruct = curried_args[0];
-      nftStateLayer = curried_args[1];
+      singletonStruct = curriedArgs[0];
+      nftStateLayer = curriedArgs[1];
 
       sinletonModHash = singletonStruct.first();
       singletonLauncherId = singletonStruct.rest().first();
       launcherPuzzhash = singletonStruct.rest().rest();
     } catch (e) {
-      throw ArgumentError("Cannot uncurry singleton top layer: Args ${curried_args}");
+      throw ArgumentError('Cannot uncurry singleton top layer: Args $curriedArgs');
     }
 
-    final uncurred = curried_args[1].uncurry();
+    final uncurred = curriedArgs[1].uncurry();
     final nftMod = uncurred.program;
     final nftArgs = uncurred.arguments;
 
     if (nftMod.toSource() != nftStateLayerProgram.toSource()) {
-      throw ArgumentError("Cannot uncurry NFT puzzle, failed on NFT state layer: Mod ${mod}");
+      throw ArgumentError('Cannot uncurry NFT puzzle, failed on NFT state layer: Mod $mod');
     }
     try {
       final nftModHash = nftArgs[0];
@@ -159,7 +159,7 @@ class UncurriedNFT {
       final innerPuzzle = nftArgs[3];
       final metadataList = metadata.toList();
 
-      for (var kvPair in metadataList) {
+      for (final kvPair in metadataList) {
         if (bytesEqual(kvPair.first().atom, 'u'.toBytes())) {
           dataUris = kvPair.rest();
         }
@@ -198,7 +198,7 @@ class UncurriedNFT {
       final mod = innerPuzzleUncurried.program;
       final olArgs = innerPuzzleUncurried.arguments;
 
-      bool supportsDid = false;
+      var supportsDid = false;
 
       if (mod.toSource() == nftOwnershipLayer.toSource()) {
         supportsDid = true;
@@ -252,13 +252,13 @@ class UncurriedNFT {
       );
     } catch (e) {
       print(e);
-      throw Exception("Cannot uncurry NFT state layer: Args ${curried_args}");
+      throw Exception('Cannot uncurry NFT state layer: Args $curriedArgs');
     }
   }
 
   // get_innermost_solution
   Program getInnermostSolution(Program solution) {
-    final stateLayerInnerSolution = solution.filterAt("rrff");
+    final stateLayerInnerSolution = solution.filterAt('rrff');
     if (supportDid) {
       return stateLayerInnerSolution.first();
     } else {

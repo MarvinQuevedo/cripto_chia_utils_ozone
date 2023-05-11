@@ -21,18 +21,18 @@ final ZDICT = [
 final LATEST_VERSION = ZDICT.length;
 
 class CompressionVersionError {
-  late final String message;
   CompressionVersionError(int versionNumber) {
     message =
-        "The data is compressed with version ${versionNumber} and cannot be parsed. Update software and try again.";
+        'The data is compressed with version $versionNumber and cannot be parsed. Update software and try again.';
   }
+  late final String message;
 }
 
 Bytes zDictForVersion(int version) {
-  Bytes summedDict = Bytes.empty;
+  var summedDict = Bytes.empty;
   final subList = ZDICT.sublist(0, version);
 
-  for (var item in subList) {
+  for (final item in subList) {
     summedDict += item;
   }
   return summedDict;
@@ -66,16 +66,14 @@ Bytes decompressObjectWithPuzzles(Bytes compressedObjectBlob) {
   final zdict = zDictForVersion(version);
 
   final objectBytes = decompressWithZdict(
-      blobIterator.extractBytesAndAdvance(compressedObjectBlob.length - 2), zdict);
+      blobIterator.extractBytesAndAdvance(compressedObjectBlob.length - 2), zdict,);
   return objectBytes;
 }
 
 int lowestBestVersion(List<Bytes> puzzleList, {int? maxVersion}) {
-  if (maxVersion == null) {
-    maxVersion = LATEST_VERSION;
-  }
-  int highestVersion = 1;
-  for (var mod in puzzleList) {
+  maxVersion ??= LATEST_VERSION;
+  var highestVersion = 1;
+  for (final mod in puzzleList) {
     for (var v = 0; v < maxVersion; v++) {
       final version = v + 1;
       final dict = ZDICT[v];

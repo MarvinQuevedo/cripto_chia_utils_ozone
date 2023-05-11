@@ -1,4 +1,4 @@
-import '../../../chia_crypto_utils.dart';
+/* import '../../../chia_crypto_utils.dart';
 
 class LineageProof {
   final Puzzlehash? parentName;
@@ -11,7 +11,7 @@ class LineageProof {
     required this.parentName,
     this.innerPuzzleHash,
     required this.amount,
-  });
+  });/*  */
 
   Program toProgram() {
     List<Program> list = <Program>[];
@@ -42,3 +42,4 @@ class LineageProof {
 
   bool isNone() => parentName == null && innerPuzzleHash == null && amount == null;
 }
+ */

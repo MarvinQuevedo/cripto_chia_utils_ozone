@@ -3,13 +3,7 @@ import 'package:compute/compute.dart';
 
 class XchToBtcMakerOfferFile implements MakerCrossChainOfferFile {
   XchToBtcMakerOfferFile({
-    this.initializationCoinId,
-    required this.offeredAmount,
-    required this.requestedAmount,
-    required this.messageAddress,
-    required this.validityTime,
-    required this.publicKey,
-    required this.lightningPaymentRequest,
+    required this.offeredAmount, required this.requestedAmount, required this.messageAddress, required this.validityTime, required this.publicKey, required this.lightningPaymentRequest, this.initializationCoinId,
   });
 
   factory XchToBtcMakerOfferFile._fromSerializedOfferFileTask(String serializedOfferFile) {

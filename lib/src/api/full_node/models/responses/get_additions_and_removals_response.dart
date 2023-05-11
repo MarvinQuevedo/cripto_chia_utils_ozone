@@ -4,10 +4,10 @@ import 'package:meta/meta.dart';
 @immutable
 class GetAdditionsAndRemovalsResponse extends ChiaBaseResponse {
   const GetAdditionsAndRemovalsResponse({
-    this.additions,
-    this.removals,
     required super.success,
     required super.error,
+    this.additions,
+    this.removals,
   });
 
   factory GetAdditionsAndRemovalsResponse.fromJson(Map<String, dynamic> json) {

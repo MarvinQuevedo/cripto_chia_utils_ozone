@@ -1,32 +1,28 @@
+// ignore_for_file: library_prefixes
+
 import 'dart:convert';
 
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/core/service/conditions_utils.dart';
+import 'package:chia_crypto_utils/src/did/puzzles/did_puzzles.dart' as didPuzzles;
 import 'package:tuple/tuple.dart';
-
-import '../../bls.dart';
-import '../../clvm.dart';
-import '../../core/index.dart';
-import '../../core/service/conditions_utils.dart';
-import '../../nft1.0/index.dart';
-import '../../singleton/index.dart';
-import '../../standard/index.dart';
-import '../../utils/key_derivation.dart';
-import '../models/did_info.dart';
-import '../puzzles/did_puzzles.dart' as didPuzzles;
 
 class DidWallet extends BaseWalletService {
   final StandardWalletService standardWalletService = StandardWalletService();
 
-  Future<Tuple2<SpendBundle, DidInfo>?> _generateNewDecentralisedId(
-      {int amount = 1,
-      int fee = 0,
-      required List<CoinPrototype> coins,
-      required WalletKeychain keychain,
-      required Puzzlehash changePuzzlehash,
-      required DidInfo didInfo}) async {
+  Future<Tuple2<SpendBundle, DidInfo>?> _generateNewDecentralisedId({
+    required List<CoinPrototype> coins,
+    required WalletKeychain keychain,
+    required Puzzlehash changePuzzlehash,
+    required DidInfo didInfoParam,
+    int amount = 1,
+    int fee = 0,
+  }) async {
     // divide coins into origin and standard coins for fee
     final origin = coins.first;
+    var didInfo = didInfoParam;
 
-    Program genesisLauncherPuz = LAUNCHER_PUZZLE;
+    final genesisLauncherPuz = LAUNCHER_PUZZLE;
 
     final launcherCoin = CoinPrototype(
       parentCoinInfo: origin.id,
@@ -36,23 +32,23 @@ class DidWallet extends BaseWalletService {
     final walletVector = keychain.getWalletVector(didInfo.p2PuzzleHash!);
     final p2Puzzle = getPuzzleFromPk(walletVector!.childPublicKey);
 
-    Program didInner = await getNewDidInnerPuz(
+    final didInner = getNewDidInnerPuz(
       coinName: launcherCoin.id,
       didInfo: didInfo,
       keychain: keychain,
       p2Puzzle: p2Puzzle,
     );
-    var didInnerHash = didInner.hash();
+    final didInnerHash = didInner.hash();
 
-    Program didFullPuz = NftWalletService.createFullpuzzle(
+    final didFullPuz = NftWalletService.createFullpuzzle(
       didInner,
       launcherCoin.id,
     );
 
-    var didPuzzleHash = didFullPuz.hash();
+    final didPuzzleHash = didFullPuz.hash();
 
-    Set<AssertCoinAnnouncementCondition> announcementSet = Set();
-    var announcementMessage = Program.list([
+    final announcementSet = <AssertCoinAnnouncementCondition>{};
+    final announcementMessage = Program.list([
       Program.fromBytes(didPuzzleHash),
       Program.fromInt(amount),
       Program.list([]),
@@ -79,31 +75,31 @@ class DidWallet extends BaseWalletService {
       coinAnnouncementsToAssert: announcementSet.toList(),
     );
 
-    Program genesisLauncherSolution = Program.list([
+    final genesisLauncherSolution = Program.list([
       Program.fromBytes(didPuzzleHash),
       Program.fromInt(amount),
       Program.list([]),
     ]);
 
-    CoinSpend launcherCs = CoinSpend(
+    final launcherCs = CoinSpend(
       coin: launcherCoin,
       puzzleReveal: genesisLauncherPuz,
       solution: genesisLauncherSolution,
     );
-    SpendBundle launcherSb = SpendBundle(coinSpends: [launcherCs]);
-    CoinPrototype eveCoin = CoinPrototype(
+    final launcherSb = SpendBundle(coinSpends: [launcherCs]);
+    final eveCoin = CoinPrototype(
       parentCoinInfo: launcherCoin.id,
       puzzlehash: didPuzzleHash,
       amount: amount,
     );
-    LineageProof futureParent = LineageProof(
-      parentName: Puzzlehash(eveCoin.parentCoinInfo),
-      innerPuzzleHash: didInnerHash,
+    final futureParent = LineageProof(
+      parentCoinInfo: Puzzlehash(eveCoin.parentCoinInfo),
+      innerPuzzlehash: didInnerHash,
       amount: eveCoin.amount,
     );
-    LineageProof eveParent = LineageProof(
-      parentName: Puzzlehash(launcherCoin.parentCoinInfo),
-      innerPuzzleHash: launcherCoin.puzzlehash,
+    final eveParent = LineageProof(
+      parentCoinInfo: Puzzlehash(launcherCoin.parentCoinInfo),
+      innerPuzzlehash: launcherCoin.puzzlehash,
       amount: launcherCoin.amount,
     );
     didInfo = addParent(eveCoin.parentCoinInfo, eveParent, didInfo: didInfo);
@@ -119,7 +115,7 @@ class DidWallet extends BaseWalletService {
       metadata: didInfo.metadata,
     );
 
-    SpendBundle eveSpend = await generateEveSpend(
+    final eveSpend = await generateEveSpend(
       coin: eveCoin,
       fullPuzzle: didFullPuz,
       innerPuz: didInner,
@@ -127,7 +123,7 @@ class DidWallet extends BaseWalletService {
       keychain: keychain,
     );
 
-    SpendBundle fullSpend = SpendBundle.aggregate([
+    final fullSpend = SpendBundle.aggregate([
       txRecord,
       eveSpend,
       launcherSb,
@@ -144,34 +140,39 @@ class DidWallet extends BaseWalletService {
 
   DidInfo addParent(Bytes name, LineageProof? parent, {required DidInfo didInfo}) {
     print('Adding parent $name: $parent');
-    List<Tuple2<Puzzlehash, LineageProof?>> currentList = didInfo.parentInfo;
-    currentList.add(Tuple2(Puzzlehash(name), parent));
 
-    return didInfo.copyWith(parentInfo: currentList);
+    return didInfo.copyWith(
+      parentInfo: didInfo.parentInfo
+        ..add(
+          Tuple2(
+            Puzzlehash(name),
+            parent,
+          ),
+        ),
+    );
   }
 
   Future<Tuple2<SpendBundle, DidInfo>?> createNewDid({
+    required List<CoinPrototype> coins,
+    required WalletKeychain keychain,
+    required Puzzlehash changePuzzlehash,
+    required Puzzlehash p2Puzlehash,
     int amount = 1,
     List<Puzzlehash> backupsIds = const [],
     int? numOfBackupIdsNeeded,
     Map<String, String> metadata = const {},
     int fee = 0,
-    required List<CoinPrototype> coins,
-    required WalletKeychain keychain,
-    required Puzzlehash changePuzzlehash,
-    required Puzzlehash p2Puzlehash,
   }) async {
-    if (numOfBackupIdsNeeded == null) {
-      numOfBackupIdsNeeded = backupsIds.length;
-    }
+    numOfBackupIdsNeeded ??= backupsIds.length;
     if (numOfBackupIdsNeeded > backupsIds.length) {
-      throw Exception("Cannot require more IDs than are known.");
+      throw Exception('Cannot require more IDs than are known.');
     }
+    final empytParentInfo = <Tuple2<Puzzlehash, LineageProof?>>[];
     final didInfo = DidInfo(
       originCoin: null,
       backupsIds: backupsIds,
       numOfBackupIdsNeeded: numOfBackupIdsNeeded,
-      parentInfo: [],
+      parentInfo: empytParentInfo,
       sentRecoveryTransaction: false,
       metadata: json.encode(metadata),
       tempPuzzlehash: p2Puzlehash,
@@ -182,13 +183,13 @@ class DidWallet extends BaseWalletService {
       coins: coins,
       keychain: keychain,
       changePuzzlehash: changePuzzlehash,
-      didInfo: didInfo,
+      didInfoParam: didInfo,
       fee: fee,
     );
   }
 
   Map<Bytes, dynamic> parseMetadata(Map<String, dynamic> metadata) {
-    Map<Bytes, dynamic> metadataMap = {};
+    final metadataMap = <Bytes, dynamic>{};
     metadata.forEach((key, value) {
       metadataMap[Bytes.fromHex(key)] = value;
     });
@@ -197,18 +198,22 @@ class DidWallet extends BaseWalletService {
 
   Program getNewDidInnerPuz({
     required DidInfo didInfo,
-    Bytes? coinName,
     required Program p2Puzzle,
     required WalletKeychain keychain,
+    Bytes? coinName,
   }) {
-    late Program innerpuz;
+    Program innerpuz;
     if (didInfo.originCoin != null) {
       innerpuz = didPuzzles.createDidInnerpuz(
         p2Puzzle: p2Puzzle,
         recoveryList: didInfo.backupsIds,
         numOfBackupIdsNeeded: didInfo.numOfBackupIdsNeeded,
         launcherId: didInfo.originCoin!.id,
-        metadata: didPuzzles.metadataToProgram(parseMetadata(json.decode(didInfo.metadata))),
+        metadata: didPuzzles.metadataToProgram(
+          parseMetadata(
+            Map<String, dynamic>.from(json.decode(didInfo.metadata) as Map<dynamic, dynamic>),
+          ),
+        ),
       );
     } else if (coinName != null) {
       innerpuz = didPuzzles.createDidInnerpuz(
@@ -216,33 +221,35 @@ class DidWallet extends BaseWalletService {
         recoveryList: didInfo.backupsIds,
         numOfBackupIdsNeeded: didInfo.numOfBackupIdsNeeded,
         launcherId: coinName,
-        metadata: didPuzzles.metadataToProgram(parseMetadata(json.decode(didInfo.metadata))),
+        metadata: didPuzzles.metadataToProgram(
+          parseMetadata(
+            Map<String, dynamic>.from(json.decode(didInfo.metadata) as Map<dynamic, dynamic>),
+          ),
+        ),
       );
     } else {
-      throw Exception("must have origin coin");
+      throw Exception('must have origin coin');
     }
     return innerpuz;
   }
 
   Future<SpendBundle> createMessageSpend(
     DidInfo didInfo, {
+    required WalletKeychain keychain,
     Set<Bytes>? coinAnnouncements,
     Set<Bytes>? puzzleAnnouncements,
     Program? newInnerPuzzle,
-    required WalletKeychain keychain,
   }) async {
     if (didInfo.currentInner == null || didInfo.originCoin == null) {
-      throw Exception("didInfo.currentInner == null || didInfo.originCoin == null");
+      throw Exception('didInfo.currentInner == null || didInfo.originCoin == null');
     }
 
     final coin = didInfo.tempCoin!;
     final innerpuz = didInfo.currentInner!;
-    if (newInnerPuzzle == null) {
-      newInnerPuzzle = innerpuz;
-    }
+    newInnerPuzzle ??= innerpuz;
     final uncurried = didPuzzles.uncurryInnerpuz(newInnerPuzzle);
     if (uncurried == null) {
-      throw Exception("uncurried == null");
+      throw Exception('uncurried == null');
     }
     final p2Puzzle = uncurried.item1;
 
@@ -265,7 +272,7 @@ class DidWallet extends BaseWalletService {
 
     final parentInfo = getParentForCoin(coin, didInfo: didInfo);
     if (parentInfo == null) {
-      throw Exception("parentInfo == null");
+      throw Exception('parentInfo == null');
     }
 
     final fullsol = Program.list(
@@ -290,7 +297,7 @@ class DidWallet extends BaseWalletService {
 
   LineageProof? getParentForCoin(Coin coin, {required DidInfo didInfo}) {
     LineageProof? parentInfo;
-    for (var item in didInfo.parentInfo) {
+    for (final item in didInfo.parentInfo) {
       final name = item.item1;
       final ccParent = item.item2;
       if (name == coin.parentCoinInfo) {
@@ -304,7 +311,7 @@ class DidWallet extends BaseWalletService {
   SpendBundle sign(
       {required SpendBundle unsignedSpendBundle,
       required WalletKeychain keychain,
-      required DidInfo didInfo}) {
+      required DidInfo didInfo,}) {
     final signatures = <JacobianPoint>[];
     for (final coinSpend in unsignedSpendBundle.coinSpends) {
       try {
@@ -330,7 +337,7 @@ class DidWallet extends BaseWalletService {
             final pairs = pkmPairsForConditionsDict(
               conditionsDict: conditionsResult.item2!,
               additionalData: Bytes.fromHex(
-                this.blockchainNetwork.aggSigMeExtraData,
+                blockchainNetwork.aggSigMeExtraData,
               ),
               coinName: coinSpend.coin.id,
             );
@@ -344,9 +351,9 @@ class DidWallet extends BaseWalletService {
                   signatures.add(signature);
                 } else {
                   final publickKey = PrivateKey.fromBytes(pk).getG1();
-                  print("publickKey: ${publickKey.toHex()}");
+                  print('publickKey: ${publickKey.toHex()}');
                   throw Exception(
-                    "This spend bundle cannot be signed by the DID wallet ${pk.toHex()}}",
+                    'This spend bundle cannot be signed by the DID wallet ${pk.toHex()}}',
                   );
                 }
               } on Exception catch (e, stackTrace) {
@@ -369,21 +376,23 @@ class DidWallet extends BaseWalletService {
     return unsignedSpendBundle.addSignature(aggregatedSignature);
   }
 
-  Future<dynamic> generateEveSpend({
+  Future<SpendBundle> generateEveSpend({
     required CoinPrototype coin,
     required Program fullPuzzle,
     required Program innerPuz,
     required DidInfo didInfo,
     required WalletKeychain keychain,
   }) async {
-    assert(didInfo.originCoin != null);
-    var uncurried = didPuzzles.uncurryInnerpuz(innerPuz);
-    if (uncurried == null) {
-      throw Exception("uncurried == null");
+    if (didInfo.originCoin == null) {
+      throw Exception('didInfo.originCoin == null');
     }
-    var p2Puzzle = uncurried.item1;
+    final uncurried = didPuzzles.uncurryInnerpuz(innerPuz);
+    if (uncurried == null) {
+      throw Exception('uncurried == null');
+    }
+    final p2Puzzle = uncurried.item1;
     // innerPuz solution is (mode p2Solution)
-    var p2Solution = BaseWalletService.makeSolution(
+    final p2Solution = BaseWalletService.makeSolution(
       primaries: [
         Payment(
           coin.amount,
@@ -392,9 +401,9 @@ class DidWallet extends BaseWalletService {
         )
       ],
     );
-    var innerSol = Program.list([Program.fromInt(1), p2Solution]);
+    final innerSol = Program.list([Program.fromInt(1), p2Solution]);
     // full solution is (lineageProof myAmount innerSolution)
-    var fullSol = Program.list([
+    final fullSol = Program.list([
       Program.list([
         Program.fromBytes(didInfo.originCoin!.parentCoinInfo),
         Program.fromInt(didInfo.originCoin!.amount),
@@ -402,14 +411,14 @@ class DidWallet extends BaseWalletService {
       Program.fromInt(coin.amount),
       innerSol,
     ]);
-    var listOfCoinSpends = [
+    final listOfCoinSpends = [
       CoinSpend(coin: coin, puzzleReveal: fullPuzzle, solution: fullSol),
     ];
-    var unsignedSpendBundle = SpendBundle(
+    final unsignedSpendBundle = SpendBundle(
       coinSpends: listOfCoinSpends,
     );
 
-    return await sign(
+    return sign(
       unsignedSpendBundle: unsignedSpendBundle,
       keychain: keychain,
       didInfo: didInfo,

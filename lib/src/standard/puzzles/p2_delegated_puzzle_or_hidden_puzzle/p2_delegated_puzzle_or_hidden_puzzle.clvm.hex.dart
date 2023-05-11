@@ -8,7 +8,7 @@ final p2DelegatedPuzzleOrHiddenPuzzleProgram = Program.deserializeHex(
 );
 
 Program solution_for_delegated_puzzle(
-    {required Program delegated_puzzle, required Program solution}) {
+    {required Program delegated_puzzle, required Program solution,}) {
   return Program.list([Program.list([]), delegated_puzzle, solution]);
 }
 

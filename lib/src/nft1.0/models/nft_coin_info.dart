@@ -1,6 +1,21 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 class NFTCoinInfo extends Coin {
+
+  NFTCoinInfo({
+    required this.nftId,
+    required this.coin,
+    required this.fullPuzzle, required this.mintHeight, required this.latestHeight, required this.minterDid, required this.ownerDid, this.lineageProof,
+    this.pendingTransaction = false,
+    super.confirmedBlockIndex = 0,
+    super.spentBlockIndex = 0,
+  }) : super(
+          amount: coin.amount,
+          puzzlehash: coin.puzzlehash,
+          parentCoinInfo: coin.parentCoinInfo,
+          coinbase: false,
+          timestamp: 0,
+        );
   /// The launcher coin ID of the NFT
   final Bytes nftId;
   final CoinPrototype coin;
@@ -13,28 +28,6 @@ class NFTCoinInfo extends Coin {
   final bool pendingTransaction;
 
   Bytes get launcherId => nftId;
-
-  NFTCoinInfo({
-    required this.nftId,
-    required this.coin,
-    this.lineageProof,
-    required this.fullPuzzle,
-    required this.mintHeight,
-    required this.latestHeight,
-    this.pendingTransaction = false,
-    required this.minterDid,
-    required this.ownerDid,
-    int confirmedBlockIndex = 0,
-    int spentBlockIndex = 0,
-  }) : super(
-          amount: coin.amount,
-          puzzlehash: coin.puzzlehash,
-          parentCoinInfo: coin.parentCoinInfo,
-          coinbase: false,
-          confirmedBlockIndex: confirmedBlockIndex,
-          spentBlockIndex: spentBlockIndex,
-          timestamp: 0,
-        );
 
   @override
   String toString() {
@@ -68,6 +61,13 @@ class NFTCoinInfo extends Coin {
 }
 
 class FullNFTCoinInfo extends FullCoin {
+
+  FullNFTCoinInfo({
+    required this.nftId,
+    required super.coin,
+    required this.fullPuzzle, required this.mintHeight, required this.latestHeight, required this.minterDid, required this.ownerDid, required super.parentCoinSpend, this.nftLineageProof,
+    this.pendingTransaction = false,
+  });
   /// The launcher coin ID of the NFT
   final Bytes nftId;
 
@@ -80,24 +80,6 @@ class FullNFTCoinInfo extends FullCoin {
   final bool pendingTransaction;
 
   Bytes get launcherId => nftId;
-
-  FullNFTCoinInfo({
-    required this.nftId,
-    required Coin coin,
-    this.nftLineageProof,
-    required this.fullPuzzle,
-    required this.mintHeight,
-    required this.latestHeight,
-    this.pendingTransaction = false,
-    required this.minterDid,
-    required this.ownerDid,
-    int confirmedBlockIndex = 0,
-    int spentBlockIndex = 0,
-    required CoinSpend? parentCoinSpend,
-  }) : super(
-          coin: coin,
-          parentCoinSpend: parentCoinSpend,
-        );
 
   @override
   String toString() {
@@ -146,7 +128,7 @@ class FullNFTCoinInfo extends FullCoin {
     return FullNFTCoinInfo(
       nftId: nftId ?? this.nftId,
       coin: coin ?? this.coin,
-      nftLineageProof: lineageProof ?? this.nftLineageProof,
+      nftLineageProof: lineageProof ?? nftLineageProof,
       fullPuzzle: fullPuzzle ?? this.fullPuzzle,
       mintHeight: mintHeight ?? this.mintHeight,
       latestHeight: latestHeight ?? this.latestHeight,

@@ -1,15 +1,14 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/api/nft1/nft_service.dart';
 import 'package:tuple/tuple.dart';
 
-import '../nft1/nft_service.dart';
-
 class OffersService {
-  final ChiaFullNodeInterface fullNode;
-  final WalletKeychain keychain;
   OffersService({
     required this.fullNode,
     required this.keychain,
   });
+  final ChiaFullNodeInterface fullNode;
+  final WalletKeychain keychain;
 
   StandardWalletService get walletService => StandardWalletService();
 
@@ -42,7 +41,7 @@ class OffersService {
         fee: fee,
         targetPuzzleHash: targetPuzzleHash,
         changePuzzlehash: changePuzzlehash,
-        offer: offer);
+        offer: offer,);
 
     final preparedData = await _prepareOfferDataForTrade(
         offerredAmounts: tradeManager.convertRequestedToOffered(
@@ -52,7 +51,7 @@ class OffersService {
         royaltyPercentage: analizedOffer.royaltyPer,
         royaltyAmount: analizedOffer.royaltyAmount,
         requesteAmounts: TradeManagerService().convertOfferedToRequested(analizedOffer.offered),
-        coinsToUse: coinsToUse);
+        coinsToUse: coinsToUse,);
 
     final completedOffer = await tradeManager.responseOffer(
       groupedCoins: preparedData.selectedCoins,
@@ -75,12 +74,8 @@ class OffersService {
 
   Future<Offer> createOffer({
     required Puzzlehash targetPuzzleHash,
-    int fee = 0,
-    required List<FullCoin> coins,
-    required Map<OfferAssetData?, List<int>> requesteAmounts,
-    required Map<OfferAssetData?, int> offerredAmounts,
+    required List<FullCoin> coins, required Map<OfferAssetData?, List<int>> requesteAmounts, required Map<OfferAssetData?, int> offerredAmounts, required Puzzlehash changePuzzlehash, int fee = 0,
     bool isOld = false,
-    required Puzzlehash changePuzzlehash,
   }) async {
     final preparedData = await _prepareOfferDataForTrade(
       offerredAmounts: offerredAmounts,
@@ -125,13 +120,12 @@ class OffersService {
     required Map<OfferAssetData?, int> offerredAmounts,
     required List<FullCoin> coinsToUse,
     required int fee,
-    int? royaltyPercentage,
+    required Map<OfferAssetData?, List<int>> requesteAmounts, int? royaltyPercentage,
     int? royaltyAmount,
-    required Map<OfferAssetData?, List<int>> requesteAmounts,
   }) async {
-    Map<OfferAssetData?, List<FullCoin>> coins = {};
-    Map<OfferAssetData?, FullCoin> nftCoins = {};
-    List<Bytes> unknowLauncherIds = [];
+    final coins = <OfferAssetData?, List<FullCoin>>{};
+    final nftCoins = <OfferAssetData?, FullCoin>{};
+    final unknowLauncherIds = <Bytes>[];
 
     for (final asset in requesteAmounts.keys) {
       final type = asset?.type;
@@ -154,7 +148,7 @@ class OffersService {
         final xchCoins = _filterCoins(coinsToUse, asset);
         final selectedCoins = _getCoinsForAmount(
           xchCoins,
-          (value.abs() + fee.abs() + (royaltyAmount?.abs() ?? 0)),
+          value.abs() + fee.abs() + (royaltyAmount?.abs() ?? 0),
         );
 
         coins[asset] = selectedCoins.map((e) {
@@ -168,7 +162,7 @@ class OffersService {
         }).toList();
 
         if (coins[asset]!.isEmpty) {
-          throw Exception("No coins found for Offer this NFT");
+          throw Exception('No coins found for Offer this NFT');
         }
         nftCoins[asset] = nftCoinsFounded.first;
       } else if (type == SpendType.cat2) {
@@ -210,7 +204,7 @@ class OffersService {
     }
 
     return _PreparedOfferDataForTradeService(
-        selectedCoins: coins, keychain: keychain, nftCoins: nftCoins);
+        selectedCoins: coins, keychain: keychain, nftCoins: nftCoins,);
   }
 
   List<FullCoin> _filterCoins(List<FullCoin> coins, OfferAssetData? asset) {
@@ -246,13 +240,13 @@ class OffersService {
 
   List<FullCoin> _getCoinsForAmount(List<FullCoin> coins, int amount, {int minCoinsCount = 1}) {
     coins.sort((a, b) => a.amount.compareTo(b.amount));
-    var coinsStandDefinitive = <FullCoin>[];
+    final coinsStandDefinitive = <FullCoin>[];
     var amountSum = 0;
 
     for (var i = 0; i < coins.length; i++) {
       amountSum += coins[i].amount;
       coinsStandDefinitive.add(coins[i]);
-      if (amountSum >= amount && coinsStandDefinitive.length >= (minCoinsCount)) {
+      if (amountSum >= amount && coinsStandDefinitive.length >= minCoinsCount) {
         break;
       }
     }
@@ -261,12 +255,12 @@ class OffersService {
 }
 
 class _PreparedOfferDataForTradeService {
+
+  const _PreparedOfferDataForTradeService(
+      {required this.selectedCoins, required this.keychain, required this.nftCoins,});
   final Map<OfferAssetData?, List<FullCoin>> selectedCoins;
   final Map<OfferAssetData?, FullCoin> nftCoins;
   final WalletKeychain keychain;
-
-  const _PreparedOfferDataForTradeService(
-      {required this.selectedCoins, required this.keychain, required this.nftCoins});
   List<FullCoin> get selectedCoinsList {
     return selectedCoins.values.expand((element) => element).toList();
   }

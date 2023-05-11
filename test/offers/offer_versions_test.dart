@@ -21,26 +21,26 @@ Future<void> main() async {
 
   final zDict = zDictForVersion(LATEST_VERSION);
 
-  final ZERO_32 = Bytes(List.generate(32, (_) => 0));
-  final ONE_32 = Bytes(List.generate(32, (_) => 17));
-  final COIN = CoinPrototype(parentCoinInfo: ZERO_32, puzzlehash: Puzzlehash(ZERO_32), amount: 0);
+  final zero32 = Bytes(List.generate(32, (_) => 0));
+  final one32 = Bytes(List.generate(32, (_) => 17));
+  final COIN = CoinPrototype(parentCoinInfo: zero32, puzzlehash: Puzzlehash(zero32), amount: 0);
   final SOLUTION = Program.list([]);
 
   void testParseOfferFile() {
     final offer = Offer.fromBench32(testOffer1);
     final offer2 = Offer.fromBench32(testOffer2);
 
-    print("offer ID = ${offer.id}   ");
-    print("Is old = ${offer.old}");
+    print('offer ID = ${offer.id}   ');
+    print('Is old = ${offer.old}');
     offer.toSpendBundle().coinSpends.forEach((element) {});
 
-    print("----------");
+    print('----------');
 
-    print("offer V2 ID = ${offer2.id}   ");
-    print("Is old = ${offer2.old}");
+    print('offer V2 ID = ${offer2.id}   ');
+    print('Is old = ${offer2.old}');
     offer2.toSpendBundle().coinSpends.forEach((element) {});
 
-    print("----------");
+    print('----------');
   }
 
   test('Parse Offer', () async {

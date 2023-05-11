@@ -59,7 +59,7 @@ Future<void> main() async {
   });
 
   test('Get  third full coin with launcher ID', () async {
-    final nftId = NftAddress("nft1aqpjrv8vyyq0djhp2s0nzks4qyvh2tf6kq8r20d0plsujdj08waqe5glhc");
+    const nftId = NftAddress('nft1aqpjrv8vyyq0djhp2s0nzks4qyvh2tf6kq8r20d0plsujdj08waqe5glhc');
     final thirdFullCoin = await nftService.getNFTFullCoinByLauncherId(nftId.toPuzzlehash());
 
     expect(thirdFullCoin, isNotNull);
@@ -80,12 +80,12 @@ Future<void> main() async {
 }
 
 class FullNodeUtilsWindows {
+
+  FullNodeUtilsWindows(this.network, {this.url = defaultUrl});
   static const String defaultUrl = 'https://localhost:8555';
 
   final String url;
   final Network network;
-
-  FullNodeUtilsWindows(this.network, {this.url = defaultUrl});
 
   Bytes get certBytes {
     return _getAuthFileBytes('$sslPath\\private_full_node.crt');

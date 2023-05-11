@@ -20,11 +20,14 @@ class CoinPrototypeWithParentSpend with CoinPrototypeDecoratorMixin implements C
   final CoinSpend? parentSpend;
 }
 
-class CoinWithParentSpend with CoinPrototypeDecoratorMixin implements Coin {
+class CoinWithParentSpend extends FullCoin {
   CoinWithParentSpend({
-    required this.delegate,
-    required this.parentSpend,
-  });
+    required Coin delegate,
+    required CoinSpend? parentSpend,
+  }) : super(
+          coin: delegate,
+          parentCoinSpend: parentSpend,
+        );
 
   factory CoinWithParentSpend.fromJson(Map<String, dynamic> json) {
     final coin = Coin.fromJson(json);
@@ -41,28 +44,20 @@ class CoinWithParentSpend with CoinPrototypeDecoratorMixin implements Coin {
     );
   }
 
-  @override
-  final Coin delegate;
+  Coin get delegate => coin;
 
-  final CoinSpend? parentSpend;
-
-  @override
   bool get coinbase => delegate.coinbase;
 
-  @override
   int get confirmedBlockIndex => delegate.confirmedBlockIndex;
 
-  @override
   int get spentBlockIndex => delegate.spentBlockIndex;
 
-  @override
   int get timestamp => delegate.timestamp;
 
-  @override
   Map<String, dynamic> toFullJson() {
     return {
       ...delegate.toFullJson(),
-      'parent_coin_spend': parentSpend?.toJson(),
+      'parent_coin_spend': parentCoinSpend?.toJson(),
     };
   }
 }

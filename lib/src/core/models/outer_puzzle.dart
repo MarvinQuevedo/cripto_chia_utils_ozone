@@ -39,7 +39,7 @@ class OuterPuzzleDriver {
   }
 
   static PuzzleInfo? matchPuzzle(Program puzzle) {
-    for (var driver in _driverLookup.values) {
+    for (final driver in _driverLookup.values) {
       final matched = driver.matchPuzzle(puzzle);
       if (matched != null) {
         return matched;

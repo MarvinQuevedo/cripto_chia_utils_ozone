@@ -1,8 +1,8 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 class CoinNotInBundle implements Exception {
-  final Bytes coinId;
   CoinNotInBundle(this.coinId) : super();
+  final Bytes coinId;
 
   @override
   String toString() {

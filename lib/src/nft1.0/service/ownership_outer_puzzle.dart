@@ -1,5 +1,5 @@
-import '../../../chia_crypto_utils.dart';
-import '../models/deconstructed_ownership_outer_puzzle.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/nft1.0/models/deconstructed_ownership_outer_puzzle.dart';
 
 DeconstructedOwnershipOuterPuzzle? mathOwnershipLayerPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
@@ -20,25 +20,28 @@ DeconstructedOwnershipOuterPuzzle? mathOwnershipLayerPuzzle(Program puzzle) {
 }
 
 /// [currentOwner] Can be Program, Bytes, Hex String or CLVM program String
-Program puzzleForOwnershipLayer(
-    {required currentOwner, required Program transferProgram, required Program innerPuzzle}) {
-  Program _currentOwner = Program.nil;
+Program puzzleForOwnershipLayer({
+  required dynamic currentOwner,
+  required Program transferProgram,
+  required Program innerPuzzle,
+}) {
+  var newCurrentOwner = Program.nil;
   if (currentOwner is Program) {
-    _currentOwner = currentOwner;
+    newCurrentOwner = currentOwner;
   } else if (currentOwner is Bytes) {
-    _currentOwner = Program.fromBytes(currentOwner);
-  } else if (currentOwner is String && (currentOwner).contains("0x")) {
-    _currentOwner = Program.fromBytes(Bytes.fromHex(currentOwner));
+    newCurrentOwner = Program.fromBytes(currentOwner);
+  } else if (currentOwner is String && currentOwner.contains('0x')) {
+    newCurrentOwner = Program.fromBytes(Bytes.fromHex(currentOwner));
   } else {
     try {
-      _currentOwner = Program.parse(currentOwner);
+      newCurrentOwner = Program.parse(currentOwner as String);
     } catch (e) {}
   }
 
   return NFT_OWNERSHIP_LAYER.curry(
     [
       Program.fromBytes(NFT_OWNERSHIP_LAYER_HASH),
-      _currentOwner,
+      newCurrentOwner,
       transferProgram,
       innerPuzzle,
     ],
@@ -58,30 +61,30 @@ class OwnershipOuterPuzzle extends OuterPuzzle {
         innerPuzzle: innerPuzzle,
       );
     }
-    final transfer_program_info = constructor["transfer_program"];
-    Program transfer_program;
-    if (transfer_program_info is Program) {
-      transfer_program = transfer_program_info;
+    final transferProgramInfo = constructor['transfer_program'];
+    Program transferProgram;
+    if (transferProgramInfo is Program) {
+      transferProgram = transferProgramInfo;
     } else {
       PuzzleInfo? constructor;
-      if (transfer_program_info is Map<String, dynamic>) {
-        constructor = PuzzleInfo(transfer_program_info);
-      } else if (transfer_program_info is PuzzleInfo) {
-        constructor = transfer_program_info;
+      if (transferProgramInfo is Map<String, dynamic>) {
+        constructor = PuzzleInfo(transferProgramInfo);
+      } else if (transferProgramInfo is PuzzleInfo) {
+        constructor = transferProgramInfo;
       }
       if (constructor == null) {
-        throw Exception("Can't conver  $transfer_program_info to PuzzleInfo");
+        throw Exception("Can't conver  $transferProgramInfo to PuzzleInfo");
       }
 
-      transfer_program = OuterPuzzleDriver.constructPuzzle(
+      transferProgram = OuterPuzzleDriver.constructPuzzle(
         constructor: constructor,
         innerPuzzle: innerPuzzle,
       );
     }
 
     return puzzleForOwnershipLayer(
-      currentOwner: constructor["owner"],
-      transferProgram: transfer_program,
+      currentOwner: constructor['owner'],
+      transferProgram: transferProgram,
       innerPuzzle: innerPuzzle,
     );
   }
@@ -97,14 +100,14 @@ class OwnershipOuterPuzzle extends OuterPuzzle {
     if (matched != null) {
       final tpMatch = OuterPuzzleDriver.matchPuzzle(matched.transferProgram);
 
-      final Map<String, dynamic> constructorDict = {
-        "type": AssetType.OWNERSHIP,
-        "owner": matched.currentOwner.isEmpty ? "()" : matched.currentOwner.toHexWithPrefix(),
-        "transfer_program": tpMatch == null ? matched.transferProgram.toSource() : tpMatch.info,
+      final constructorDict = <String, dynamic>{
+        'type': AssetType.OWNERSHIP,
+        'owner': matched.currentOwner.isEmpty ? '()' : matched.currentOwner.toHexWithPrefix(),
+        'transfer_program': tpMatch == null ? matched.transferProgram.toSource() : tpMatch.info,
       };
       final next = OuterPuzzleDriver.matchPuzzle(matched.innerPuzzle);
       if (next != null) {
-        constructorDict["also"] = next.info;
+        constructorDict['also'] = next.info;
       }
       return PuzzleInfo(constructorDict);
     }
@@ -112,18 +115,20 @@ class OwnershipOuterPuzzle extends OuterPuzzle {
   }
 
   @override
-  Program solvePuzzle(
-      {required PuzzleInfo constructor,
-      required Solver solver,
-      required Program innerPuzzle,
-      required Program innerSolution}) {
-    Program deepSolution = innerSolution;
+  Program solvePuzzle({
+    required PuzzleInfo constructor,
+    required Solver solver,
+    required Program innerPuzzle,
+    required Program innerSolution,
+  }) {
+    var deepSolution = innerSolution;
     if (constructor.also != null) {
       deepSolution = OuterPuzzleDriver.solvePuzzle(
-          constructor: constructor.also!,
-          solver: solver,
-          innerPuzzle: innerPuzzle,
-          innerSolution: innerSolution);
+        constructor: constructor.also!,
+        solver: solver,
+        innerPuzzle: innerPuzzle,
+        innerSolution: innerSolution,
+      );
     }
 
     return solutionForOwnershipLayer(innerSolution: deepSolution);
@@ -143,7 +148,7 @@ class OwnershipOuterPuzzle extends OuterPuzzle {
       }
       return innerPuzzle;
     } else {
-      throw Exception("This driver is not for the specified puzzle reveal");
+      throw Exception('This driver is not for the specified puzzle reveal');
     }
   }
 

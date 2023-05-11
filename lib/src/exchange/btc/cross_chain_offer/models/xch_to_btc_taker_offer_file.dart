@@ -3,11 +3,7 @@ import 'package:compute/compute.dart';
 
 class XchToBtcTakerOfferFile implements TakerCrossChainOfferFile {
   XchToBtcTakerOfferFile({
-    this.initializationCoinId,
-    required this.validityTime,
-    required this.publicKey,
-    required this.acceptedOfferHash,
-    required this.lightningPaymentRequest,
+    required this.validityTime, required this.publicKey, required this.acceptedOfferHash, required this.lightningPaymentRequest, this.initializationCoinId,
   });
 
   factory XchToBtcTakerOfferFile._fromSerializedOfferFileTask(String serializedOfferFile) {

@@ -26,8 +26,7 @@ enum CoinSelectionType {
   List<CoinPrototype> select(
     List<CoinPrototype> coins,
     int amount, {
-    int minMojos = 50,
-    required int? maxNumberOfCoins,
+    required int? maxNumberOfCoins, int minMojos = 50,
   }) =>
       selector.select(
         coins,
@@ -41,8 +40,7 @@ abstract class CoinSelector {
   List<CoinPrototype> select(
     List<CoinPrototype> coins,
     int amount, {
-    int minMojos = 50,
-    required int? maxNumberOfCoins,
+    required int? maxNumberOfCoins, int minMojos = 50,
   });
 }
 
@@ -53,8 +51,7 @@ class SmallestFirstCoinSelector implements CoinSelector {
   List<CoinPrototype> select(
     List<CoinPrototype> coins,
     int amount, {
-    int minMojos = 50,
-    required int? maxNumberOfCoins,
+    required int? maxNumberOfCoins, int minMojos = 50,
   }) {
     return _selectSortedCoinsForAmount(
       coins,
@@ -73,8 +70,7 @@ class BiggestFirstCoinSelector implements CoinSelector {
   List<CoinPrototype> select(
     List<CoinPrototype> coins,
     int amount, {
-    int minMojos = 50,
-    required int? maxNumberOfCoins,
+    required int? maxNumberOfCoins, int minMojos = 50,
   }) {
     return _selectSortedCoinsForAmount(
       coins,
@@ -93,8 +89,7 @@ class ClosestValueCoinSelector implements CoinSelector {
   List<CoinPrototype> select(
     List<CoinPrototype> coins,
     int amount, {
-    int minMojos = 50,
-    required int? maxNumberOfCoins,
+    required int? maxNumberOfCoins, int minMojos = 50,
   }) {
     final coinsWithDiffs = coins.map((e) => CoinWithDiff(e, (e.amount - amount).abs())).toList()
       ..sort((a, b) => a.diff.compareTo(b.diff));

@@ -55,4 +55,28 @@ class NotificationCoin with CoinPrototypeDecoratorMixin implements Coin {
   Map<String, dynamic> toFullJson() {
     return delegate.toFullJson();
   }
+
+  @override
+  Coin copyWith(
+      {int? confirmedBlockIndex,
+      int? spentBlockIndex,
+      bool? coinbase,
+      int? timestamp,
+      Bytes? parentCoinInfo,
+      Puzzlehash? puzzlehash,
+      int? amount,}) {
+    return NotificationCoin(
+      delegate: delegate.copyWith(
+        confirmedBlockIndex: confirmedBlockIndex,
+        spentBlockIndex: spentBlockIndex,
+        coinbase: coinbase,
+        timestamp: timestamp,
+        parentCoinInfo: parentCoinInfo,
+        puzzlehash: puzzlehash,
+        amount: amount,
+      ),
+      targetPuzzlehash: targetPuzzlehash,
+      message: message,
+    );
+  }
 }

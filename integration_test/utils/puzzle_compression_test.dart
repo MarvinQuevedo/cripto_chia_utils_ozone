@@ -16,16 +16,16 @@ Future<void> main() async {
 
   final zDict = zDictForVersion(LATEST_VERSION);
 
-  final ZERO_32 = Bytes(List.generate(32, (_) => 0));
-  final ONE_32 = Bytes(List.generate(32, (_) => 17));
-  final COIN = CoinPrototype(parentCoinInfo: ZERO_32, puzzlehash: Puzzlehash(ZERO_32), amount: 0);
+  final zero32 = Bytes(List.generate(32, (_) => 0));
+  final one32 = Bytes(List.generate(32, (_) => 17));
+  final COIN = CoinPrototype(parentCoinInfo: zero32, puzzlehash: Puzzlehash(zero32), amount: 0);
   final SOLUTION = Program.list([]);
 
   void testStandardPuzzle() {
     final coinSpend = CoinSpend(
         coin: COIN,
         puzzleReveal: getPuzzleFromPk(keychain.unhardenedMap.values.toList()[0].childPublicKey),
-        solution: SOLUTION);
+        solution: SOLUTION,);
     final compressed = compressObjectWithPuzzles(coinSpend.toBytes(), LATEST_VERSION);
 
     assert(coinSpend.toBytes().length > compressed.length);
@@ -33,7 +33,7 @@ Future<void> main() async {
     final coinsSpendUncompressed = CoinSpend.fromBytes(decompressObjectWithPuzzles(compressed));
     assert(coinsSpendUncompressed == coinSpend);
     final factor = compressed.length / coinSpend.toBytes().length;
-    print("standart factor = ${factor}");
+    print('standart factor = $factor');
   }
 
   void testCatPuzzle() {
@@ -47,12 +47,12 @@ Future<void> main() async {
     final coinsSpendUncompressed = CoinSpend.fromBytes(decompressObjectWithPuzzles(compressed));
     assert(coinsSpendUncompressed == coinSpend);
     final factor = compressed.length / coinSpend.toBytes().length;
-    print("Cat factor = ${factor}");
+    print('Cat factor = $factor');
   }
 
   void testSpendBundleCatPuzzleList() {
     final puzzle = CatWalletService.makeCatPuzzle(Program.list([]).hash(),
-        getPuzzleFromPk(keychain.unhardenedMap.values.toList()[0].childPublicKey));
+        getPuzzleFromPk(keychain.unhardenedMap.values.toList()[0].childPublicKey),);
     final coinSpend = CoinSpend(coin: COIN, puzzleReveal: puzzle, solution: SOLUTION);
     final spendBundle = SpendBundle(coinSpends: [coinSpend, coinSpend, coinSpend, coinSpend]);
     final compressed = compressObjectWithPuzzles(spendBundle.toBytes(), LATEST_VERSION);
@@ -62,7 +62,7 @@ Future<void> main() async {
     final spendBuneldUncompressed = SpendBundle.fromBytes(decompressObjectWithPuzzles(compressed));
     assert(spendBuneldUncompressed == spendBundle);
     final factor = compressed.length / spendBundle.toBytes().length;
-    print("SpendBundle factor = ${factor}");
+    print('SpendBundle factor = $factor');
   }
 
   void testOfferPuzzle() {
@@ -74,7 +74,7 @@ Future<void> main() async {
     final coinsSpendUncompressed = CoinSpend.fromBytes(decompressObjectWithPuzzles(compressed));
     assert(coinsSpendUncompressed == coinSpend);
     final factor = compressed.length / coinSpend.toBytes().length;
-    print("Offer factor = ${factor}");
+    print('Offer factor = $factor');
   }
 
   void testLowestBestVersion() {

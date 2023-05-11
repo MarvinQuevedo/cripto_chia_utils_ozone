@@ -82,4 +82,31 @@ class CatFullCoin with CoinPrototypeDecoratorMixin implements CatCoin, Coin {
   Map<String, dynamic> toFullJson() {
     return delegate.toFullJson();
   }
+
+  @override
+  Coin copyWith({
+    int? confirmedBlockIndex,
+    int? spentBlockIndex,
+    bool? coinbase,
+    int? timestamp,
+    Bytes? parentCoinInfo,
+    Puzzlehash? puzzlehash,
+    int? amount,
+  }) {
+    return CatFullCoin(
+      parentCoinSpend: parentCoinSpend,
+      catProgram: catProgram,
+      lineageProof: lineageProof,
+      assetId: assetId,
+      delegate: delegate.copyWith(
+        confirmedBlockIndex: confirmedBlockIndex,
+        spentBlockIndex: spentBlockIndex,
+        coinbase: coinbase,
+        timestamp: timestamp,
+        parentCoinInfo: parentCoinInfo,
+        puzzlehash: puzzlehash,
+        amount: amount,
+      ),
+    );
+  }
 }

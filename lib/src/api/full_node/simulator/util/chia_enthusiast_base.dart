@@ -17,8 +17,8 @@ class ChiaEnthusiastBase {
       plotNftWalletSize: plotNftWalletSize,
     );
   }
-  final Cat1WalletService cat1WalletService = Cat1WalletService();
-  final Cat2WalletService catWalletService = Cat2WalletService();
+
+  final catWalletService = CatWalletService();
   List<Coin> standardCoins = [];
   List<CatCoin> cat1Coins = [];
   List<CatCoin> catCoins = [];

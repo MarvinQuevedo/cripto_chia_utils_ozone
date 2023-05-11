@@ -1,4 +1,4 @@
-import '../../../chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 DeconstructedUpdateMetadataPuzzle? mathMetadataLayerPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
@@ -18,8 +18,11 @@ DeconstructedUpdateMetadataPuzzle? mathMetadataLayerPuzzle(Program puzzle) {
   return null;
 }
 
-Program puzzleForMetadataLayer(
-    {required Program metadata, required Bytes metadataUpdaterHash, required Program innerPuzzle}) {
+Program puzzleForMetadataLayer({
+  required Program metadata,
+  required Bytes metadataUpdaterHash,
+  required Program innerPuzzle,
+}) {
   return NFT_STATE_LAYER_MOD.curry([
     Program.fromBytes(NFT_STATE_LAYER_MOD_HASH),
     metadata,
@@ -45,16 +48,16 @@ class MetadataOurterPuzzle extends OuterPuzzle {
       );
     }
     Program metadata;
-    if (constructor["metadata"] is Program) {
-      metadata = constructor["metadata"];
+    if (constructor['metadata'] is Program) {
+      metadata = constructor['metadata'] as Program;
     } else {
-      metadata = Program.parse(constructor["metadata"]);
+      metadata = Program.parse(constructor['metadata'] as String);
     }
     Bytes updaterHash;
-    if (constructor["updater_hash"] is Bytes) {
-      updaterHash = constructor["updater_hash"];
+    if (constructor['updater_hash'] is Bytes) {
+      updaterHash = constructor['updater_hash'] as Bytes;
     } else {
-      updaterHash = Bytes.fromHex(constructor["updater_hash"] as String);
+      updaterHash = Bytes.fromHex(constructor['updater_hash'] as String);
     }
 
     return puzzleForMetadataLayer(
@@ -66,28 +69,28 @@ class MetadataOurterPuzzle extends OuterPuzzle {
 
   @override
   Puzzlehash createAssetId({required PuzzleInfo constructor}) {
-    final updaterHash = constructor["updater_hash"]!;
+    final updaterHash = constructor['updater_hash']!;
     if (updaterHash is Bytes) {
       return Puzzlehash(updaterHash);
     } else if (updaterHash is Puzzlehash) {
       return updaterHash;
     }
-    return Puzzlehash.fromHex(updaterHash);
+    return Puzzlehash.fromHex(updaterHash as String);
   }
 
   @override
   PuzzleInfo? matchPuzzle(Program puzzle) {
     final matched = mathMetadataLayerPuzzle(puzzle);
     if (matched != null) {
-      final Map<String, dynamic> constructorDict = {
-        "type": AssetType.METADATA,
-        "metadata": matched.metadata.toSource(),
-        "updater_hash": matched.metadataUpdaterHash.toHexWithPrefix(),
+      final constructorDict = <String, dynamic>{
+        'type': AssetType.METADATA,
+        'metadata': matched.metadata.toSource(),
+        'updater_hash': matched.metadataUpdaterHash.toHexWithPrefix(),
       };
       final innerPuzzle = matched.innerPuzzle;
       final next = OuterPuzzleDriver.matchPuzzle(innerPuzzle);
       if (next != null) {
-        constructorDict["also"] = next.info;
+        constructorDict['also'] = next.info;
       }
       return PuzzleInfo(constructorDict);
     }
@@ -95,27 +98,29 @@ class MetadataOurterPuzzle extends OuterPuzzle {
   }
 
   @override
-  Program solvePuzzle(
-      {required PuzzleInfo constructor,
-      required Solver solver,
-      required Program innerPuzzle,
-      required Program innerSolution}) {
+  Program solvePuzzle({
+    required PuzzleInfo constructor,
+    required Solver solver,
+    required Program innerPuzzle,
+    required Program innerSolution,
+  }) {
     Bytes coinBytes;
 
-    if (solver["coin"] is Bytes) {
-      coinBytes = solver["coin"];
+    if (solver['coin'] is Bytes) {
+      coinBytes = solver['coin'] as Bytes;
     } else {
-      coinBytes = Bytes.fromHex(solver["coin"] as String);
+      coinBytes = Bytes.fromHex(solver['coin'] as String);
     }
 
     final coin = CoinPrototype.fromBytes(coinBytes);
 
     if (constructor.also != null) {
       innerSolution = OuterPuzzleDriver.solvePuzzle(
-          constructor: constructor.also!,
-          solver: solver,
-          innerPuzzle: innerPuzzle,
-          innerSolution: innerSolution);
+        constructor: constructor.also!,
+        solver: solver,
+        innerPuzzle: innerPuzzle,
+        innerSolution: innerSolution,
+      );
     }
 
     return solutionForMetadataLayer(amount: coin.amount, innerSolution: innerSolution);
@@ -135,7 +140,7 @@ class MetadataOurterPuzzle extends OuterPuzzle {
       }
       return innerPuzzle;
     } else {
-      throw Exception("This driver is not for the specified puzzle reveal");
+      throw Exception('This driver is not for the specified puzzle reveal');
     }
   }
 

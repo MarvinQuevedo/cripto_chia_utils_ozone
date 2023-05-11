@@ -1,3 +1,5 @@
+// ignore_for_file: library_annotations
+
 @Timeout(Duration(minutes: 5))
 import 'dart:async';
 import 'dart:math';
