@@ -1,7 +1,5 @@
 // ignore_for_file: unused_local_variable
 
-import 'dart:convert';
-
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/core/models/conditions/announcement.dart';
 import 'package:test/test.dart';

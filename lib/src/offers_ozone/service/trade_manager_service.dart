@@ -7,7 +7,6 @@ import '../../nft1.0/index.dart';
 import '../../standard/index.dart';
 import '../../utils.dart';
 import '../index.dart';
-import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 import '../utils/build_keychain.dart';
 
 class TradeManagerService extends BaseWalletService {
