@@ -1,4 +1,15 @@
 # Changelog
+## 1.0.18
+
+- Fixes for pub.dev
+
+## 1.0.17
+
+- Chiaswap enhancements
+- Added support for CAT2
+- Added support for Notification
+- Extensive addition of tests and test cleanup
+- Bug fixing and code cleanup
 
 ## 1.0.16
 

@@ -7,47 +7,14 @@ import 'package:meta/meta.dart';
 
 @immutable
 class CoinPrototype with ToBytesMixin {
-  final Bytes parentCoinInfo;
-  final Puzzlehash puzzlehash;
-  final int amount;
-
   const CoinPrototype({
     required this.parentCoinInfo,
     required this.puzzlehash,
     required this.amount,
   });
-
-  CoinPrototype.fromJson(Map<String, dynamic> json)
-      : parentCoinInfo = Bytes.fromHex(json['parent_coin_info'] as String),
-        puzzlehash = Puzzlehash.fromHex(json['puzzle_hash'] as String),
-        amount = (json['amount'] as num).toInt();
-
-  Bytes get id {
-    return (parentCoinInfo + puzzlehash + intToBytesStandard(amount, Endian.big)).sha256Hash();
-  }
-
-  Program toProgram() {
-    return Program.list([
-      Program.fromBytes(parentCoinInfo),
-      Program.fromBytes(puzzlehash),
-      Program.fromInt(amount),
-    ]);
-  }
-
-  Map<String, dynamic> toJson() => <String, dynamic>{
-        'parent_coin_info': parentCoinInfo.toHexWithPrefix(),
-        'puzzle_hash': puzzlehash.toHexWithPrefix(),
-        'amount': amount
-      };
-
   factory CoinPrototype.fromBytes(Bytes bytes) {
     final iterator = bytes.iterator;
     return CoinPrototype.fromStream(iterator);
-  }
-
-  @override
-  Bytes toBytes() {
-    return parentCoinInfo + puzzlehash + intTo64Bits(amount);
   }
 
   factory CoinPrototype.fromStream(Iterator<int> iterator) {
@@ -66,6 +33,38 @@ class CoinPrototype with ToBytesMixin {
       puzzlehash: puzzlehash,
       amount: amount,
     );
+  }
+
+  CoinPrototype.fromJson(Map<String, dynamic> json)
+      : parentCoinInfo = Bytes.fromHex(json['parent_coin_info'] as String),
+        puzzlehash = Puzzlehash.fromHex(json['puzzle_hash'] as String),
+        amount = (json['amount'] as num).toInt();
+
+  Bytes get id {
+    return (parentCoinInfo + puzzlehash + intTo64Bits(amount)).sha256Hash();
+  }
+
+  Program toProgram() {
+    return Program.list([
+      Program.fromBytes(parentCoinInfo),
+      Program.fromBytes(puzzlehash),
+      Program.fromInt(amount),
+    ]);
+  }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'parent_coin_info': parentCoinInfo.toHexWithPrefix(),
+        'puzzle_hash': puzzlehash.toHexWithPrefix(),
+        'amount': amount
+      };
+
+  final Bytes parentCoinInfo;
+  final Puzzlehash puzzlehash;
+  final int amount;
+
+  @override
+  Bytes toBytes() {
+    return parentCoinInfo + puzzlehash + Bytes(intTo64Bits(amount));
   }
 
   @override

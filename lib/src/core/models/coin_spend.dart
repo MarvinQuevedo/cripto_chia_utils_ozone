@@ -1,19 +1,41 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import '../../did/puzzles/did_puzzles.dart' as didPuzzles;
-import '../../offers_ozone/models/full_coin.dart' as fullCoin;
+import 'package:chia_crypto_utils/src/did/puzzles/did_puzzles.dart' as didPuzzles;
+import 'package:chia_crypto_utils/src/offers_ozone/models/full_coin.dart' as fullCoin;
 
 class CoinSpend with ToBytesMixin {
-  CoinPrototype coin;
-  Program puzzleReveal;
-  Program solution;
-
   CoinSpend({
     required this.coin,
     required this.puzzleReveal,
     required this.solution,
   });
+
+  factory CoinSpend.fromJson(Map<String, dynamic> json) {
+    return CoinSpend(
+      coin: CoinPrototype.fromJson(json['coin'] as Map<String, dynamic>),
+      puzzleReveal: Program.deserializeHex(json['puzzle_reveal'] as String),
+      solution: Program.deserializeHex(json['solution'] as String),
+    );
+  }
+  factory CoinSpend.fromStream(Iterator<int> iterator) {
+    final coin = CoinPrototype.fromStream(iterator);
+    final puzzleReveal = Program.fromStream(iterator);
+    final solution = Program.fromStream(iterator);
+    return CoinSpend(
+      coin: coin,
+      puzzleReveal: puzzleReveal,
+      solution: solution,
+    );
+  }
+
+  factory CoinSpend.fromBytes(Bytes bytes) {
+    final iterator = bytes.iterator;
+    return CoinSpend.fromStream(iterator);
+  }
+  CoinPrototype coin;
+  Program puzzleReveal;
+  Program solution;
 
   Program get outputProgram => puzzleReveal.run(solution).program;
 
@@ -72,24 +94,9 @@ class CoinSpend with ToBytesMixin {
         'solution': solution.serialize().toHexWithPrefix()
       };
 
-  factory CoinSpend.fromBytes(Bytes bytes) {
-    final iterator = bytes.iterator;
-    return CoinSpend.fromStream(iterator);
-  }
-  factory CoinSpend.fromStream(Iterator<int> iterator) {
-    final coin = CoinPrototype.fromStream(iterator);
-    final puzzleReveal = Program.fromStream(iterator);
-    final solution = Program.fromStream(iterator);
-    return CoinSpend(
-      coin: coin,
-      puzzleReveal: puzzleReveal,
-      solution: solution,
-    );
-  }
-
   @override
   Bytes toBytes() {
-    Bytes coinBytes = coin.toBytes();
+    var coinBytes = coin.toBytes();
     if (coin is CatCoin) {
       coinBytes = (coin as CatCoin).toCoinPrototype().toBytes();
     }
@@ -97,7 +104,7 @@ class CoinSpend with ToBytesMixin {
   }
 
   Program toProgram() {
-    Bytes coinBytes = coin.toBytes();
+    var coinBytes = coin.toBytes();
     if (coin is CatCoin) {
       coinBytes = (coin as CatCoin).toCoinPrototype().toBytes();
     }
@@ -114,14 +121,6 @@ class CoinSpend with ToBytesMixin {
     final puzzleReveal = Program.deserialize(args[1].atom);
     final solution = Program.deserialize(args[2].atom);
     return CoinSpend(coin: coin, puzzleReveal: puzzleReveal, solution: solution);
-  }
-
-  factory CoinSpend.fromJson(Map<String, dynamic> json) {
-    return CoinSpend(
-      coin: CoinPrototype.fromJson(json['coin'] as Map<String, dynamic>),
-      puzzleReveal: Program.deserializeHex(json['puzzle_reveal'] as String),
-      solution: Program.deserializeHex(json['solution'] as String),
-    );
   }
 
   SpendType get type {
@@ -160,6 +159,8 @@ class CoinSpend with ToBytesMixin {
     return _getPaymentsFromOutputProgram(await outputProgramAsync);
   }
 
+  List<Memo> get memosSync => payments.memos;
+
   Future<List<Memo>> get memos async {
     final payments = await paymentsAsync;
     return payments.memos;
@@ -196,11 +197,11 @@ class CoinSpend with ToBytesMixin {
 }
 
 enum SpendType {
-  unknown("unknown"),
+  unknown('unknown'),
   standard('xch'),
-  cat1("cat1"),
-  cat2("cat"),
-  nft("nft"),
+  cat1('cat1'),
+  cat2('cat'),
+  nft('nft'),
   did('did');
 
   const SpendType(this.value);
@@ -215,8 +216,7 @@ SpendType? spendTypeFromString(String? value) {
 }
 
 class PaymentsAndAdditions {
+  PaymentsAndAdditions(this.payments, this.additions);
   final List<Payment> payments;
   final List<CoinPrototype> additions;
-
-  PaymentsAndAdditions(this.payments, this.additions);
 }

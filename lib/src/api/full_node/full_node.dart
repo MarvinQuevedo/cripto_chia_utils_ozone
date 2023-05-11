@@ -17,10 +17,10 @@ abstract class FullNode {
   Future<CoinRecordResponse> getCoinByName(Bytes coinId);
 
   Future<CoinRecordsResponse> getCoinsByHint(
-    Bytes hint, {
+    Puzzlehash hint, {
+    bool includeSpentCoins = false,
     int? startHeight,
     int? endHeight,
-    bool includeSpentCoins = false,
   });
 
   Future<CoinRecordsResponse> getCoinsByParentIds(

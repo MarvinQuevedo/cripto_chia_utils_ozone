@@ -1,4 +1,5 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:compute/compute.dart';
 import 'package:meta/meta.dart';
 
 @immutable
@@ -10,6 +11,28 @@ class WalletVector with ToBytesMixin {
     Map<Puzzlehash, Puzzlehash>? assetIdtoOuterPuzzlehash,
   }) {
     this.assetIdtoOuterPuzzlehash = assetIdtoOuterPuzzlehash ?? {};
+  }
+  factory WalletVector.fromMap(Map<String, dynamic> map) {
+    final childPrivateKey = PrivateKey.fromHex(map['childPrivateKey'] as String);
+    //final childPublicKey = childPrivateKey.getG1();
+    final puzzlehash = Puzzlehash.fromHex(map['puzzlehash'] as String);
+
+    final assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
+    final assetIdtoOuterPuzzlehash = Map<String, String>.from(
+      map['assetIdtoOuterPuzzlehash'] as Map<String, dynamic>,
+    );
+
+    // ignore: cascade_invocations
+    assetIdtoOuterPuzzlehash.forEach((key, value) {
+      assetIdtoOuterPuzzlehashMap[Puzzlehash.fromHex(key)] = Puzzlehash.fromHex(value);
+    });
+
+    return WalletVector(
+      childPrivateKey: childPrivateKey,
+      derivationIndex: map['derivationIndex'] as int,
+      puzzlehash: puzzlehash,
+      assetIdtoOuterPuzzlehash: assetIdtoOuterPuzzlehashMap,
+    );
   }
   factory WalletVector.fromStream(Iterator<int> iterator, int derivationIndex) {
     final childPrivateKey = PrivateKey.fromStream(iterator);
@@ -44,6 +67,24 @@ class WalletVector with ToBytesMixin {
     );
   }
 
+  static Future<WalletVector> fromPrivateKeyAsync(
+    PrivateKey masterPrivateKey,
+    int derivationIndex,
+  ) async {
+    final result = await compute(
+      _fromPrivateKeyTask,
+      _PrivateKeyWithDerivationIndex(masterPrivateKey, derivationIndex),
+    );
+
+    return WalletVector.fromBytes(Bytes.fromHex(result), derivationIndex);
+  }
+
+  static String _fromPrivateKeyTask(_PrivateKeyWithDerivationIndex arg) {
+    final walletVector = WalletVector.fromPrivateKey(arg.privateKey, arg.derivationIndex);
+
+    return walletVector.toHex();
+  }
+
   Map<String, dynamic> toMap() {
     final assetIdtoOuterPuzzlehashMap = <String, String>{};
     assetIdtoOuterPuzzlehash.forEach((key, value) {
@@ -58,29 +99,6 @@ class WalletVector with ToBytesMixin {
     map['derivationIndex'] = derivationIndex;
 
     return map;
-  }
-
-  factory WalletVector.fromMap(Map<String, dynamic> map) {
-    final childPrivateKey = PrivateKey.fromHex(map['childPrivateKey'] as String);
-    //final childPublicKey = childPrivateKey.getG1();
-    final puzzlehash = Puzzlehash.fromHex(map['puzzlehash'] as String);
-
-    var assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
-    var assetIdtoOuterPuzzlehash = Map<String, String>.from(
-      map['assetIdtoOuterPuzzlehash'] as Map<String, dynamic>,
-    );
-
-    // ignore: cascade_invocations
-    assetIdtoOuterPuzzlehash.forEach((key, value) {
-      assetIdtoOuterPuzzlehashMap[Puzzlehash.fromHex(key)] = Puzzlehash.fromHex(value);
-    });
-
-    return WalletVector(
-      childPrivateKey: childPrivateKey,
-      derivationIndex: map['derivationIndex'] as int,
-      puzzlehash: puzzlehash,
-      assetIdtoOuterPuzzlehash: assetIdtoOuterPuzzlehashMap,
-    );
   }
 
   final PrivateKey childPrivateKey;
@@ -124,6 +142,55 @@ class UnhardenedWalletVector extends WalletVector {
     required super.derivationIndex,
     super.assetIdtoOuterPuzzlehash,
   });
+  factory UnhardenedWalletVector.fromMap(Map<String, dynamic> map) {
+    final childPrivateKey = PrivateKey.fromHex(map['childPrivateKey'] as String);
+
+    final puzzlehash = Puzzlehash.fromHex(map['puzzlehash'] as String);
+
+    final assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
+    final assetIdtoOuterPuzzlehash = Map<String, String>.from(
+      map['assetIdtoOuterPuzzlehash'] as Map<String, dynamic>,
+    );
+
+    // ignore: cascade_invocations
+    assetIdtoOuterPuzzlehash.forEach((key, value) {
+      assetIdtoOuterPuzzlehashMap[Puzzlehash.fromHex(key)] = Puzzlehash.fromHex(value);
+    });
+
+    return UnhardenedWalletVector(
+      childPrivateKey: childPrivateKey,
+      derivationIndex: map['derivationIndex'] as int,
+      puzzlehash: puzzlehash,
+      assetIdtoOuterPuzzlehash: assetIdtoOuterPuzzlehashMap,
+    );
+  }
+
+  factory UnhardenedWalletVector.fromBytes(Bytes bytes, int derivationIndex) {
+    final iterator = bytes.iterator;
+    return UnhardenedWalletVector.fromStream(iterator, derivationIndex);
+  }
+
+  factory UnhardenedWalletVector.fromStream(Iterator<int> iterator, int derivationIndex) {
+    final childPrivateKey = PrivateKey.fromStream(iterator);
+    final puzzlehash = Puzzlehash.fromStream(iterator);
+
+    final assetIdToOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
+
+    final assetIdMapLength = intFrom32BitsStream(iterator);
+
+    for (var _ = 0; _ < assetIdMapLength; _++) {
+      final assetId = Puzzlehash.fromStream(iterator);
+      final outerPuzzlehash = Puzzlehash.fromStream(iterator);
+      assetIdToOuterPuzzlehashMap[assetId] = outerPuzzlehash;
+    }
+
+    return UnhardenedWalletVector(
+      childPrivateKey: childPrivateKey,
+      puzzlehash: puzzlehash,
+      assetIdtoOuterPuzzlehash: assetIdToOuterPuzzlehashMap,
+      derivationIndex: derivationIndex,
+    );
+  }
 
   factory UnhardenedWalletVector.fromPrivateKey(
     PrivateKey masterPrivateKey,
@@ -160,55 +227,6 @@ class UnhardenedWalletVector extends WalletVector {
     return Bytes(bytesList);
   }
 
-  factory UnhardenedWalletVector.fromStream(Iterator<int> iterator, int derivationIndex) {
-    final childPrivateKey = PrivateKey.fromStream(iterator);
-    final puzzlehash = Puzzlehash.fromStream(iterator);
-
-    final assetIdToOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
-
-    final assetIdMapLength = intFrom32BitsStream(iterator);
-
-    for (var _ = 0; _ < assetIdMapLength; _++) {
-      final assetId = Puzzlehash.fromStream(iterator);
-      final outerPuzzlehash = Puzzlehash.fromStream(iterator);
-      assetIdToOuterPuzzlehashMap[assetId] = outerPuzzlehash;
-    }
-
-    return UnhardenedWalletVector(
-      childPrivateKey: childPrivateKey,
-      puzzlehash: puzzlehash,
-      assetIdtoOuterPuzzlehash: assetIdToOuterPuzzlehashMap,
-      derivationIndex: derivationIndex,
-    );
-  }
-  factory UnhardenedWalletVector.fromMap(Map<String, dynamic> map) {
-    final childPrivateKey = PrivateKey.fromHex(map['childPrivateKey'] as String);
-
-    final puzzlehash = Puzzlehash.fromHex(map['puzzlehash'] as String);
-
-    var assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
-    var assetIdtoOuterPuzzlehash = Map<String, String>.from(
-      map['assetIdtoOuterPuzzlehash'] as Map<String, dynamic>,
-    );
-
-    // ignore: cascade_invocations
-    assetIdtoOuterPuzzlehash.forEach((key, value) {
-      assetIdtoOuterPuzzlehashMap[Puzzlehash.fromHex(key)] = Puzzlehash.fromHex(value);
-    });
-
-    return UnhardenedWalletVector(
-      childPrivateKey: childPrivateKey,
-      derivationIndex: map['derivationIndex'] as int,
-      puzzlehash: puzzlehash,
-      assetIdtoOuterPuzzlehash: assetIdtoOuterPuzzlehashMap,
-    );
-  }
-
-  factory UnhardenedWalletVector.fromBytes(Bytes bytes, int derivationIndex) {
-    final iterator = bytes.iterator;
-    return UnhardenedWalletVector.fromStream(iterator, derivationIndex);
-  }
-
   @override
   int get hashCode => super.hashCode ^ assetIdtoOuterPuzzlehash.hashCode;
 
@@ -235,4 +253,11 @@ class UnhardenedWalletVector extends WalletVector {
     }
     return true;
   }
+}
+
+class _PrivateKeyWithDerivationIndex {
+  _PrivateKeyWithDerivationIndex(this.privateKey, this.derivationIndex);
+
+  final PrivateKey privateKey;
+  final int derivationIndex;
 }

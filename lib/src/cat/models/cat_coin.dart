@@ -1,15 +1,10 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/cat/exceptions/invalid_cat_exception.dart';
 import 'package:meta/meta.dart';
 
 @immutable
 class CatCoin extends CoinPrototype with ToBytesMixin {
-  final CoinSpend parentCoinSpend;
-  final Puzzlehash assetId;
-  final Program lineageProof;
-
   CatCoin({
     required this.parentCoinSpend,
     required CoinPrototype coin,
@@ -56,6 +51,20 @@ class CatCoin extends CoinPrototype with ToBytesMixin {
     return CatCoin(parentCoinSpend: parentCoinSpend, coin: coinPrototype);
   }
 
+  CatCoin.eve({
+    required this.parentCoinSpend,
+    required CoinPrototype coin,
+    required this.assetId,
+  })  : lineageProof = Program.nil,
+        super(
+          parentCoinInfo: coin.parentCoinInfo,
+          puzzlehash: coin.puzzlehash,
+          amount: coin.amount,
+        );
+  final CoinSpend parentCoinSpend;
+  final Puzzlehash assetId;
+  final Program lineageProof;
+
   CoinPrototype toCoinPrototype() => CoinPrototype(
         parentCoinInfo: parentCoinInfo,
         puzzlehash: puzzlehash,
@@ -79,17 +88,6 @@ class CatCoin extends CoinPrototype with ToBytesMixin {
       ...coinPrototypeBytes,
     ]);
   }
-
-  CatCoin.eve({
-    required this.parentCoinSpend,
-    required CoinPrototype coin,
-    required this.assetId,
-  })  : lineageProof = Program.nil,
-        super(
-          parentCoinInfo: coin.parentCoinInfo,
-          puzzlehash: coin.puzzlehash,
-          amount: coin.amount,
-        );
 
   @override
   String toString() =>
