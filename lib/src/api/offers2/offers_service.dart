@@ -1,3 +1,5 @@
+// ignore_for_file: cascade_invocations
+
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/api/nft1/nft_service.dart';
 import 'package:tuple/tuple.dart';
@@ -38,20 +40,22 @@ class OffersService {
     final tradeManager = TradeManagerService();
 
     final analizedOffer = await tradeManager.analizeOffer(
-        fee: fee,
-        targetPuzzleHash: targetPuzzleHash,
-        changePuzzlehash: changePuzzlehash,
-        offer: offer,);
+      fee: fee,
+      targetPuzzleHash: targetPuzzleHash,
+      changePuzzlehash: changePuzzlehash,
+      offer: offer,
+    );
 
     final preparedData = await _prepareOfferDataForTrade(
-        offerredAmounts: tradeManager.convertRequestedToOffered(
-          analizedOffer!.requested,
-        ),
-        fee: fee,
-        royaltyPercentage: analizedOffer.royaltyPer,
-        royaltyAmount: analizedOffer.royaltyAmount,
-        requesteAmounts: TradeManagerService().convertOfferedToRequested(analizedOffer.offered),
-        coinsToUse: coinsToUse,);
+      offerredAmounts: tradeManager.convertRequestedToOffered(
+        analizedOffer!.requested,
+      ),
+      fee: fee,
+      royaltyPercentage: analizedOffer.royaltyPer,
+      royaltyAmount: analizedOffer.royaltyAmount,
+      requesteAmounts: TradeManagerService().convertOfferedToRequested(analizedOffer.offered),
+      coinsToUse: coinsToUse,
+    );
 
     final completedOffer = await tradeManager.responseOffer(
       groupedCoins: preparedData.selectedCoins,
@@ -74,7 +78,11 @@ class OffersService {
 
   Future<Offer> createOffer({
     required Puzzlehash targetPuzzleHash,
-    required List<FullCoin> coins, required Map<OfferAssetData?, List<int>> requesteAmounts, required Map<OfferAssetData?, int> offerredAmounts, required Puzzlehash changePuzzlehash, int fee = 0,
+    required List<FullCoin> coins,
+    required Map<OfferAssetData?, List<int>> requesteAmounts,
+    required Map<OfferAssetData?, int> offerredAmounts,
+    required Puzzlehash changePuzzlehash,
+    int fee = 0,
     bool isOld = false,
   }) async {
     final preparedData = await _prepareOfferDataForTrade(
@@ -120,7 +128,8 @@ class OffersService {
     required Map<OfferAssetData?, int> offerredAmounts,
     required List<FullCoin> coinsToUse,
     required int fee,
-    required Map<OfferAssetData?, List<int>> requesteAmounts, int? royaltyPercentage,
+    required Map<OfferAssetData?, List<int>> requesteAmounts,
+    int? royaltyPercentage,
     int? royaltyAmount,
   }) async {
     final coins = <OfferAssetData?, List<FullCoin>>{};
@@ -204,7 +213,10 @@ class OffersService {
     }
 
     return _PreparedOfferDataForTradeService(
-        selectedCoins: coins, keychain: keychain, nftCoins: nftCoins,);
+      selectedCoins: coins,
+      keychain: keychain,
+      nftCoins: nftCoins,
+    );
   }
 
   List<FullCoin> _filterCoins(List<FullCoin> coins, OfferAssetData? asset) {
@@ -255,9 +267,11 @@ class OffersService {
 }
 
 class _PreparedOfferDataForTradeService {
-
-  const _PreparedOfferDataForTradeService(
-      {required this.selectedCoins, required this.keychain, required this.nftCoins,});
+  const _PreparedOfferDataForTradeService({
+    required this.selectedCoins,
+    required this.keychain,
+    required this.nftCoins,
+  });
   final Map<OfferAssetData?, List<FullCoin>> selectedCoins;
   final Map<OfferAssetData?, FullCoin> nftCoins;
   final WalletKeychain keychain;

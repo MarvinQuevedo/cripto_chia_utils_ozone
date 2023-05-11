@@ -84,9 +84,7 @@ class DidService {
         }
       }
     }
-    uncurriedInfo = uncurriedInfo.copyWith(tempCoin: actualCoin);
-
-    return uncurriedInfo;
+    return uncurriedInfo.copyWith(tempCoin: actualCoin);
   }
 
   Future<DidInfo?> getDidInfoByLauncherId(

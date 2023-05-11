@@ -32,7 +32,7 @@ Offer generateSecureBundle({
   for (final coin in selectedCoins) {
     if (coin.assetId == null) {
       final standarBundle = StandardWalletService().createSpendBundle(
-        payments: [Payment(offeredAmounts[coin.assetId]!, Offer.ph(false))],
+        payments: [Payment(offeredAmounts[coin.assetId]!, Offer.ph(isOld: false))],
         coinsInput: selectedCoins,
         keychain: keychain,
         fee: feeLeftToPay,
@@ -41,7 +41,7 @@ Offer generateSecureBundle({
       transactions.add(standarBundle);
     } else if (coin.assetId != null) {
       final catBundle = CatWalletService().createSpendBundle(
-        payments: [CatPayment(offeredAmounts[coin.assetId]!, Offer.ph(false))],
+        payments: [CatPayment(offeredAmounts[coin.assetId]!, Offer.ph(isOld: false))],
         catCoinsInput:
             selectedCoins.where((element) => element.isCatCoin).map((e) => e.toCatCoin()).toList(),
         keychain: keychain,

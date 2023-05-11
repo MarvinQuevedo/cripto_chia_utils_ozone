@@ -81,10 +81,11 @@ Future<void> main() async {
 
     //Create the transfer bundle
     final transferBundle = NftWallet().createTransferSpendBundle(
-        nftCoin: fullNFTCoinInfo.toNftCoinInfo(),
-        keychain: keychain,
-        targetPuzzleHash: targetPuzzleHash,
-        standardCoinsForFee: [],);
+      nftCoin: fullNFTCoinInfo.toNftCoinInfo(),
+      keychain: keychain,
+      targetPuzzleHash: targetPuzzleHash,
+      standardCoinsForFee: List.empty(),
+    );
 
     print('coins additions = ${transferBundle.additions.length}');
 

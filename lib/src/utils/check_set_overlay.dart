@@ -1,3 +1,5 @@
+// ignore_for_file: strict_raw_type
+
 extension IterableCheckSetOverLay on Iterable {
   bool checkOverlay(Iterable<dynamic> other) {
     for (final value in other) {

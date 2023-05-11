@@ -447,7 +447,7 @@ class CatWalletService extends BaseWalletService {
     );
 
     return standardWalletService.createSpendBundle(
-      payments: [],
+      payments: List.empty(),
       coinsInput: standardCoins,
       changePuzzlehash: changePuzzlehash,
       keychain: keychain,

@@ -37,7 +37,7 @@ class TradeManagerService extends BaseWalletService {
       if (assetId == null) {
         final standarBundle = StandardWalletService().createSpendBundle(
           payments: [
-            Payment(offeredAmounts[assetId]!.abs(), Offer.ph(old)),
+            Payment(offeredAmounts[assetId]!.abs(), Offer.ph(isOld: old)),
           ],
           coinsInput: selectedCoins,
           keychain: keychain,
@@ -53,9 +53,9 @@ class TradeManagerService extends BaseWalletService {
           final catPayments = [
             CatPayment(
               offeredAmounts[assetId]!.abs(),
-              Offer.ph(old),
+              Offer.ph(isOld: old),
               memos: <Bytes>[
-                Offer.ph(old).toBytes(),
+                Offer.ph(isOld: old).toBytes(),
               ],
             ),
           ];

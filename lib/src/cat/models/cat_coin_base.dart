@@ -225,7 +225,6 @@ String? _calculateCatP2PuzzleHashTask(_CalculateCatP2PuzzleHashArgument args) {
     final outerPuzzleHash = WalletKeychain.makeOuterPuzzleHashForCatProgram(
       potentialP2PuzzleHash,
       catCoin.assetId,
-      catCoin.catProgram,
     );
 
     if (outerPuzzleHash == catCoin.puzzlehash) {

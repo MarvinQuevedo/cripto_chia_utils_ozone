@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 /// `generate_secure_bundle` simulates a wallet's `generate_signed_transaction`
 /// but doesn't bother with non-offer announcements
-Offer generate_secure_bundle({
+Offer generateSecureBundle({
   required List<FullCoin> selectedCoins,
   required List<Announcement> announcements,
   required Map<Bytes?, int> offeredAmounts,
@@ -23,7 +23,7 @@ Offer generate_secure_bundle({
   for (final coin in selectedCoins) {
     if (coin.assetId == null) {
       final standarBundle = StandardWalletService().createSpendBundle(
-        payments: [Payment(offeredAmounts[coin.assetId]!, Offer.ph(false))],
+        payments: [Payment(offeredAmounts[coin.assetId]!, Offer.ph(isOld: false))],
         coinsInput: selectedCoins,
         keychain: keychain,
         fee: feeLeftToPay,
@@ -32,7 +32,7 @@ Offer generate_secure_bundle({
       transactions.add(standarBundle);
     } else if (coin.assetId != null) {
       final catBundle = CatWalletService().createSpendBundle(
-        payments: [CatPayment(offeredAmounts[coin.assetId]!, Offer.ph(false))],
+        payments: [CatPayment(offeredAmounts[coin.assetId]!, Offer.ph(isOld: false))],
         catCoinsInput:
             selectedCoins.where((element) => element.isCatCoin).map((e) => e.toCatCoin()).toList(),
         keychain: keychain,
@@ -238,7 +238,7 @@ Future<void> main() async {
       old: false,
     );
 
-    final chiaOffer = generate_secure_bundle(
+    final chiaOffer = generateSecureBundle(
       announcements: chiaAnnouncements,
       offeredAmounts: {null: chiaOfferedAmount},
       selectedCoins: stardarCoins.map((e) => FullCoin(coin: e)).toList(),

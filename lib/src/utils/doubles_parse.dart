@@ -3,9 +3,8 @@ import 'dart:math' as math;
 import 'package:intl/intl.dart';
 
 class LocaleProvider {
-
   LocaleProvider._internal();
-  List? languages = [];
+  List<String>? languages = [];
   String locale = 'en';
   static LocaleProvider instance = LocaleProvider._internal();
 }
@@ -46,7 +45,7 @@ String removeTrailingZeros(double original, String n, String? symbol, int decima
 }
 
 String get _getDefaultLocaleName {
-  final var locale = LocaleProvider.instance.locale;
+  final locale = LocaleProvider.instance.locale;
 
   if (!NumberFormat.localeExists(locale)) {
     if (locale.contains('es_')) {
@@ -69,8 +68,12 @@ extension NumberParsing on String {
   }
 }
 
-String _toRegionalString(
-    {required int decimals, required String? symbol, required double value, String? locale,}) {
+String _toRegionalString({
+  required int decimals,
+  required String? symbol,
+  required double value,
+  String? locale,
+}) {
   final defaultLocale = _getDefaultLocaleName;
   final formatAsset = NumberFormat.simpleCurrency(
     name: '',

@@ -115,8 +115,12 @@ class ChiaFullNodeInterface {
   }) async {
     final results = <Coin>[];
     for (final hint in hints) {
-      final result = await getCoinsByHint(hint,
-          startHeight: startHeight, endHeight: endHeight, includeSpentCoins: includeSpentCoins,);
+      final result = await getCoinsByHint(
+        hint,
+        startHeight: startHeight,
+        endHeight: endHeight,
+        includeSpentCoins: includeSpentCoins,
+      );
       results.addAll(result);
     }
     return results;
@@ -199,7 +203,7 @@ class ChiaFullNodeInterface {
 
       catCoins.add(
         FullCoin(
-          parentCoinSpend: parentCoinSpend!,
+          parentCoinSpend: parentCoinSpend,
           coin: coin,
         ),
       );

@@ -121,7 +121,7 @@ class NftWallet extends BaseWalletService {
     );
 
     return standardWalletService.createSpendBundle(
-      payments: [],
+      payments: List.empty(),
       coinsInput: standardCoins,
       changePuzzlehash: changePuzzlehash,
       keychain: keychain,
@@ -467,7 +467,7 @@ class NftWallet extends BaseWalletService {
           ],
         )
       ],
-      standardCoinsForFee: [],
+      standardCoinsForFee: List.empty(),
       keychain: keychain,
       nftCoin: nftCoin,
       newOwner: didInfo?.didId,
@@ -903,7 +903,7 @@ class NftWallet extends BaseWalletService {
                 Program.cons(
                   Program.nil,
                   Program.list([
-                    Payment(duplicatePaymentsSum, Offer.ph(old)).toProgram(),
+                    Payment(duplicatePaymentsSum, Offer.ph(isOld: old)).toProgram(),
                   ]),
                 ),
                 innerRoyaltySol,
@@ -1075,7 +1075,7 @@ class NftWallet extends BaseWalletService {
       nftId: nftUncurried.singletonLauncherId.atom,
       // pendingTransaction: false,
       parentCoinSpend: nftFullCoin.parentCoinSpend,
-      confirmedBlockIndex: nftFullCoin.coin.confirmedBlockIndex,
+      //confirmedBlockIndex: nftFullCoin.coin.confirmedBlockIndex,
       ownerDid: nftUncurried.ownerDid,
       minterDid: null,
       nftLineageProof: LineageProof(
@@ -1083,7 +1083,7 @@ class NftWallet extends BaseWalletService {
         innerPuzzlehash: nftUncurried.nftStateLayer.hash(),
         parentCoinInfo: Puzzlehash(coinSpend.coin.parentCoinInfo),
       ),
-      spentBlockIndex: nftFullCoin.coin.spentBlockIndex,
+      //spentBlockIndex: nftFullCoin.coin.spentBlockIndex,
     );
     return Tuple3(nftCoin, fullPuzzle, keychainForNft);
   }

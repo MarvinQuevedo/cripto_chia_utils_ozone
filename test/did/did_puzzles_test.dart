@@ -19,7 +19,7 @@ Future<void> main() async {
       launcherId: coinBytes,
       p2Puzzle: puzzle,
       numOfBackupIdsNeeded: 0,
-      recoveryList: [],
+      recoveryList: List.empty(),
     );
     print('did puzzle');
     print(didPuzzle.hash().toHex());

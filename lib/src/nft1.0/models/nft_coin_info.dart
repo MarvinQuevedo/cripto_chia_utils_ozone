@@ -1,11 +1,15 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 class NFTCoinInfo extends Coin {
-
   NFTCoinInfo({
     required this.nftId,
     required this.coin,
-    required this.fullPuzzle, required this.mintHeight, required this.latestHeight, required this.minterDid, required this.ownerDid, this.lineageProof,
+    required this.fullPuzzle,
+    required this.mintHeight,
+    required this.latestHeight,
+    required this.minterDid,
+    required this.ownerDid,
+    this.lineageProof,
     this.pendingTransaction = false,
     super.confirmedBlockIndex = 0,
     super.spentBlockIndex = 0,
@@ -16,6 +20,7 @@ class NFTCoinInfo extends Coin {
           coinbase: false,
           timestamp: 0,
         );
+
   /// The launcher coin ID of the NFT
   final Bytes nftId;
   final CoinPrototype coin;
@@ -61,13 +66,19 @@ class NFTCoinInfo extends Coin {
 }
 
 class FullNFTCoinInfo extends FullCoin {
-
   FullNFTCoinInfo({
     required this.nftId,
     required super.coin,
-    required this.fullPuzzle, required this.mintHeight, required this.latestHeight, required this.minterDid, required this.ownerDid, required super.parentCoinSpend, this.nftLineageProof,
+    required this.fullPuzzle,
+    required this.mintHeight,
+    required this.latestHeight,
+    required this.minterDid,
+    required this.ownerDid,
+    required super.parentCoinSpend,
+    this.nftLineageProof,
     this.pendingTransaction = false,
   });
+
   /// The launcher coin ID of the NFT
   final Bytes nftId;
 
@@ -93,7 +104,7 @@ class FullNFTCoinInfo extends FullCoin {
     return other is NFTCoinInfo &&
         other.nftId == nftId &&
         other.coin == coin &&
-        other.lineageProof == lineageProof &&
+        other.lineageProof?.toProgram() == lineageProof &&
         other.fullPuzzle == fullPuzzle &&
         other.mintHeight == mintHeight &&
         other.latestHeight == latestHeight &&
@@ -121,8 +132,6 @@ class FullNFTCoinInfo extends FullCoin {
     bool? pendingTransaction,
     Bytes? minterDid,
     Bytes? ownerDid,
-    int? confirmedBlockIndex,
-    int? spentBlockIndex,
     CoinSpend? parentCoinSpend,
   }) {
     return FullNFTCoinInfo(
@@ -135,8 +144,6 @@ class FullNFTCoinInfo extends FullCoin {
       pendingTransaction: pendingTransaction ?? this.pendingTransaction,
       minterDid: minterDid ?? this.minterDid,
       ownerDid: ownerDid ?? this.ownerDid,
-      confirmedBlockIndex: confirmedBlockIndex ?? this.coin.confirmedBlockIndex,
-      spentBlockIndex: spentBlockIndex ?? this.coin.spentBlockIndex,
       parentCoinSpend: parentCoinSpend ?? this.parentCoinSpend,
     );
   }

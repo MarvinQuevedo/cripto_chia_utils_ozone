@@ -67,7 +67,7 @@ class StandardWalletService extends BaseWalletService {
     );
 
     return createSpendBundle(
-      payments: [],
+      payments: List.empty(),
       coinsInput: standardCoins,
       changePuzzlehash: changePuzzlehash,
       keychain: keychain,
@@ -155,10 +155,12 @@ class StandardWalletService extends BaseWalletService {
 
   List<FullCoin> convertXchCoinsToFull(List<Coin> coins) {
     return coins
-        .map((coin) => FullCoin(
-              coin: coin,
-              // parentCoinSpend: null,
-            ),)
+        .map(
+          (coin) => FullCoin(
+            coin: coin,
+            // parentCoinSpend: null,
+          ),
+        )
         .toList();
   }
 }

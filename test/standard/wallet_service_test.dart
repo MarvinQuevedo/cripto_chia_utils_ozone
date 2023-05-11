@@ -222,7 +222,7 @@ void main() {
 
   test('Should create valid spendbundle with only fee', () {
     final spendBundle = walletService.createSpendBundle(
-      payments: [],
+      payments: List.empty(),
       coinsInput: coins,
       changePuzzlehash: changePuzzlehash,
       keychain: walletKeychain,
