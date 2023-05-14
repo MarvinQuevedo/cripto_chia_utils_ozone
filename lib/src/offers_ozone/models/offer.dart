@@ -686,6 +686,14 @@ class Offer {
     return encoded;
   }
 
+  static String toBench32Bytes(
+      {required Bytes compressedBytes, String prefix = "offer", int? compressionVersion}) {
+    final offerBytes = compressedBytes;
+
+    final encoded = OfferSegwitEncoder().convert(Segwit(prefix, offerBytes));
+    return encoded;
+  }
+
   static Offer fromBench32(String offerBech32) {
     final bytes = Bytes(OfferSegwitDecoder().convert(offerBech32).program);
 
