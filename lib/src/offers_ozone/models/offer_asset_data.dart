@@ -51,8 +51,8 @@ class OfferAssetData extends Equatable {
 
   factory OfferAssetData.fromMap(Map<String, dynamic> map) {
     return OfferAssetData(
-      assetId: map['assetId'] == null ? null : Bytes.fromHex(map['assetId']),
-      type: spendTypeFromString(map['type']) ?? SpendType.unknown,
+      assetId: map['assetId'] == null ? null : Bytes.fromHex(map['assetId'] as String),
+      type: spendTypeFromString(map['type'] as String) ?? SpendType.unknown,
     );
   }
 }

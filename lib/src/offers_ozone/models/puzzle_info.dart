@@ -3,9 +3,10 @@ class PuzzleInfo {
 
   PuzzleInfo(this.info);
 
-  String get type => info['type'];
-  PuzzleInfo? get also =>
-      info['also'] != null ? PuzzleInfo(Map<String, dynamic>.from(info['also'])) : null;
+  String get type => info['type'] as String;
+  PuzzleInfo? get also => info['also'] != null
+      ? PuzzleInfo(Map<String, dynamic>.from(info['also'] as Map<dynamic, dynamic>))
+      : null;
 
   @override
   bool operator ==(Object other) => other is PuzzleInfo && other.type == type && other.also == also;

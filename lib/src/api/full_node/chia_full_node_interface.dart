@@ -4,6 +4,8 @@ import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/core/models/blockchain_state.dart';
 import 'package:chia_crypto_utils/src/plot_nft/models/exceptions/invalid_pool_singleton_exception.dart';
 
+import '../../notification/index.dart';
+
 class ChiaFullNodeInterface {
   const ChiaFullNodeInterface(this.fullNode);
   factory ChiaFullNodeInterface.fromURL(
@@ -397,5 +399,77 @@ class ChiaFullNodeInterface {
     }
 
     throw BadRequestException(message: errorMessage);
+  }
+
+  Future<DateTime?> getDateTimeFromBlockIndex(int spentBlockIndex) async {
+    try {
+      final blockRecordByHeight = await fullNode.getBlockRecordByHeight(spentBlockIndex);
+      return blockRecordByHeight.blockRecord?.dateTime;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<List<NotificationCoin>> scroungeForReceivedNotificationCoins(
+    List<Puzzlehash> puzzlehashes,
+  ) async {
+    final coinsByHint = await getCoinsByHints(puzzlehashes, includeSpentCoins: true);
+    final spentCoins = coinsByHint.where((c) => c.isSpent);
+
+    final notificationCoins = <NotificationCoin>[];
+    for (final spentCoin in spentCoins) {
+      final coinSpend = await getCoinSpend(spentCoin);
+      final programAndArgs = coinSpend!.puzzleReveal.uncurry();
+      if (programAndArgs.program == notificationProgram) {
+        try {
+          final parentCoin = await getCoinById(spentCoin.parentCoinInfo);
+          final parentCoinSpend = await getCoinSpend(parentCoin!);
+          final notificationCoin = await NotificationCoin.fromParentSpend(
+            parentCoinSpend: parentCoinSpend!,
+            coin: spentCoin,
+          );
+          notificationCoins.add(notificationCoin);
+        } catch (e) {
+          continue;
+        }
+      }
+    }
+    return notificationCoins;
+  }
+
+  Future<List<Coin>> getCoinsByHints(
+    List<Puzzlehash> hints, {
+    int? startHeight,
+    int? endHeight,
+    bool includeSpentCoins = false,
+  }) async {
+    final coinsByHints = <Coin>[];
+    for (final hint in hints) {
+      final coinsByHint = await getCoinsByMemo(
+        hint,
+        includeSpentCoins: includeSpentCoins,
+        endHeight: endHeight,
+        startHeight: startHeight,
+      );
+      coinsByHints.addAll(coinsByHint);
+    }
+
+    return coinsByHints;
+  }
+
+  Future<Coin?> getSingleChildCoinFromCoin(Coin messageCoin) async {
+    try {
+      final messageCoinSpend = await getCoinSpend(messageCoin);
+      final messageCoinChildId = (await messageCoinSpend!.additionsAsync).single.id;
+      final messageCoinChild = await getCoinById(messageCoinChildId);
+      return messageCoinChild;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<int?> getCurrentBlockIndex() async {
+    final blockchainState = await getBlockchainState();
+    return blockchainState?.peak?.height;
   }
 }

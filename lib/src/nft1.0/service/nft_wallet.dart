@@ -772,7 +772,7 @@ class NftWallet extends BaseWalletService {
           }
           final tradePriceList = <Program>[];
           for (var price in tradePrices) {
-            if ((price.item1 * (offeredRoyaltyPercentages[assetId]! / 10000)).floor != 0 || old) {
+            if ((price.item1 * (offeredRoyaltyPercentages[assetId]! / 10000)).floor() != 0 || old) {
               tradePriceList.add(Program.list([
                 Program.fromInt(price.item1),
                 Program.fromBytes(

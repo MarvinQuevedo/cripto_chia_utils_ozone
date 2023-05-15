@@ -98,15 +98,16 @@ class NFTInfo {
         licenseUris: List<String>.from(json['license_uris'] as List),
         licenseHash: json['license_hash'] as String,
         chainInfo: json["chain_info"] as String,
-        p2Puzzlehash: Puzzlehash.fromHex(json["p2_puzzle_hash"]),
-        mintHeight: json["mint_height"],
-        pendingTransaction: json["pending_transaction"],
+        p2Puzzlehash: Puzzlehash.fromHex(json["p2_puzzle_hash"] as String),
+        mintHeight: json["mint_height"] as int,
+        pendingTransaction: json["pending_transaction"] as bool,
         royaltyAddress: json["royalty_puzzle_hash"] != null
-            ? Address.fromPuzzlehash(Puzzlehash.fromHex(json["royalty_puzzle_hash"]), prefix)
+            ? Address.fromPuzzlehash(
+                Puzzlehash.fromHex(json["royalty_puzzle_hash"] as String), prefix)
             : null,
-        seriesNumber: json['series_number'],
-        seriesTotal: json["series_total"],
-        supportsDid: json["supports_did"],
+        seriesNumber: json['series_number'] as int,
+        seriesTotal: json["series_total"] as int,
+        supportsDid: json["supports_did"] as bool,
         updaterPuzzlehash: Bytes.fromHex(json['updater_puzhash']));
   }
 
