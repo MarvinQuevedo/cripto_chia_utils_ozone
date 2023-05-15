@@ -23,6 +23,12 @@
             "program": "integration_test/nft1/nft1_service_test.dart"
         },
         {
+            "name": "Test nft service MAINNET",
+            "type": "dart",
+            "request": "launch",
+            "program": "integration_test/nft1/nft1_service_mainnet.dart"
+        },
+        {
             "name": "trade service test",
             "type": "dart",
             "request": "launch",
