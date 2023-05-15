@@ -1,5 +1,6 @@
 import 'package:bech32m/bech32m.dart';
 import 'package:chia_crypto_utils/src/clvm/bytes.dart';
+import 'package:chia_crypto_utils/src/utils.dart';
 import 'package:meta/meta.dart';
 
 const COL_HRP = 'col';
@@ -28,4 +29,10 @@ class CollectionAddress {
 
   @override
   String toString() => 'Address($address)';
+}
+
+CollectionAddress calcSpaceScanCollection({required Bytes didId, required String collectionId}) {
+  final concatData = didId.toHex().toBytes() + collectionId.toBytes();
+  final hash = concatData.sha256Hash();
+  return CollectionAddress.fromPuzzlehash(Puzzlehash(hash));
 }
