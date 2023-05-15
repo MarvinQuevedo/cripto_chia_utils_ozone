@@ -15,7 +15,7 @@ Future<void> main() async {
   }
 
   final mnemonic =
-      'faint step noise upper anchor audit make will buyer shed cliff chalk'.split(' ');
+      'blast song refuse excess filter unhappy tag extra bless grain broom vanish'.split(' ');
 
   final keychainSecret = KeychainCoreSecret.fromMnemonic(mnemonic);
   final walletsSetList = <WalletSet>[];
@@ -40,9 +40,26 @@ Future<void> main() async {
 
   FullNFTCoinInfo? nftFullCoin;
   test('Get NFT Coins', () async {
-    nftCoins = await nftService.getNFTCoins();
+    nftCoins = await nftService.getNFTCoins(includeSpentCoins: false, startHeight: 3663980);
     print(nftCoins!);
     expect(nftCoins!, isNotEmpty);
+  }, timeout: Timeout(Duration(minutes: 1)));
+
+  test('Get full coins for test', () async {
+    for (final nftCoin in nftCoins!) {
+      final nftFullCoin_ = await nftService.convertFullCoin(nftCoin);
+      final nftInfo = nftFullCoin_.toNftCoinInfo();
+
+      final uncurriedNft = UncurriedNFT.uncurry(nftInfo.fullPuzzle);
+      if (uncurriedNft.supportDid) {
+        expect(nftInfo.minterDid, isNotNull);
+      }
+
+      final launcherId = uncurriedNft.singletonLauncherId.atom;
+      final address = NftAddress.fromPuzzlehash(Puzzlehash(launcherId)).address;
+      final walletVector = keychain.getWalletVector(uncurriedNft.p2PuzzleHash);
+      expect(walletVector, isNotNull);
+    }
   });
 
   test('Get full coin for transfer', () async {
