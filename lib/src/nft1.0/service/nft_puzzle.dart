@@ -253,6 +253,9 @@ class NftService {
       if (condition.first().toInt() == -10) {
         // this is the change owner magic condition
         newDidId = condition.filterAt("rf").atom;
+        if (newDidId.isEmpty) {
+          newDidId = null;
+        }
       } else if (condition.first().toInt() == 51) {
         newPuzhash = condition.filterAt("rf").atom;
       }
@@ -283,6 +286,9 @@ class NftService {
         // this is the change owner magic condition
 
         newDidId = condition.filterAt("rf").atom;
+        if (newDidId.isEmpty) {
+          newDidId = null;
+        }
       }
     }
     return newDidId;
