@@ -17,3 +17,5 @@ export './wallet_set.dart';
 export './wallet_vector.dart';
 export './outer_puzzle.dart';
 export './nft_address.dart';
+export './collection_address.dart';
+export './did_address.dart';
