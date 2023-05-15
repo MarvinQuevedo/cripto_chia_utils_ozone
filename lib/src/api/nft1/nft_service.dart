@@ -81,7 +81,7 @@ class NftNodeWalletService {
     }
     FullCoin nftCoin = mainHidratedCoins.first;
     print(nftCoin.type);
-    final foundedCoins = await fullNode.getAllLinageSingletonCoin(nftCoin);
+    final foundedCoins = await fullNode.getAllLinageSingletonCoin(nftCoin, onlyFirst: true);
     final eveCcoin = foundedCoins.first;
     final uncurriedNft = UncurriedNFT.tryUncurry(eveCcoin.parentCoinSpend!.puzzleReveal);
     if (uncurriedNft!.supportDid) {

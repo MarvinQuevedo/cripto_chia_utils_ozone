@@ -209,7 +209,8 @@ class ChiaFullNodeInterface {
     return hydrated.first;
   }
 
-  Future<List<FullCoin>> getAllLinageSingletonCoin(FullCoin parentCoin) async {
+  Future<List<FullCoin>> getAllLinageSingletonCoin(FullCoin parentCoin,
+      {bool onlyFirst = false}) async {
     Coin lastCoin = parentCoin.coin;
     List<Coin> allCoins = [];
 
@@ -224,7 +225,11 @@ class ChiaFullNodeInterface {
         print("Warning: would not be more than one children");
         lastCoin = children.first;
       }
+
       allCoins.add(lastCoin);
+      if (onlyFirst) {
+        break;
+      }
     }
     final hydrated = await hydrateFullCoins(allCoins);
     return hydrated;
