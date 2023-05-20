@@ -125,31 +125,35 @@ class CoinSpend with ToBytesMixin {
   }
 
   SpendType get type {
-    final uncurried = puzzleReveal.uncurry();
-    final uncurriedPuzzleSource = uncurried.program.toSource();
-    if (uncurriedPuzzleSource == p2DelegatedPuzzleOrHiddenPuzzleProgram.toSource()) {
-      return SpendType.standard;
-    }
-    if (uncurriedPuzzleSource == CAT_MOD.toSource()) {
-      return SpendType.cat2;
-    }
-    if (uncurriedPuzzleSource == LEGACY_CAT_MOD.toSource()) {
-      return SpendType.cat1;
-    }
-    if (uncurriedPuzzleSource == SINGLETON_TOP_LAYER_MOD_v1_1.toSource()) {
-      final nftUncurried = UncurriedNFT.tryUncurry(puzzleReveal);
-      if (nftUncurried != null) {
-        return SpendType.nft;
+    try {
+      final uncurried = puzzleReveal.uncurry();
+      final uncurriedPuzzleSource = uncurried.program.toSource();
+      if (uncurriedPuzzleSource == p2DelegatedPuzzleOrHiddenPuzzleProgram.toSource()) {
+        return SpendType.standard;
       }
-
-      final args = uncurried.arguments;
-
-      final uncurriedDid = didPuzzles.uncurryInnerpuz(args[1]);
-      if (uncurriedDid != null) {
-        return SpendType.did;
+      if (uncurriedPuzzleSource == CAT_MOD.toSource()) {
+        return SpendType.cat2;
       }
+      if (uncurriedPuzzleSource == LEGACY_CAT_MOD.toSource()) {
+        return SpendType.cat1;
+      }
+      if (uncurriedPuzzleSource == SINGLETON_TOP_LAYER_MOD_v1_1.toSource()) {
+        final nftUncurried = UncurriedNFT.tryUncurry(puzzleReveal);
+        if (nftUncurried != null) {
+          return SpendType.nft;
+        }
+
+        final args = uncurried.arguments;
+
+        final uncurriedDid = didPuzzles.uncurryInnerpuz(args[1]);
+        if (uncurriedDid != null) {
+          return SpendType.did;
+        }
+      }
+      return SpendType.unknown;
+    } catch (e) {
+      return SpendType.unknown;
     }
-    return SpendType.unknown;
     //throw UnimplementedError('Unimplemented spend type');
   }
 
