@@ -3,7 +3,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/notification/index.dart';
 import 'package:test/expect.dart';
 import 'package:test/scaffolding.dart';
 

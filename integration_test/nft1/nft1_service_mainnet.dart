@@ -56,7 +56,7 @@ Future<void> main() async {
       }
 
       final launcherId = uncurriedNft.singletonLauncherId.atom;
-      final address = NftAddress.fromPuzzlehash(Puzzlehash(launcherId)).address;
+      final _ = NftAddress.fromPuzzlehash(Puzzlehash(launcherId)).address;
       final walletVector = keychain.getWalletVector(uncurriedNft.p2PuzzleHash);
       expect(walletVector, isNotNull);
     }

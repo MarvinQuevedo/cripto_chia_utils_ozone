@@ -2,8 +2,6 @@ import 'dart:collection';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
-import '../../../../notification/index.dart';
-
 class ExchangeOfferWalletService {
   ExchangeOfferWalletService();
 

@@ -1,7 +1,5 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
-import '../index.dart';
-
 class NotificationWalletService {
   NotificationWalletService();
 
