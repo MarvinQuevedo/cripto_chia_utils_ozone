@@ -178,7 +178,7 @@ class TradeManagerService extends BaseWalletService {
     return null;
   }
 
-  int calculateRoyaltyAmount(int fungibleAmount, int percentageRaw) {
+  static int calculateRoyaltyAmount({required int fungibleAmount, required int percentageRaw}) {
     return (fungibleAmount.abs() * (percentageRaw / 10000)).floor();
   }
 
@@ -261,7 +261,8 @@ class TradeManagerService extends BaseWalletService {
 
     if (royaltyPercentage != null && fungibleAssetAmount.length == 1) {
       final fungibleAmount = fungibleAssetAmount.values.first;
-      royaltyAmount = calculateRoyaltyAmount(fungibleAmount, royaltyPercentage!);
+      royaltyAmount =
+          calculateRoyaltyAmount(fungibleAmount: fungibleAmount, percentageRaw: royaltyPercentage!);
     }
 
     final invertOfferred = convertRequestedToOffered(requestedAmounts);
