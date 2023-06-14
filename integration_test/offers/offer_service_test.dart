@@ -156,4 +156,115 @@ Future<void> main() async {
         coinsToUse: xchCoins!);
     expect(responseResult.item1.success, true);
   });
+
+  test('Create Cat offer, Offer USDS for XCH', () async {
+    /// The user will to offer USDS Cat Coins, then, we need to pass the USDS Cat Coins,
+    /// also need to pass the XCH coins for pay the fee, can be in the same coins params list
+    /// intern the service will separate the coins for the offer and the fee
+
+    final catCoins = <CatCoin>[];
+    final fullCoins = catCoins
+        .map((e) => FullCoin.fromCoin(
+            Coin(
+              confirmedBlockIndex: 0,
+              spentBlockIndex: 0,
+              coinbase: false,
+              timestamp: 0,
+              parentCoinInfo: e.parentCoinInfo,
+              puzzlehash: e.puzzlehash,
+              amount: e.amount,
+            ),
+            e.parentCoinSpend))
+        .toList();
+
+    final changePh = keychain.puzzlehashes[2];
+    final targePh = keychain.puzzlehashes[3];
+
+    //USDS Tailhash
+    //6d95dae356e32a71db5ddcb42224754a02524c615c5fc35f568c2af04774e589
+
+    final usdsTailhash = Bytes.fromHex(
+      "6d95dae356e32a71db5ddcb42224754a02524c615c5fc35f568c2af04774e589",
+    );
+
+    // Request 100000000000 mojos for 1.000 USDS
+    final offer = await offerService.createOffer(
+      offerredAmounts: {
+        OfferAssetData.cat(
+          tailHash: usdsTailhash,
+        ): -1000
+      },
+      requesteAmounts: {
+        null: [100000000000],
+      },
+
+      coins: fullCoins,
+
+      changePuzzlehash: changePh,
+      targetPuzzleHash: targePh,
+      //fee: 1000000,
+    );
+    final summary = offer.summary();
+    print(summary);
+    final requested = offer.requestedPayments;
+    final requestedAmount = requested.values.fold<int>(
+        0, (a, b) => a + b.fold(0, (previousValue, element) => previousValue + element.amount));
+    expect(requested.length, 1);
+    expect(requestedAmount, 100000000000);
+
+    final offered = offer.getOfferedAmounts();
+    final offeredAmount = offered.values.fold<int>(0, (a, b) => a + b);
+    expect(offered.length, 1);
+    expect(offeredAmount, 1000);
+
+    offeringNFTStr = offer.toBench32();
+    expect(offeringNFTStr, isNotNull);
+  });
+
+  test('Create Cat offer, Offer XCH for USDS', () async {
+    // Because the offer offer xch, only need XCH coins
+    final fullCoins = xchCoins!;
+
+    final changePh = keychain.puzzlehashes[2];
+    final targePh = keychain.puzzlehashes[3];
+
+    //USDS Tailhash
+    //6d95dae356e32a71db5ddcb42224754a02524c615c5fc35f568c2af04774e589
+
+    final usdsTailhash = Bytes.fromHex(
+      "6d95dae356e32a71db5ddcb42224754a02524c615c5fc35f568c2af04774e589",
+    );
+
+    // Request 100000000000 mojos for 1.000 USDS
+    final offer = await offerService.createOffer(
+      offerredAmounts: {
+        null: 100000000000,
+      },
+      requesteAmounts: {
+        OfferAssetData.cat(
+          tailHash: usdsTailhash,
+        ): [-1000]
+      },
+
+      coins: fullCoins,
+      changePuzzlehash: changePh,
+      targetPuzzleHash: targePh,
+      //fee: 1000000,
+    );
+    final summary = offer.summary();
+    print(summary);
+    final requested = offer.requestedPayments;
+    final requestedAmount = requested.values.fold<int>(
+        0, (a, b) => a + b.fold(0, (previousValue, element) => previousValue + element.amount));
+    expect(requested.length, 1);
+    expect(requestedAmount, 100000000000);
+
+    final offered = offer.getOfferedAmounts();
+    final offeredAmount = offered.values.fold<int>(0, (a, b) => a + b);
+    expect(offered.length, 1);
+    expect(offeredAmount, 1000);
+
+    offeringNFTStr = offer.toBench32();
+    expect(offeringNFTStr, isNotNull);
+  });
 }
