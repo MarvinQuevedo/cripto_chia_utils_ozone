@@ -69,7 +69,11 @@ extension NumberParsing on String {
 }
 
 String _toRegionalString(
-    {String? locale, required int decimals, required String? symbol, required double value}) {
+    {String? locale,
+    required int decimals,
+    required String? symbol,
+    required double value,
+    bool removeZeros = true}) {
   final defaultLocale = _getDefaultLocaleName;
   final formatAsset = NumberFormat.simpleCurrency(
     name: "",
@@ -77,28 +81,49 @@ String _toRegionalString(
     decimalDigits: decimals,
   );
   final rawValue = value;
-  return removeTrailingZeros(
-    rawValue,
-    formatAsset.format(rawValue),
-    symbol?.toUpperCase(),
-    decimals,
-  );
+  if (removeZeros) {
+    return removeTrailingZeros(
+      rawValue,
+      formatAsset.format(rawValue),
+      symbol?.toUpperCase(),
+      decimals,
+    );
+  } else {
+    return (formatAsset.format(rawValue) + ' ' + (symbol?.toUpperCase() ?? '')).trim();
+  }
 }
 
 extension IntDoubleParsing on int {
-  String toRegionalString({String? locale, required int decimals, String? symbol}) {
+  String toRegionalString({
+    String? locale,
+    required int decimals,
+    String? symbol,
+    bool removeZeros = true,
+  }) {
     final rawValue = this / math.pow(10, decimals);
-    return _toRegionalString(decimals: decimals, locale: locale, symbol: symbol, value: rawValue);
+    return _toRegionalString(
+      decimals: decimals,
+      locale: locale,
+      symbol: symbol,
+      value: rawValue,
+      removeZeros: removeZeros,
+    );
   }
 }
 
 extension DoubleParsing on double {
-  String toRegionalString({String? locale, required int decimals, String? symbol}) {
+  String toRegionalString({
+    String? locale,
+    required int decimals,
+    String? symbol,
+    bool removeZeros = true,
+  }) {
     return _toRegionalString(
       decimals: decimals,
       locale: locale,
       symbol: symbol,
       value: this,
+      removeZeros: removeZeros,
     );
   }
 }
