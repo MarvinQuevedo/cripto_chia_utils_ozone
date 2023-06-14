@@ -16,7 +16,7 @@ class TradeManagerService extends BaseWalletService {
   /// `generate_secure_bundle` simulates a wallet's `generate_signed_transaction`
   /// but doesn't bother with non-offer announcements
   Offer createOfferBundle(
-      {required List<FullCoin> selectedCoins,
+      {required Map<OfferAssetData?, List<FullCoin>> selectedCoins,
       required List<AssertPuzzleCondition> announcements,
       required Map<Bytes?, int> offeredAmounts,
       required WalletKeychain keychain,
@@ -27,7 +27,8 @@ class TradeManagerService extends BaseWalletService {
       required bool old}) {
     final transactions = <SpendBundle>[];
 
-    final feeLeftToPay = fee;
+    int feeLeftToPay = fee;
+    List<Coin> xchCoins = (selectedCoins[null] ?? []).map((e) => e.toCoin()).toList();
 
     offeredAmounts.forEach((assetId, amount) {
       if (assetId == null) {
@@ -35,13 +36,15 @@ class TradeManagerService extends BaseWalletService {
           payments: [
             Payment(offeredAmounts[assetId]!.abs(), Offer.ph(old)),
           ],
-          coinsInput: selectedCoins,
+          coinsInput: xchCoins,
           keychain: keychain,
           fee: feeLeftToPay,
           puzzleAnnouncementsToAssert: announcements,
           changePuzzlehash: changePuzzlehash,
         );
         transactions.add(standarBundle);
+        feeLeftToPay = 0;
+        xchCoins = [];
       } else {
         bool isCat = driverDict[assetId]!.type == AssetType.CAT;
 
@@ -51,12 +54,13 @@ class TradeManagerService extends BaseWalletService {
               Offer.ph(old).toBytes(),
             ]),
           ];
-          final catCoins = selectedCoins
-              .where((element) => element.isCatCoin)
+          final catCoins = selectedCoins[OfferAssetData.cat(tailHash: assetId)]!
               .map((e) => e.toCatCoin())
               .toList();
-          final standardsCoins =
-              selectedCoins.where((element) => !element.isCatCoin).map((e) => e.coin).toList();
+          var standardsCoins = <Coin>[];
+          if (feeLeftToPay > 0) {
+            standardsCoins = xchCoins;
+          }
           final catBundle = CatWalletService().createSpendBundle(
             payments: catPayments,
             catCoinsInput: catCoins,
@@ -88,7 +92,7 @@ class TradeManagerService extends BaseWalletService {
   }
 
   Offer createOfferForIds(
-      {required List<FullCoin> coins,
+      {required Map<OfferAssetData?, List<FullCoin>> coins,
       required Map<Bytes, PuzzleInfo> driverDict,
       required Map<Bytes?, List<Payment>> requiredPayments,
       required Map<Bytes?, int> offeredAmounts,
@@ -98,10 +102,10 @@ class TradeManagerService extends BaseWalletService {
       required WalletKeychain keychain,
       required bool old}) {
     final chiaRequestedPayments = requiredPayments;
-
+    final coinsList = coins.values.expand((element) => element).toList();
     final chiaNotariedPayments = Offer.notarizePayments(
       requestedPayments: chiaRequestedPayments,
-      coins: coins,
+      coins: coinsList,
     );
     final chiaAnnouncements = Offer.calculateAnnouncements(
       notarizedPayment: chiaNotariedPayments,
@@ -384,7 +388,7 @@ class TradeManagerService extends BaseWalletService {
     } else {
       final offerWallet = TradeManagerService();
       final responseOffer = await offerWallet.createOfferForIds(
-        coins: coins,
+        coins: groupedCoins,
         driverDict: preparedData.driverDict,
         requiredPayments: preparedData.payments,
         offeredAmounts: preparedData.offerredAmounts,
@@ -520,7 +524,7 @@ class TradeManagerService extends BaseWalletService {
     } else {
       final offerWallet = TradeManagerService();
       final offer = offerWallet.createOfferForIds(
-        coins: coins,
+        coins: preparedCoins,
         driverDict: preparedData.driverDict,
         requiredPayments: preparedData.payments,
         offeredAmounts: preparedData.offerredAmounts,
