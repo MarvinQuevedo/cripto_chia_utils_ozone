@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:typed_data';
 
 import '../../cat/index.dart';
@@ -15,22 +16,38 @@ class TradeManagerService extends BaseWalletService {
 
   /// `generate_secure_bundle` simulates a wallet's `generate_signed_transaction`
   /// but doesn't bother with non-offer announcements
-  Offer createOfferBundle(
-      {required Map<OfferAssetData?, List<FullCoin>> selectedCoins,
-      required List<AssertPuzzleCondition> announcements,
-      required Map<Bytes?, int> offeredAmounts,
-      required WalletKeychain keychain,
-      required int fee,
-      required Puzzlehash changePuzzlehash,
-      required Map<Bytes, PuzzleInfo> driverDict,
-      required Map<Bytes?, List<NotarizedPayment>> notarizedPayments,
-      required bool old}) {
+  Offer createOfferBundle({
+    required Map<OfferAssetData?, List<FullCoin>> selectedCoins,
+    required List<AssertPuzzleCondition> announcements,
+    required Map<Bytes?, int> offeredAmounts,
+    required WalletKeychain keychain,
+    required int fee,
+    required Puzzlehash changePuzzlehash,
+    required Map<Bytes, PuzzleInfo> driverDict,
+    required Map<Bytes?, List<NotarizedPayment>> notarizedPayments,
+    required bool old,
+  }) {
     final transactions = <SpendBundle>[];
 
     int feeLeftToPay = fee;
     List<Coin> xchCoins = (selectedCoins[null] ?? []).map((e) => e.toCoin()).toList();
 
-    offeredAmounts.forEach((assetId, amount) {
+    List<MapEntry<Bytes?, int>> entries = offeredAmounts.entries.toList();
+    entries.sort((a, b) {
+      if (a.key == null && b.key == null) {
+        return 0;
+      } else if (a.key == null) {
+        return -1;
+      } else if (b.key == null) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
+
+    LinkedHashMap<Bytes?, int> sortedOfferedAmounts = LinkedHashMap.fromEntries(entries);
+
+    sortedOfferedAmounts.forEach((assetId, amount) {
       if (assetId == null) {
         final standarBundle = StandardWalletService().createSpendBundle(
           payments: [
