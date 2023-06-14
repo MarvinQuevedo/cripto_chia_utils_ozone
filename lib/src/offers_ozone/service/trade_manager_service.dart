@@ -90,6 +90,7 @@ class TradeManagerService extends BaseWalletService {
           final catBytes = catBundle.toBytes();
           final _ = SpendBundle.fromBytes(catBytes);
           transactions.add(catBundle);
+          feeLeftToPay = 0;
         } else {
           throw Exception("Not implemented for ${driverDict[assetId]?.type}}");
         }
