@@ -50,7 +50,7 @@ class OffersService {
         ),
         fee: fee,
         royaltyPercentage: analizedOffer.royaltyPer,
-        royaltyAmount: analizedOffer.royaltyAmount,
+        royaltyAmounts: analizedOffer.royaltyAmounts,
         requesteAmounts: TradeManagerService().convertOfferedToRequested(analizedOffer.offered),
         coinsToUse: coinsToUse);
 
@@ -126,7 +126,7 @@ class OffersService {
     required List<FullCoin> coinsToUse,
     required int fee,
     int? royaltyPercentage,
-    int? royaltyAmount,
+    Map<Bytes?, int?>? royaltyAmounts,
     required Map<OfferAssetData?, List<int>> requesteAmounts,
   }) async {
     Map<OfferAssetData?, List<FullCoin>> coins = {};
@@ -154,7 +154,7 @@ class OffersService {
         final xchCoins = _filterCoins(coinsToUse, asset);
         final selectedCoins = _getCoinsForAmount(
           xchCoins,
-          (value.abs() + fee.abs() + (royaltyAmount?.abs() ?? 0)),
+          (value.abs() + fee.abs() + (royaltyAmounts?[null]?.abs() ?? 0)),
         );
 
         coins[asset] = selectedCoins.map((e) {
@@ -176,7 +176,7 @@ class OffersService {
 
         final selectedCoins = _getCoinsForAmount(
           catCoins,
-          value.abs() + (royaltyAmount?.abs() ?? 0),
+          value.abs() + (royaltyAmounts?[asset.assetId!]?.abs() ?? 0),
         );
 
         coins[asset] = selectedCoins.map((e) {

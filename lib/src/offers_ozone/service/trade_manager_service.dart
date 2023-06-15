@@ -215,7 +215,7 @@ class TradeManagerService extends BaseWalletService {
     final takeOfferDict = <Bytes?, int>{};
     Map<OfferAssetData?, int> offerredAmounts = {};
     int? royaltyPercentage;
-    int? royaltyAmount;
+    Map<Bytes?, int?>? royaltyAmounts;
 
     final arbitrage = offer.arbitrage();
     final offerDriverDict = offer.driverDict;
@@ -281,22 +281,28 @@ class TradeManagerService extends BaseWalletService {
       }
     });
 
-    if (royaltyPercentage != null && fungibleAssetAmount.length == 1) {
-      final fungibleAmount = fungibleAssetAmount.values.first;
-      royaltyAmount =
-          calculateRoyaltyAmount(fungibleAmount: fungibleAmount, percentageRaw: royaltyPercentage!);
+    if (royaltyPercentage != null && fungibleAssetAmount.length >= 1) {
+      royaltyAmounts = {};
+      for (var key in fungibleAssetAmount.keys) {
+        final fungibleAmount = fungibleAssetAmount[key]!;
+        royaltyAmounts[key] = calculateRoyaltyAmount(
+          fungibleAmount: fungibleAmount,
+          percentageRaw: royaltyPercentage!,
+        );
+      }
     }
 
     final invertOfferred = convertRequestedToOffered(requestedAmounts);
     final invertRequested = convertOfferedToRequested(offerredAmounts);
 
     return AnalizedOffer(
-        offered: invertOfferred,
-        requested: invertRequested,
-        isOld: isOld,
-        royaltyAmount: royaltyAmount,
-        royaltyPer: royaltyPercentage,
-        fungibleAmounts: fungibleAssetAmount);
+      offered: invertOfferred,
+      requested: invertRequested,
+      isOld: isOld,
+      royaltyAmounts: royaltyAmounts,
+      royaltyPer: royaltyPercentage,
+      fungibleAmounts: fungibleAssetAmount,
+    );
   }
 
   Map<OfferAssetData?, int> convertRequestedToOffered(Map<OfferAssetData?, List<int>> requested) {
@@ -358,7 +364,7 @@ class TradeManagerService extends BaseWalletService {
       targetPuzzleHash: targetPuzzleHash,
       offerDriverDict: offerDriverDict,
       royaltyPercentage: analizedOffer.royaltyPer,
-      royaltyAmount: analizedOffer.royaltyAmount,
+      royaltyAmounts: analizedOffer.royaltyAmounts,
     );
     offerDriverDict = preparedData.driverDict;
 
@@ -588,7 +594,7 @@ class TradeManagerService extends BaseWalletService {
       required Puzzlehash targetPuzzleHash,
       Map<Bytes, PuzzleInfo>? offerDriverDict,
       int? royaltyPercentage,
-      int? royaltyAmount}) async {
+      Map<Bytes?, int?>? royaltyAmounts}) async {
     Bytes? nftOfferedLauncher;
     bool requestedLauncher = false;
     Map<OfferAssetData, FullNFTCoinInfo> nftCoins = {};
