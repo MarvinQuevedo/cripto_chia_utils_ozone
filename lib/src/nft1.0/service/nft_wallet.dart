@@ -940,11 +940,11 @@ class NftWallet extends BaseWalletService {
               String parentSpendHex = "0x" + parentSpend.toBytes().toHex();
               Solver solver = Solver({
                 "coin": royaltyCoinHex,
-                "parentSpend": parentSpendHex,
+                "parent_spend": parentSpendHex,
                 "siblings": "()",
-                "siblingSpends": "()",
-                "siblingPuzzles": "()",
-                "siblingSolutions": "()",
+                "sibling_spends": "()",
+                "sibling_puzzles": "()",
+                "sibling_solutions": "()",
               });
               royaltySol = OuterPuzzleDriver.solvePuzzle(
                   constructor: driverDict[assetId]!,
