@@ -20,6 +20,21 @@ class AssertCoinAnnouncementCondition implements Condition {
 
   AssertCoinAnnouncementCondition(this.coinId, this.message, {this.morphBytes});
 
+  Program get programList => Program.list([
+        Program.fromBytes(coinId),
+        Program.fromBytes(message),
+        morphBytes != null ? Program.fromBytes(morphBytes!) : Program.nil,
+      ]);
+  static AssertCoinAnnouncementCondition fromProgramList(Program program) {
+    final programList = program.toList();
+
+    return AssertCoinAnnouncementCondition(
+      Bytes(programList[1].atom),
+      Bytes(programList[2].atom),
+      morphBytes: programList[3] != Program.nil ? Bytes(programList[3].atom) : null,
+    );
+  }
+
   static Bytes getAnnouncementIdFromProgram(Program program) {
     final programList = program.toList();
     if (!isThisCondition(program)) {
