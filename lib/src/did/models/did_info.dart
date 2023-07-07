@@ -5,6 +5,8 @@ import 'package:equatable/equatable.dart';
 import 'package:tuple/tuple.dart';
 import '../puzzles/did_puzzles.dart' as didPuzzles;
 
+const didPrefix = 'did:chia:';
+
 class DidInfo extends Equatable {
   final CoinPrototype? originCoin;
   final List<Puzzlehash> backupsIds;
@@ -17,6 +19,8 @@ class DidInfo extends Equatable {
   final Bytes? tempPubKey;
   final bool sentRecoveryTransaction;
   final String metadata;
+
+  Bytes get did => didId!.toBytes();
 
   DidInfo({
     this.didId,
@@ -89,6 +93,14 @@ class DidInfo extends Equatable {
     return 'DidInfo(originCoin: $originCoin, backupsIds: $backupsIds, numOfBackupIdsNeeded: $numOfBackupIdsNeeded, parentInfo: $parentInfo, currentInner: $currentInner, tempCoin: $tempCoin, tempPuzzlehash: $tempPuzzlehash, tempPubKey: $tempPubKey, sentRecoveryTransaction: $sentRecoveryTransaction, metadata: $metadata)';
   }
 
+  static Bytes parseDidFromEitherFormat(String serializedDid) {
+    if (serializedDid.startsWith(didPrefix)) {
+      return Address(serializedDid).toPuzzlehash();
+    }
+
+    return Bytes.fromHex(serializedDid);
+  }
+
   DidInfo? replaceLineagePuzzlehash(Puzzlehash innerPh) {
     final newParentInfo = parentInfo.map((e) {
       final lineageProof = e.item2;
@@ -151,5 +163,23 @@ class DidInfo extends Equatable {
     } catch (e) {
       return null;
     }
+  }
+
+  // conforms to Chia's DidInfo JSON format
+  Map<String, dynamic> toChiaJson(CoinPrototype originCoin) {
+    return <String, dynamic>{
+      'origin_coin': originCoin.toJson(),
+      'backup_ids': backupsIds.map((id) => id.toHex()).toList(),
+      'num_of_backup_ids_needed': backupsIds.length,
+      'parent_info': parentInfo.map(
+        (e) => Tuple2(e.item1.toHex(), e.item2?.toJson()).toList(),
+      ),
+      'current_inner': currentInner?.toBytes().toHex(),
+      'temp_coin': null,
+      'temp_puzhash': null,
+      'temp_pubkey': null,
+      'sent_recovery_transaction': false,
+      'metadata': metadata,
+    };
   }
 }

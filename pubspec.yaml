@@ -31,6 +31,7 @@ dependencies:
   bs58: ^1.0.2
   compute: ^1.0.2
   deep_pick: ^1.0.0
+  
    
 
 dev_dependencies:
