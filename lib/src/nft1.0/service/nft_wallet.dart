@@ -990,6 +990,20 @@ class NftWallet extends BaseWalletService {
     }
   }
 
+  NFTInfo getNftInfoFromFullCoin(FullCoin fullCoin) {
+    final coin = fullCoin.coin;
+    final coinSpend = fullCoin.parentCoinSpend!;
+
+    final nftUncurried = UncurriedNFT.uncurry(coinSpend.puzzleReveal);
+
+    final nftInfo = NFTInfo.fromUncurried(
+      uncurriedNFT: nftUncurried,
+      currentCoin: coin,
+      mintHeight: fullCoin.coin.confirmedBlockIndex,
+    );
+    return nftInfo;
+  }
+
   /// From FullCoin It prepare the FullNftCoinInfo with the updated data for transfer,
   /// if you want use It only for requested NFT, you can return null the the buildKeychain
   /// for create the last spend fullNftCoinInfo

@@ -60,7 +60,7 @@ class NFTInfo {
 
   final Puzzlehash p2Puzzlehash;
 
-  final launcherPuzzlehash = singletonLauncherProgram.hash;
+  final launcherPuzzlehash = singletonLauncherProgram.hash();
 
   NftAddress get nftAddress => NftAddress.fromPuzzlehash(this.launcherId);
 

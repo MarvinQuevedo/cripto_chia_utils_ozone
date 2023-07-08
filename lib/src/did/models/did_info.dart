@@ -171,9 +171,11 @@ class DidInfo extends Equatable {
       'origin_coin': originCoin.toJson(),
       'backup_ids': backupsIds.map((id) => id.toHex()).toList(),
       'num_of_backup_ids_needed': backupsIds.length,
-      'parent_info': parentInfo.map(
-        (e) => Tuple2(e.item1.toHex(), e.item2?.toJson()).toList(),
-      ),
+      'parent_info': parentInfo
+          .map(
+            (e) => Tuple2(e.item1.toHex(), e.item2?.toJson()).toList(),
+          )
+          .toList(),
       'current_inner': currentInner?.toBytes().toHex(),
       'temp_coin': null,
       'temp_puzhash': null,
