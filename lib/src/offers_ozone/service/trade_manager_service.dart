@@ -422,7 +422,6 @@ class TradeManagerService extends BaseWalletService {
         handleTaskCompletion: SpendBundle.fromJson,
       );
       final nftOffer = Offer.fromSpendBundle(offerSpenBundle);
-
       final completedOffer = Offer.aggregate([offer, nftOffer]);
 
       return completedOffer;
@@ -438,7 +437,7 @@ class TradeManagerService extends BaseWalletService {
           old: isOld,
           fee: fee,
           extraSpendBundles: extraSpendBundles);
-      print(responseOffer.toBench32());
+
       final completedOffer = Offer.aggregate([offer, responseOffer]);
       return completedOffer;
     }
