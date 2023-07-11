@@ -52,6 +52,8 @@ class DidInfo extends Equatable {
     ];
   }
 
+  String get didAddress => DidAddress.fromPuzzlehash(didId!).address;
+
   DidInfo copyWith(
       {Coin? originCoin,
       List<Puzzlehash>? backupsIds,
