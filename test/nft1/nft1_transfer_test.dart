@@ -85,6 +85,7 @@ Future<void> main() async {
         keychain: keychain,
         targetPuzzleHash: targetPuzzleHash,
         standardCoinsForFee: [],
+        memos: [],
         fee: 0);
 
     print("coins additions = ${transferBundle.additions.length}");

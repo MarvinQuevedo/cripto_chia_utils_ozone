@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:typed_data';
 
 import '../../cat/index.dart';
 import '../../clvm.dart';
+import '../../context/index.dart';
 import '../../core/index.dart';
 import '../../nft1.0/index.dart';
 import '../../standard/index.dart';
@@ -26,8 +28,11 @@ class TradeManagerService extends BaseWalletService {
     required Map<Bytes, PuzzleInfo> driverDict,
     required Map<Bytes?, List<NotarizedPayment>> notarizedPayments,
     required bool old,
+    required List<SpendBundle> extraSpendBundles,
   }) {
     final transactions = <SpendBundle>[];
+
+    transactions.addAll(extraSpendBundles);
 
     int feeLeftToPay = fee;
     List<Coin> xchCoins = (selectedCoins[null] ?? []).map((e) => e.toCoin()).toList();
@@ -118,7 +123,8 @@ class TradeManagerService extends BaseWalletService {
       validateOnly = false,
       required Puzzlehash changePuzzlehash,
       required WalletKeychain keychain,
-      required bool old}) {
+      required bool old,
+      required List<SpendBundle> extraSpendBundles}) {
     final chiaRequestedPayments = requiredPayments;
     final coinsList = coins.values.expand((element) => element).toList();
     final chiaNotariedPayments = Offer.notarizePayments(
@@ -141,6 +147,7 @@ class TradeManagerService extends BaseWalletService {
       notarizedPayments: chiaNotariedPayments,
       driverDict: driverDict,
       old: old,
+      extraSpendBundles: extraSpendBundles,
     );
 
     return chiaOffer;
@@ -332,6 +339,9 @@ class TradeManagerService extends BaseWalletService {
     List<Coin>? standardCoinsForFee,
     required Offer offer,
     required BuildKeychain buildKeychainForNft,
+    required List<SpendBundle> extraSpendBundles,
+    required Network network,
+    required Environment enviroment,
   }) async {
     final isOld = offer.old;
 
@@ -380,7 +390,7 @@ class TradeManagerService extends BaseWalletService {
           throw Exception("Offered NFT coin not found ${preparedData.nftOfferedLauncher!.toHex()}");
         }
       }
-      final nftWallet = NftWallet();
+
       if (standardCoinsForFee == null && offeredAmounts[null] == null && fee > 0) {
         throw Exception("Standard coins for fee not found for NFT Offer");
       }
@@ -394,17 +404,24 @@ class TradeManagerService extends BaseWalletService {
         }
       });
 
-      final nftOffer = await nftWallet.makeNft1Offer(
-        offerDict: offerDict,
-        driverDict: offerDriverDict,
-        changePuzzlehash: changePuzzlehash,
-        keychain: keychain,
-        old: isOld,
-        fee: fee,
-        selectedCoins: preparedCoins,
-        standardCoinsForFee: standardCoinsForFee ?? [],
-        targetPuzzleHash: targetPuzzleHash,
+      final offerSpenBundle = await spawnAndWaitForIsolate(
+        taskArgument: MakeNft1OfferIsolatedArguments(
+            offerDict: offerDict,
+            driverDict: offerDriverDict,
+            changePuzzlehash: changePuzzlehash,
+            keychain: keychain,
+            old: isOld,
+            fee: fee,
+            selectedCoins: preparedCoins,
+            standardCoinsForFee: standardCoinsForFee ?? [],
+            targetPuzzleHash: targetPuzzleHash,
+            extraSpendBundles: extraSpendBundles,
+            network: network,
+            environment: enviroment),
+        isolateTask: makeNft1OfferIsolate,
+        handleTaskCompletion: SpendBundle.fromJson,
       );
+      final nftOffer = Offer.fromSpendBundle(offerSpenBundle);
 
       final completedOffer = Offer.aggregate([offer, nftOffer]);
 
@@ -412,16 +429,16 @@ class TradeManagerService extends BaseWalletService {
     } else {
       final offerWallet = TradeManagerService();
       final responseOffer = await offerWallet.createOfferForIds(
-        coins: groupedCoins,
-        driverDict: preparedData.driverDict,
-        requiredPayments: preparedData.payments,
-        offeredAmounts: preparedData.offerredAmounts,
-        changePuzzlehash: changePuzzlehash,
-        keychain: keychain,
-        old: isOld,
-        fee: fee,
-      );
-
+          coins: groupedCoins,
+          driverDict: preparedData.driverDict,
+          requiredPayments: preparedData.payments,
+          offeredAmounts: preparedData.offerredAmounts,
+          changePuzzlehash: changePuzzlehash,
+          keychain: keychain,
+          old: isOld,
+          fee: fee,
+          extraSpendBundles: extraSpendBundles);
+      print(responseOffer.toBench32());
       final completedOffer = Offer.aggregate([offer, responseOffer]);
       return completedOffer;
     }
@@ -446,6 +463,7 @@ class TradeManagerService extends BaseWalletService {
       required Puzzlehash targetPuzzleHash,
       required bool isOld,
       required Puzzlehash changePuzzlehash,
+      required List<SpendBundle> extraSpendBundles,
       List<Coin>? standardCoinsForFee}) async {
     List<FullCoin> coins = [];
 
@@ -543,6 +561,7 @@ class TradeManagerService extends BaseWalletService {
         selectedCoins: preparedCoins,
         standardCoinsForFee: standardCoinsForFee ?? [],
         targetPuzzleHash: targetPuzzleHash,
+        extraSpendBundles: extraSpendBundles,
       );
       return nftOffer;
     } else {
@@ -556,6 +575,7 @@ class TradeManagerService extends BaseWalletService {
         keychain: keychain,
         old: isOld,
         fee: fee,
+        extraSpendBundles: extraSpendBundles,
       );
       return offer;
     }
@@ -693,4 +713,86 @@ class TradeManagerService extends BaseWalletService {
     );
     return result.item1;
   }
+}
+
+FutureOr<Map<String, dynamic>> makeNft1OfferIsolate(
+    MakeNft1OfferIsolatedArguments taskArgument) async {
+  ChiaNetworkContextWrapper().registerNetworkContext(
+    taskArgument.network,
+    environment: taskArgument.environment,
+  );
+  final nftWallet = NftWallet();
+
+  final nftOffer = await nftWallet.makeNft1Offer(
+    offerDict: taskArgument.offerDict,
+    driverDict: taskArgument.driverDict,
+    changePuzzlehash: taskArgument.changePuzzlehash,
+    keychain: taskArgument.keychain,
+    old: taskArgument.old,
+    fee: taskArgument.fee,
+    selectedCoins: taskArgument.selectedCoins,
+    standardCoinsForFee: taskArgument.standardCoinsForFee,
+    targetPuzzleHash: taskArgument.targetPuzzleHash,
+    extraSpendBundles: taskArgument.extraSpendBundles,
+  );
+  return nftOffer.toSpendBundle().toJson();
+}
+
+class CreateOfferArgumentsIsolated {
+  final Map<OfferAssetData?, List<FullCoin>> groupedCoins;
+  final Map<OfferAssetData?, List<int>> requestedAmounts;
+  final Map<OfferAssetData?, int> offerredAmounts;
+  final WalletKeychain keychain;
+  final int fee;
+  final Puzzlehash targetPuzzleHash;
+  final bool isOld;
+  final Puzzlehash changePuzzlehash;
+  final List<Coin>? standardCoinsForFee;
+  final Network network;
+  final List<SpendBundle> extraSpendBundles;
+
+  CreateOfferArgumentsIsolated({
+    required this.groupedCoins,
+    required this.requestedAmounts,
+    required this.offerredAmounts,
+    required this.keychain,
+    required this.fee,
+    required this.targetPuzzleHash,
+    required this.isOld,
+    required this.changePuzzlehash,
+    this.standardCoinsForFee,
+    required this.network,
+    required this.extraSpendBundles,
+  });
+}
+
+class MakeNft1OfferIsolatedArguments {
+  final WalletKeychain keychain;
+  final Map<Bytes?, int> offerDict;
+  final Map<Bytes, PuzzleInfo> driverDict;
+  final Puzzlehash targetPuzzleHash;
+  final Map<OfferAssetData?, List<FullCoin>> selectedCoins;
+  final int fee;
+  final int? mintCoinAmount;
+  final Puzzlehash? changePuzzlehash;
+  final List<Coin> standardCoinsForFee;
+  final bool old;
+  final List<SpendBundle> extraSpendBundles;
+  final Network network;
+  final Environment environment;
+  MakeNft1OfferIsolatedArguments({
+    required this.keychain,
+    required this.offerDict,
+    required this.driverDict,
+    required this.targetPuzzleHash,
+    required this.selectedCoins,
+    required this.standardCoinsForFee,
+    required this.old,
+    required this.extraSpendBundles,
+    this.mintCoinAmount,
+    this.changePuzzlehash,
+    required this.fee,
+    required this.network,
+    required this.environment,
+  });
 }

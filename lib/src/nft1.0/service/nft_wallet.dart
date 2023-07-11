@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable
+
 import 'dart:typed_data';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
@@ -21,9 +23,6 @@ class NftWallet extends BaseWalletService {
     required List<CoinPrototype> standardCoinsForFee,
     required List<String> memos,
   }) {
-    print(
-      "p2puzzleNew = ${UncurriedNFT.uncurry(nftCoin.fullPuzzle).p2PuzzleHash.toHex()} ",
-    );
     return generateSignedSpendBundle(
         payments: [
           Payment(
@@ -70,9 +69,9 @@ class NftWallet extends BaseWalletService {
     List<SpendBundle>? additionalBundles,
   }) {
     final uncurriedNft = UncurriedNFT.uncurry(nftCoin.fullPuzzle);
-    print(
-      "p2puzzleNew = ${uncurriedNft.p2PuzzleHash.toHex()} ",
-    );
+    //print(
+    //   "p2puzzleNew = ${uncurriedNft.p2PuzzleHash.toHex()} ",
+    // );
     final generateSpendsTuple = generateUnsignedSpendbundle(
       payments: payments,
       keychain: keychain,
@@ -264,13 +263,7 @@ class NftWallet extends BaseWalletService {
       if (puzzleHashList.isEmpty) {
         final uncurriedNft = UncurriedNFT.tryUncurry(coinSpend.puzzleReveal);
         if (uncurriedNft != null) {
-          print("Found a NFT state layer to sign");
           puzzleHashList.add(uncurriedNft.p2PuzzleHash);
-
-          print(
-            "p2puzzleNew = ${uncurriedNft.p2PuzzleHash.toHex()} ",
-          );
-          print(Address.fromPuzzlehash(uncurriedNft.p2PuzzleHash, "txch").address);
         }
       }
       for (final ph in puzzleHashList) {
@@ -303,7 +296,6 @@ class NftWallet extends BaseWalletService {
           try {
             final sk = keys[pk];
             if (sk != null) {
-              print("sign message ${msg.toHex()} }");
               final signature = AugSchemeMPL.sign(sk, msg);
               signatures.add(signature);
             } else {
@@ -319,7 +311,6 @@ class NftWallet extends BaseWalletService {
     }
 
     final aggregatedSignature = AugSchemeMPL.aggregate(signatures);
-    print(aggregatedSignature.toHex());
 
     return unsignedSpendBundle.addSignature(aggregatedSignature);
   }
@@ -345,16 +336,16 @@ class NftWallet extends BaseWalletService {
       amount: amount,
     );
 
-    print("Generating NFT with launcher coin %s and metadata:  ${launcherCoin}, ${metadata}");
+    //print("Generating NFT with launcher coin %s and metadata:  ${launcherCoin}, ${metadata}");
 
     final targetWalletVector = keychain.getWalletVector(targetPuzzleHash);
     final p2InnerPuzzle = getPuzzleFromPk(targetWalletVector!.childPublicKey);
-    print("Attempt to generate a new NFT to ${targetPuzzleHash.toHex()}");
-    print("address = ${Address.fromPuzzlehash(targetPuzzleHash, "txch").address}");
+    //print("Attempt to generate a new NFT to ${targetPuzzleHash.toHex()}");
+    //print("address = ${Address.fromPuzzlehash(targetPuzzleHash, "txch").address}");
 
     Program innerPuzzle = p2InnerPuzzle;
     if (didInfo != null) {
-      print("Creating provenant NFT");
+      //print("Creating provenant NFT");
       // eve coin DID can be set to whatever so we keep it empty
       // WARNING: wallets should always ignore DID value for eve coins as they can be set
       //          to any DID without approval
@@ -365,9 +356,9 @@ class NftWallet extends BaseWalletService {
         percentage: percentage,
         royaltyPuzzleHash: royaltyPuzzleHash,
       );
-      print("Got back ownership inner puzzle: ${(innerPuzzle).toSource()}");
+      //print("Got back ownership inner puzzle: ${(innerPuzzle).toSource()}");
     } else {
-      print("Creating standard NFT");
+      //print("Creating standard NFT");
       //innerPuzzle = p2InnerPuzzle;
     }
 
@@ -393,8 +384,8 @@ class NftWallet extends BaseWalletService {
     );
     announcementSet.add(assertCoinAnnouncement);
 
-    print(
-        "Creating transaction for launcher: ${origin} and other coins: ${standardCoinsForFee} (${announcementSet})");
+    //print(
+    //    "Creating transaction for launcher: ${origin} and other coins: ${standardCoinsForFee} (${announcementSet})");
 
     final createLauncherSpendBundle = standardWalletService.createSpendBundle(
       payments: [
@@ -491,7 +482,7 @@ class NftWallet extends BaseWalletService {
     required DidInfo didInfo,
     required WalletKeychain keychain,
   }) async {
-    print("Creating announcement from DID for nft_ids: ${nftsIds}");
+    //print("Creating announcement from DID for nft_ids: ${nftsIds}");
 
     final didBundle = await DidWallet().createMessageSpend(
       didInfo,
@@ -499,21 +490,23 @@ class NftWallet extends BaseWalletService {
       puzzleAnnouncements: nftsIds.toSet(),
     );
     final didInnerhash = didInfo.currentInner!.hash();
-    print("Sending DID announcement from puzzle: ${didBundle.removals}");
+    //print("Sending DID announcement from puzzle: ${didBundle.removals}");
     return Tuple2(didInnerhash, didBundle);
   }
 
-  Future<Offer> makeNft1Offer(
-      {required WalletKeychain keychain,
-      required Map<Bytes?, int> offerDict,
-      required Map<Bytes, PuzzleInfo> driverDict,
-      required Puzzlehash targetPuzzleHash,
-      required Map<OfferAssetData?, List<FullCoin>> selectedCoins,
-      int fee = 0,
-      int? mintCoinAmount,
-      Puzzlehash? changePuzzlehash,
-      required List<Coin> standardCoinsForFee,
-      required bool old}) async {
+  Future<Offer> makeNft1Offer({
+    required WalletKeychain keychain,
+    required Map<Bytes?, int> offerDict,
+    required Map<Bytes, PuzzleInfo> driverDict,
+    required Puzzlehash targetPuzzleHash,
+    required Map<OfferAssetData?, List<FullCoin>> selectedCoins,
+    int fee = 0,
+    int? mintCoinAmount,
+    Puzzlehash? changePuzzlehash,
+    required List<Coin> standardCoinsForFee,
+    required bool old,
+    required List<SpendBundle> extraSpendBundles,
+  }) async {
     final DESIRED_OFFER_MOD = old ? OFFER_MOD_V1 : OFFER_MOD_V2;
     final DESIRED_OFFER_MOD_HASH = old ? OFFER_MOD_V1_HASH : OFFER_MOD_V2_HASH;
 
@@ -728,7 +721,9 @@ class NftWallet extends BaseWalletService {
       }
     }
     // Crear todas las transacciones
-    List<SpendBundle> allTransactions = [];
+    List<SpendBundle> allTransactions = [
+      ...extraSpendBundles,
+    ];
     List<SpendBundle> additionalBundles = [];
     // standard paga la tarifa si es posible
 
@@ -1045,7 +1040,7 @@ class NftWallet extends BaseWalletService {
         innerPuzzle = getPuzzleFromPk(vector.childPublicKey);
       } else {
         //innerPuzzle = nftUncurried.p2Puzzle;
-        print("User parent spend innerPuzzle for ${nftInfo.launcherId}");
+        //print("User parent spend innerPuzzle for ${nftInfo.launcherId}");
       }
     }
 

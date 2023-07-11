@@ -35,6 +35,8 @@ class OffersService {
     required Offer offer,
     required Puzzlehash changePuzzlehash,
     required List<FullCoin> coinsToUse,
+    required Environment environment,
+    required Network network,
   }) async {
     final tradeManager = TradeManagerService();
 
@@ -62,6 +64,9 @@ class OffersService {
       changePuzzlehash: changePuzzlehash,
       offer: offer,
       buildKeychainForNft: (phs) async => keychain,
+      enviroment: environment,
+      network: network,
+      extraSpendBundles: [],
     );
 
     if (completedOffer.isValid()) {
@@ -117,6 +122,7 @@ class OffersService {
       targetPuzzleHash: targetPuzzleHash,
       isOld: isOld,
       changePuzzlehash: changePuzzlehash,
+      extraSpendBundles: [],
     );
     return offer;
   }

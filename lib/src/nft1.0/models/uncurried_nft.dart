@@ -203,7 +203,7 @@ class UncurriedNFT {
     final uncurried = puzzle.uncurry();
     final mod = uncurried.program;
     final curried_args = uncurried.arguments;
-    // print(mod.serializeHex());
+
     if (mod.hash() != SINGLETON_TOP_LAYER_MOD_V1_1_HASH) {
       throw ArgumentError("Cannot uncurry NFT puzzle, failed on singleton top layer: Mod ${mod}");
     }
@@ -325,7 +325,6 @@ class UncurriedNFT {
         // nftInnerPuzzleHash: nftInnerPuzzleMod,
       );
     } catch (e) {
-      print(e);
       throw Exception("Cannot uncurry NFT state layer: Args ${curried_args}");
     }
   }

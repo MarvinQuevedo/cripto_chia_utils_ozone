@@ -149,11 +149,14 @@ Future<void> main() async {
     final changePh = keychain.puzzlehashes[2];
     final targePh = keychain.puzzlehashes[3];
     final responseResult = await offerService.responseOffer(
-        fee: 1000000,
-        targetPuzzleHash: targePh,
-        offer: offer,
-        changePuzzlehash: changePh,
-        coinsToUse: xchCoins!);
+      fee: 1000000,
+      targetPuzzleHash: targePh,
+      offer: offer,
+      changePuzzlehash: changePh,
+      coinsToUse: xchCoins!,
+      environment: Environment.pureDart,
+      network: Network.testnet10,
+    );
     expect(responseResult.item1.success, true);
   });
 

@@ -175,7 +175,6 @@ class NFTInfo {
     for (var uri in uncurriedNFT.licenseUris.toList()) {
       licenceUris.add(utf8.decode(uri.atom));
     }
-    print(dataUris);
 
     if (mintHeight == null) {
       mintHeight = genesisCoin!.spentBlockIndex;
