@@ -998,13 +998,13 @@ class NftWallet extends BaseWalletService {
     }
   }
 
-  NFTInfo getNftInfoFromFullCoin(FullCoin fullCoin) {
+  Future<NFTInfo> getNftInfoFromFullCoin(FullCoin fullCoin) async {
     final coin = fullCoin.coin;
     final coinSpend = fullCoin.parentCoinSpend!;
 
-    final nftUncurried = UncurriedNFT.uncurry(coinSpend.puzzleReveal);
+    final nftUncurried = await UncurriedNFT.uncurry(coinSpend.puzzleReveal);
 
-    final nftInfo = NFTInfo.fromUncurried(
+    final nftInfo = await NFTInfo.fromUncurriedAsync(
       uncurriedNFT: nftUncurried,
       currentCoin: coin,
       mintHeight: fullCoin.coin.confirmedBlockIndex,
@@ -1022,7 +1022,7 @@ class NftWallet extends BaseWalletService {
 
     final nftUncurried = UncurriedNFT.uncurry(coinSpend.puzzleReveal);
 
-    final nftInfo = NFTInfo.fromUncurried(
+    final nftInfo = await NFTInfo.fromUncurriedAsync(
       uncurriedNFT: nftUncurried,
       currentCoin: coin,
       mintHeight: nftFullCoin.coin.confirmedBlockIndex,
