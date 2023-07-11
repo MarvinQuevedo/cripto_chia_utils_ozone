@@ -97,12 +97,14 @@ class NftNodeWalletService {
   }
 
   /// Allow transfer a NFT to other wallet
-  Future<ChiaBaseResponse> transferNFt(
-      {required Puzzlehash targePuzzlehash,
-      required FullNFTCoinInfo nftCoinInfo,
-      int fee = 0,
-      required List<CoinPrototype> standardCoinsForFee,
-      required Puzzlehash changePuzzlehash}) async {
+  Future<ChiaBaseResponse> transferNFt({
+    required Puzzlehash targePuzzlehash,
+    required FullNFTCoinInfo nftCoinInfo,
+    int fee = 0,
+    required List<CoinPrototype> standardCoinsForFee,
+    required Puzzlehash changePuzzlehash,
+    List<String> memos = const [],
+  }) async {
     final spendBundle = await NftWallet().createTransferSpendBundle(
       nftCoin: nftCoinInfo.toNftCoinInfo(),
       keychain: keychain,
@@ -110,6 +112,7 @@ class NftNodeWalletService {
       standardCoinsForFee: standardCoinsForFee,
       fee: fee,
       changePuzzlehash: changePuzzlehash,
+      memos: memos,
     );
     final response = await fullNode.pushTransaction(spendBundle);
     return response;

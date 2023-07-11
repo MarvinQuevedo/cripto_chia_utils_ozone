@@ -19,6 +19,7 @@ class NftWallet extends BaseWalletService {
     Puzzlehash? changePuzzlehash,
     int fee = 0,
     required List<CoinPrototype> standardCoinsForFee,
+    required List<String> memos,
   }) {
     print(
       "p2puzzleNew = ${UncurriedNFT.uncurry(nftCoin.fullPuzzle).p2PuzzleHash.toHex()} ",
@@ -30,6 +31,13 @@ class NftWallet extends BaseWalletService {
             targetPuzzleHash,
             memos: <Bytes>[
               targetPuzzleHash,
+              ...memos.map<Bytes>((e) {
+                if (e.startsWith("0x")) {
+                  return Bytes.fromHex(e);
+                } else {
+                  return e.toBytes();
+                }
+              }).toList()
             ],
           )
         ],
