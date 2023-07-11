@@ -159,8 +159,9 @@ class NFTInfo {
     if (mintHeight == null) {
       mintHeight = genesisCoin!.spentBlockIndex;
     }
+    final launcherId = Puzzlehash(uncurriedNFT.singletonLauncherId.atom);
     return NFTInfo(
-        launcherId: Puzzlehash(uncurriedNFT.launcherPuzhash.atom),
+        launcherId: launcherId,
         p2Puzzlehash: uncurriedNFT.p2Puzzle.hash(),
         nftCoinId: currentCoin.id,
         didOwner: uncurriedNFT.ownerDid,
