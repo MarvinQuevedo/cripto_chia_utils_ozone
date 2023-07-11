@@ -1085,3 +1085,27 @@ class NftWallet extends BaseWalletService {
     return Tuple3(nftCoin, fullPuzzle, keychainForNft);
   }
 }
+
+class CreateTransferArguments {
+  final NFTCoinInfo nftCoin;
+  final WalletKeychain keychain;
+  final Puzzlehash targetPuzzleHash;
+  final Puzzlehash? changePuzzlehash;
+  final int fee;
+  final List<CoinPrototype> standardCoinsForFee;
+  final List<String> memos;
+  final Environment enviroment;
+  final Network network;
+
+  CreateTransferArguments({
+    required this.nftCoin,
+    required this.keychain,
+    required this.targetPuzzleHash,
+    required this.standardCoinsForFee,
+    required this.memos,
+    required this.enviroment,
+    required this.network,
+    this.changePuzzlehash,
+    required this.fee,
+  });
+}
