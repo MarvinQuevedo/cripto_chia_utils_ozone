@@ -5,8 +5,6 @@ import 'dart:typed_data';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:tuple/tuple.dart';
 
-import '../../core/models/conditions/announcement.dart';
-
 import '../../core/service/conditions_utils.dart';
 import '../../offers_ozone/utils/build_keychain.dart';
 //import '../../did/puzzles/did_puzzles.dart' as didPuzzles;
