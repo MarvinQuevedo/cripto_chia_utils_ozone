@@ -1,5 +1,6 @@
 // ignore_for_file: unused_local_variable
 
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
@@ -991,7 +992,7 @@ class NftWallet extends BaseWalletService {
     }
   }
 
-  Future<NFTInfo> getNftInfoFromFullCoin(FullCoin fullCoin) async {
+  static Future<NFTInfo> getNftInfoFromFullCoin(FullCoin fullCoin) async {
     final coin = fullCoin.coin;
     final coinSpend = fullCoin.parentCoinSpend!;
 
@@ -1003,6 +1004,35 @@ class NftWallet extends BaseWalletService {
       mintHeight: fullCoin.coin.confirmedBlockIndex,
     );
     return nftInfo;
+  }
+
+  static Future<List<NFTInfo>> getNftInfosFromFullCoins(List<FullCoin> fullCoins) async {
+    final nftInfos = <NFTInfo>[];
+    for (var fullCoin in fullCoins) {
+      final coin = fullCoin.coin;
+      final coinSpend = fullCoin.parentCoinSpend!;
+
+      final nftUncurried = await UncurriedNFT.uncurry(coinSpend.puzzleReveal);
+
+      final nftInfo = await NFTInfo.fromUncurried(
+        uncurriedNFT: nftUncurried,
+        currentCoin: coin,
+        mintHeight: fullCoin.coin.confirmedBlockIndex,
+      );
+      nftInfos.add(nftInfo);
+    }
+    return nftInfos;
+  }
+
+  static Future<List<NFTInfo>> getNftInfosFromFullCoinsAsync(List<FullCoin> fullCoins) async {
+    final nftInfos = await spawnAndWaitForIsolate(
+        taskArgument: fullCoins,
+        isolateTask: getNftInfosFromFullCoinsIsolate,
+        handleTaskCompletion: (data) {
+          final nfts = data['list'] as List;
+          return nfts.map((e) => NFTInfo.fromJson(e)).toList();
+        });
+    return nftInfos;
   }
 
   /// From FullCoin It prepare the FullNftCoinInfo with the updated data for transfer,
@@ -1077,6 +1107,17 @@ class NftWallet extends BaseWalletService {
     );
     return Tuple3(nftCoin, fullPuzzle, keychainForNft);
   }
+}
+
+FutureOr<Map<String, dynamic>> getNftInfosFromFullCoinsIsolate(List<FullCoin> fullCoins) async {
+  final infos = await NftWallet.getNftInfosFromFullCoins(fullCoins);
+  return {
+    'list': infos
+        .map(
+          (e) => e.toMap(),
+        )
+        .toList(),
+  };
 }
 
 class CreateTransferArguments {
