@@ -104,7 +104,13 @@ class CatWalletService extends BaseWalletService {
         }
 
         if (change > 0) {
-          conditions.add(CreateCoinCondition(changePuzzlehash!, change));
+          conditions.add(CreateCoinCondition(
+            changePuzzlehash!,
+            change,
+            memos: <Bytes>[
+              changePuzzlehash.toBytes(),
+            ],
+          ));
           createdCoins.add(
             CoinPrototype(
               parentCoinInfo: catCoin.id,
