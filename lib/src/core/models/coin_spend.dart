@@ -71,6 +71,13 @@ class CoinSpend with ToBytesMixin {
         'puzzle_reveal': puzzleReveal.serialize().toHexWithPrefix(),
         'solution': solution.serialize().toHexWithPrefix()
       };
+  factory CoinSpend.fromCamelJson(Map<String, dynamic> json) {
+    return CoinSpend(
+      coin: CoinPrototype.fromCamelJson(json['coin'] as Map<String, dynamic>),
+      puzzleReveal: Program.deserializeHex(json['puzzleReveal'] as String),
+      solution: Program.deserializeHex(json['solution'] as String),
+    );
+  }
 
   factory CoinSpend.fromBytes(Bytes bytes) {
     final iterator = bytes.iterator;
