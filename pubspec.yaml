@@ -36,7 +36,7 @@ dependencies:
 
 dev_dependencies:
   csv: ^5.0.1
-  http: ^0.13.4
+  http: ^1.1.0
   lints: ^2.1.0
   #rps: ^0.6.3
   test: ^1.19.3
