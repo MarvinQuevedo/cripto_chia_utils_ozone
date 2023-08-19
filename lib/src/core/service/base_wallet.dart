@@ -215,7 +215,6 @@ class BaseWalletService {
   /// If it fails, returns as Error
   Tuple2<Exception?, ConditionWithArgs?> parseSexpToCondition(Program sexp) {
     try {
-      print(sexp.toSource());
       final atoms = sexp.toList();
       if (atoms.length < 1) {
         return Tuple2(Exception("INVALID_CONDITION"), null);
@@ -241,7 +240,7 @@ class BaseWalletService {
     } catch (e, stackTrace) {
       print(stackTrace);
       print(e);
-      print(sexp.toSource());
+
       return Tuple2(Exception("INVALID_CONDITION"), null);
     }
   }
