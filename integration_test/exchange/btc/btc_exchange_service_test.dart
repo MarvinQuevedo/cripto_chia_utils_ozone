@@ -69,7 +69,7 @@ Future<void> main() async {
       changePuzzlehash: xchHolder.firstPuzzlehash,
       keychain: xchHolder.keychain,
     );
-    await fullNodeSimulator.pushTransaction(spendBundle);
+    await fullNodeSimulator.pushTransaction(spendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     final escrowCoins = await fullNodeSimulator.getCoinsByPuzzleHashes([escrowPuzzlehash]);
@@ -137,7 +137,7 @@ Future<void> main() async {
       changePuzzlehash: xchHolder.firstPuzzlehash,
       keychain: xchHolder.keychain,
     );
-    await fullNodeSimulator.pushTransaction(spendBundle);
+    await fullNodeSimulator.pushTransaction(spendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     final escrowCoins = await fullNodeSimulator.getCoinsByPuzzleHashes([escrowPuzzlehash]);
@@ -219,7 +219,7 @@ Future<void> main() async {
       changePuzzlehash: xchHolder.firstPuzzlehash,
       keychain: xchHolder.keychain,
     );
-    await fullNodeSimulator.pushTransaction(spendBundle);
+    await fullNodeSimulator.pushTransaction(spendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     final escrowCoins = await fullNodeSimulator.getCoinsByPuzzleHashes([escrowPuzzlehash]);
@@ -296,7 +296,7 @@ Future<void> main() async {
       changePuzzlehash: xchHolder.firstPuzzlehash,
       keychain: xchHolder.keychain,
     );
-    await fullNodeSimulator.pushTransaction(spendBundle);
+    await fullNodeSimulator.pushTransaction(spendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     final escrowCoins = await fullNodeSimulator.getCoinsByPuzzleHashes([escrowPuzzlehash]);
@@ -366,7 +366,7 @@ Future<void> main() async {
       changePuzzlehash: xchHolder.firstPuzzlehash,
       keychain: xchHolder.keychain,
     );
-    await fullNodeSimulator.pushTransaction(spendBundle);
+    await fullNodeSimulator.pushTransaction(spendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     final escrowCoins = await fullNodeSimulator.getCoinsByPuzzleHashes([escrowPuzzlehash]);
@@ -445,7 +445,7 @@ Future<void> main() async {
       changePuzzlehash: xchHolder.firstPuzzlehash,
       keychain: xchHolder.keychain,
     );
-    await fullNodeSimulator.pushTransaction(spendBundle);
+    await fullNodeSimulator.pushTransaction(spendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     final escrowCoins = await fullNodeSimulator.getCoinsByPuzzleHashes([escrowPuzzlehash]);
@@ -514,7 +514,7 @@ Future<void> main() async {
       changePuzzlehash: xchHolder.firstPuzzlehash,
       keychain: xchHolder.keychain,
     );
-    await fullNodeSimulator.pushTransaction(spendBundle);
+    await fullNodeSimulator.pushTransaction(spendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     final escrowCoins = await fullNodeSimulator.getCoinsByPuzzleHashes([escrowPuzzlehash]);
@@ -591,7 +591,7 @@ Future<void> main() async {
       changePuzzlehash: xchHolder.firstPuzzlehash,
       keychain: xchHolder.keychain,
     );
-    await fullNodeSimulator.pushTransaction(spendBundle);
+    await fullNodeSimulator.pushTransaction(spendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     final escrowCoins = await fullNodeSimulator.getCoinsByPuzzleHashes([escrowPuzzlehash]);
@@ -666,7 +666,7 @@ Future<void> main() async {
       changePuzzlehash: xchHolder.firstPuzzlehash,
       keychain: xchHolder.keychain,
     );
-    await fullNodeSimulator.pushTransaction(spendBundle);
+    await fullNodeSimulator.pushTransaction(spendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     final xchHolderescrowCoins =
@@ -739,7 +739,7 @@ Future<void> main() async {
       changePuzzlehash: xchHolder.firstPuzzlehash,
       keychain: xchHolder.keychain,
     );
-    await fullNodeSimulator.pushTransaction(spendBundle);
+    await fullNodeSimulator.pushTransaction(spendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     final xchHolderescrowCoins =

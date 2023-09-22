@@ -61,7 +61,7 @@ class NotificationWalletService {
       puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
     );
 
-    final totalSpendBundle = notificationSpendBundle + standardSpendBundle;
+    final totalSpendBundle = notificationSpendBundle + standardSpendBundle.item1;
     return totalSpendBundle;
   }
 }

@@ -525,7 +525,7 @@ class ExchangeOfferService {
       keychain: keychain,
       changePuzzlehash: changePuzzlehash,
     );
-    final totalSpendBundle = standardSpendBundle + feeSpendBundle;
+    final totalSpendBundle = standardSpendBundle + feeSpendBundle.item1;
     return totalSpendBundle;
   }
 

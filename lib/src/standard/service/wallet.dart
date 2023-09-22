@@ -3,9 +3,16 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validation/incorrect_announcement_id_exception.dart';
 import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validation/multiple_origin_coin_exception.dart';
+import 'package:tuple/tuple.dart';
+
+typedef MakePuzzleRevealFromPuzzleHash = Program Function(Puzzlehash);
 
 class StandardWalletService extends BaseWalletService {
-  SpendBundle createSpendBundle({
+  Program getPuzzleFromPublicKey(JacobianPoint publicKey) {
+    return getPuzzleFromPk(publicKey);
+  }
+
+  Tuple2<SpendBundle, SignatureHashes?> createSpendBundle({
     required List<Payment> payments,
     required List<CoinPrototype> coinsInput,
     required WalletKeychain keychain,
@@ -14,25 +21,33 @@ class StandardWalletService extends BaseWalletService {
     Bytes? originId,
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
     List<AssertPuzzleCondition> puzzleAnnouncementsToAssert = const [],
+    bool unsigned = false,
+    MakePuzzleRevealFromPuzzleHash? makePuzzleRevealFromPuzzlehash,
   }) {
     return createSpendBundleBase(
-      payments: payments,
-      coinsInput: coinsInput,
-      changePuzzlehash: changePuzzlehash,
-      fee: fee,
-      originId: originId,
-      coinAnnouncementsToAssert: coinAnnouncementsToAssert,
-      puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
-      makePuzzleRevealFromPuzzlehash: (puzzlehash) {
-        final walletVector = keychain.getWalletVector(puzzlehash);
-        final publicKey = walletVector!.childPublicKey;
-        return getPuzzleFromPk(publicKey);
-      },
-      makeSignatureForCoinSpend: (coinSpend) {
-        final walletVector = keychain.getWalletVector(coinSpend.coin.puzzlehash);
-        return makeSignature(walletVector!.childPrivateKey, coinSpend);
-      },
-    );
+        payments: payments,
+        coinsInput: coinsInput,
+        changePuzzlehash: changePuzzlehash,
+        fee: fee,
+        originId: originId,
+        coinAnnouncementsToAssert: coinAnnouncementsToAssert,
+        puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
+        makePuzzleRevealFromPuzzlehash: makePuzzleRevealFromPuzzlehash ??
+            (puzzlehash) {
+              final walletVector = keychain.getWalletVector(puzzlehash);
+              final publicKey = walletVector!.childPublicKey;
+              return getPuzzleFromPk(publicKey);
+            },
+        makeSignatureForCoinSpend: (coinSpend) {
+          final walletVector = keychain.getWalletVector(coinSpend.coin.puzzlehash);
+          return makeSignature(walletVector!.childPrivateKey, coinSpend);
+        },
+        makeSignatureMessages: (coinSpend) => getSignatureMessages(
+              keychain.getWalletVector(coinSpend.coin.puzzlehash)!.childPublicKey,
+              coinSpend,
+              puzzleHash: coinSpend.coin.puzzlehash,
+            ),
+        unsigned: unsigned);
   }
 
   void validateSpendBundle(SpendBundle spendBundle) {
@@ -121,7 +136,7 @@ class StandardWalletService extends BaseWalletService {
         .toList();
   }
 
-  SpendBundle createFeeSpendBundle({
+  Tuple2<SpendBundle, SignatureHashes?> createFeeSpendBundle({
     required int fee,
     required List<CoinPrototype> standardCoins,
     required WalletKeychain keychain,

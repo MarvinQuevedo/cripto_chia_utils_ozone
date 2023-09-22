@@ -17,3 +17,5 @@ export 'src/did/index.dart';
 export 'src/nft1.0/index.dart';
 export 'src/notification/index.dart';
 export 'src/utils/parsing/deep_pick_extension.dart';
+export 'src/tangem/cat_wallet.dart';
+export 'src/tangem/standart_wallet.dart';

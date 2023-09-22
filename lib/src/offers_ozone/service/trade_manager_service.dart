@@ -64,7 +64,7 @@ class TradeManagerService extends BaseWalletService {
           puzzleAnnouncementsToAssert: announcements,
           changePuzzlehash: changePuzzlehash,
         );
-        transactions.add(standarBundle);
+        transactions.add(standarBundle.item1);
         feeLeftToPay = 0;
         xchCoins = [];
       } else {
@@ -92,9 +92,9 @@ class TradeManagerService extends BaseWalletService {
             puzzleAnnouncementsToAssert: announcements,
             changePuzzlehash: changePuzzlehash,
           );
-          final catBytes = catBundle.toBytes();
+          final catBytes = catBundle.item1.toBytes();
           final _ = SpendBundle.fromBytes(catBytes);
-          transactions.add(catBundle);
+          transactions.add(catBundle.item1);
           feeLeftToPay = 0;
         } else {
           throw Exception("Not implemented for ${driverDict[assetId]?.type}}");

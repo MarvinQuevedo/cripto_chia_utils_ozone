@@ -251,7 +251,7 @@ Future<void> main() async {
       changePuzzlehash: errantCoinSender.firstPuzzlehash,
     );
 
-    await fullNodeSimulator.pushTransaction(errantCoinSpendBundle);
+    await fullNodeSimulator.pushTransaction(errantCoinSpendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     // taker sweeps escrow puzzlehash

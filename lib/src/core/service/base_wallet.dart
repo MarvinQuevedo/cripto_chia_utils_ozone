@@ -8,13 +8,14 @@ import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validatio
 import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validation/failed_signature_verification.dart';
 import 'package:get_it/get_it.dart';
 import 'package:tuple/tuple.dart';
-
 import '../models/contidions_args.dart';
+
+typedef MakeSignatureMessages = MessageSignTuple Function(CoinSpend coinSpend);
 
 class BaseWalletService {
   BlockchainNetwork get blockchainNetwork => GetIt.I.get<BlockchainNetwork>();
 
-  SpendBundle createSpendBundleBase({
+  Tuple2<SpendBundle, SignatureHashes?> createSpendBundleBase({
     required List<Payment> payments,
     required List<CoinPrototype> coinsInput,
     Puzzlehash? changePuzzlehash,
@@ -25,6 +26,8 @@ class BaseWalletService {
     required Program Function(Puzzlehash puzzlehash) makePuzzleRevealFromPuzzlehash,
     Program Function(Program standardSolution)? transformStandardSolution,
     required JacobianPoint Function(CoinSpend coinSpend) makeSignatureForCoinSpend,
+    MakeSignatureMessages? makeSignatureMessages,
+    bool unsigned = false,
   }) {
     Program makeSolutionFromConditions(List<Condition> conditions) {
       final standardSolution = BaseWalletService.makeSolutionFromConditions(conditions);
@@ -33,6 +36,8 @@ class BaseWalletService {
       }
       return transformStandardSolution(standardSolution);
     }
+
+    final SignatureHashes signatureHashes = SignatureHashes();
 
     // copy coins input since coins list is modified in this function
     final coins = List<CoinPrototype>.from(coinsInput);
@@ -133,14 +138,27 @@ class BaseWalletService {
       final puzzle = makePuzzleRevealFromPuzzlehash(coin.puzzlehash);
       final coinSpend = CoinSpend(coin: coin, puzzleReveal: puzzle, solution: solution);
       spends.add(coinSpend);
-
-      final signature = makeSignatureForCoinSpend(coinSpend);
-      signatures.add(signature);
+      if (!unsigned) {
+        final signature = makeSignatureForCoinSpend(coinSpend);
+        signatures.add(signature);
+      } else {
+        final messageData = makeSignatureMessages!(coinSpend);
+        signatureHashes.addSignatureHashTuple(messageData);
+      }
+    }
+    if (unsigned) {
+      return Tuple2(
+        SpendBundle(coinSpends: spends),
+        signatureHashes,
+      );
     }
 
     final aggregate = AugSchemeMPL.aggregate(signatures);
 
-    return SpendBundle(coinSpends: spends, aggregatedSignature: aggregate);
+    return Tuple2(
+      SpendBundle(coinSpends: spends, aggregatedSignature: aggregate),
+      null,
+    );
   }
 
   JacobianPoint makeSignature(
@@ -156,6 +174,28 @@ class BaseWalletService {
     final signature = AugSchemeMPL.sign(privateKey0, addsigmessage);
 
     return signature;
+  }
+
+  MessageSignTuple getSignatureMessages(JacobianPoint pk, CoinSpend coinSpend,
+      {bool useSyntheticOffset = true, required Puzzlehash puzzleHash}) {
+    final result = coinSpend.puzzleReveal.run(coinSpend.solution);
+    final addsigmessage = getAddSigMeMessageFromResult(result.program, coinSpend.coin);
+    return MessageSignTuple(
+      message: addsigmessage,
+      pk: pk.toBytes(),
+      puzzlehash: puzzleHash,
+    );
+  }
+
+  MessageSignTuple makeSignatureMessages(
+    CoinSpend coinSpend,
+    WalletKeychain keychain,
+  ) {
+    return getSignatureMessages(
+      keychain.getWalletVector(coinSpend.coin.puzzlehash)!.childPublicKey,
+      coinSpend,
+      puzzleHash: coinSpend.coin.puzzlehash,
+    );
   }
 
   Bytes getAddSigMeMessageFromResult(Program result, CoinPrototype coin) {

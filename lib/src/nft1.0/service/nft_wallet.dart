@@ -132,7 +132,7 @@ class NftWallet extends BaseWalletService {
       keychain: keychain,
       fee: fee,
       coinAnnouncementsToAssert: coinAnnouncementsToAsset,
-    );
+    ).item1;
   }
 
   Tuple2<SpendBundle, SpendBundle?> generateUnsignedSpendbundle({
@@ -400,7 +400,7 @@ class NftWallet extends BaseWalletService {
       originId: origin.id,
       fee: fee,
       coinAnnouncementsToAssert: announcementSet.toList(),
-    );
+    ).item1;
 
     final genesisLauncherSolution = Program.list([
       Program.fromBytes(eveFullPuzzleHash),
@@ -767,7 +767,7 @@ class NftWallet extends BaseWalletService {
             changePuzzlehash: changePuzzlehash,
           );
 
-          txs = [standarBundle];
+          txs = [standarBundle.item1];
         } else if (fungibleAssetDict[assetId] == null && wallet is NftWallet) {
           if (assetId == null) {
             throw Exception("Asset id is null");
@@ -830,7 +830,7 @@ class NftWallet extends BaseWalletService {
             changePuzzlehash: changePuzzlehash,
           );
 
-          txs = [catBundle];
+          txs = [catBundle.item1];
         }
         allTransactions.addAll(txs);
         feeLeftToPay = 0;

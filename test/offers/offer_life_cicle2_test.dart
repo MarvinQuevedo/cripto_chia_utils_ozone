@@ -35,7 +35,7 @@ Offer generate_secure_bundle(
           keychain: keychain,
           fee: feeLeftToPay,
           changePuzzlehash: changePuzzlehash);
-      transactions.add(standarBundle);
+      transactions.add(standarBundle.item1);
     } else if (coin.assetId != null) {
       final catBundle = CatWalletService().createSpendBundle(
         payments: [Payment(offeredAmounts[coin.assetId]!, Offer.ph(false))],
@@ -45,7 +45,7 @@ Offer generate_secure_bundle(
         fee: feeLeftToPay,
         puzzleAnnouncementsToAssert: announcements,
       );
-      transactions.add(catBundle);
+      transactions.add(catBundle.item1);
     }
   }
   final totalSpendBundle = transactions.fold<SpendBundle>(

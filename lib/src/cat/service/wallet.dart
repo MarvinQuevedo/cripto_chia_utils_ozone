@@ -7,11 +7,13 @@ import 'package:chia_crypto_utils/src/core/exceptions/change_puzzlehash_needed_e
 import 'package:chia_crypto_utils/src/core/exceptions/insufficient_coins_exception.dart';
 import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validation/incorrect_announcement_id_exception.dart';
 import 'package:chia_crypto_utils/src/standard/exceptions/spend_bundle_validation/multiple_origin_coin_exception.dart';
+import 'package:tuple/tuple.dart';
 
 class CatWalletService extends BaseWalletService {
-  final StandardWalletService standardWalletService = StandardWalletService();
+  final _standardWalletService = StandardWalletService();
+  StandardWalletService get standardWalletService => _standardWalletService;
 
-  SpendBundle createSpendBundle({
+  Tuple2<SpendBundle, SignatureHashes?> createSpendBundle({
     required List<Payment> payments,
     required List<CatCoin> catCoinsInput,
     required WalletKeychain keychain,
@@ -20,7 +22,9 @@ class CatWalletService extends BaseWalletService {
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
     List<AssertPuzzleCondition> puzzleAnnouncementsToAssert = const [],
     int fee = 0,
+    bool unsigned = false,
   }) {
+    final SignatureHashes signatureHashes = SignatureHashes();
     final distinctAssetIds = catCoinsInput.map((c) => c.assetId).toSet();
     if (distinctAssetIds.length != 1) {
       throw MixedAssetIdsException(distinctAssetIds);
@@ -121,12 +125,15 @@ class CatWalletService extends BaseWalletService {
         }
 
         if (fee > 0) {
-          feeStandardSpendBundle = _makeStandardSpendBundleForFee(
+          final standartResult = _makeStandardSpendBundleForFee(
             fee: fee,
             standardCoins: standardCoinsForFee,
             keychain: keychain,
             changePuzzlehash: changePuzzlehash,
+            unsigned: unsigned,
           );
+          feeStandardSpendBundle = standartResult.item1;
+          signatureHashes.aggreate(standartResult.item2);
         }
 
         innerSolution = BaseWalletService.makeSolutionFromConditions(conditions);
@@ -136,7 +143,7 @@ class CatWalletService extends BaseWalletService {
         );
       }
 
-      final innerPuzzle = getPuzzleFromPk(coinPublicKey);
+      final innerPuzzle = standardWalletService.getPuzzleFromPublicKey(coinPublicKey);
 
       spendableCats.add(
         SpendableCat(
@@ -149,12 +156,23 @@ class CatWalletService extends BaseWalletService {
 
     final immutableSpendableCats = List<SpendableCat>.unmodifiable(spendableCats);
 
-    final catSpendBundle = makeCatSpendBundleFromSpendableCats(immutableSpendableCats, keychain);
+    final catSpendBundleResult =
+        makeCatSpendBundleFromSpendableCats(immutableSpendableCats, keychain, unsigned: unsigned);
+    final catSpendBundle = catSpendBundleResult.item1;
+    signatureHashes.aggreate(catSpendBundleResult.item2);
 
     if (feeStandardSpendBundle != null) {
-      return catSpendBundle + feeStandardSpendBundle;
+      if (unsigned) {
+        return Tuple2(catSpendBundle + feeStandardSpendBundle, signatureHashes);
+      } else {
+        return Tuple2(catSpendBundle + feeStandardSpendBundle, null);
+      }
     }
-    return catSpendBundle;
+    if (unsigned) {
+      return Tuple2(catSpendBundle, signatureHashes);
+    } else {
+      return Tuple2(catSpendBundle, null);
+    }
   }
 
   SpendBundle makeMultiIssuanceCatSpendBundle({
@@ -244,7 +262,7 @@ class CatWalletService extends BaseWalletService {
     );
 
     final finalSpendbundle =
-        (meltSpendBundle + xchClaimingSpendbundle).addSignature(issuanceSignature);
+        (meltSpendBundle.item1 + xchClaimingSpendbundle.item1).addSignature(issuanceSignature);
 
     return finalSpendbundle;
   }
@@ -287,7 +305,7 @@ class CatWalletService extends BaseWalletService {
     final catPuzzleHash = Puzzlehash(catPuzzle.hash());
 
     final standardCoinOriginId = originId ?? standardCoins[0].id;
-    final standardSpendBundle = standardWalletService.createSpendBundle(
+    final standartResult = standardWalletService.createSpendBundle(
       payments: [Payment(amount, Puzzlehash(catPuzzle.hash()))],
       coinsInput: standardCoins,
       changePuzzlehash: changePuzzlehash,
@@ -295,6 +313,7 @@ class CatWalletService extends BaseWalletService {
       originId: standardCoinOriginId,
       fee: fee,
     );
+    final standardSpendBundle = standartResult.item1;
 
     final eveParentSpend = standardSpendBundle.coinSpends
         .singleWhere((spend) => spend.coin.id == standardCoinOriginId);
@@ -324,24 +343,40 @@ class CatWalletService extends BaseWalletService {
     return finalSpendBundle;
   }
 
-  SpendBundle makeCatSpendBundleFromSpendableCats(
+  Tuple2<SpendBundle, SignatureHashes?> makeCatSpendBundleFromSpendableCats(
     List<SpendableCat> spendableCats,
-    WalletKeychain keychain,
-  ) {
+    WalletKeychain keychain, {
+    bool unsigned = false,
+  }) {
+    SignatureHashes signatureHashes = SignatureHashes();
     final unsignedSpendBundle = makeUnsignedSpendBundleForSpendableCats(spendableCats);
 
     final signatures = <JacobianPoint>[];
 
     for (final coinSpend in unsignedSpendBundle.coinSpends) {
       final coinWalletVector = keychain.getWalletVector(coinSpend.coin.puzzlehash);
-      final coinPrivateKey = coinWalletVector!.childPrivateKey;
-      final signature = makeSignature(coinPrivateKey, coinSpend);
-      signatures.add(signature);
+
+      if (unsigned) {
+        final message = getSignatureMessages(
+          coinWalletVector!.childPublicKey,
+          coinSpend,
+          puzzleHash: coinSpend.coin.puzzlehash,
+        );
+        signatureHashes.addSignatureHashTuple(message);
+      } else {
+        final coinPrivateKey = coinWalletVector!.childPrivateKey;
+        final signature = makeSignature(coinPrivateKey, coinSpend);
+        signatures.add(signature);
+      }
+    }
+    if (unsigned) {
+      return Tuple2(unsignedSpendBundle, signatureHashes);
     }
 
     final aggregatedSignature = AugSchemeMPL.aggregate(signatures);
 
-    return unsignedSpendBundle.addSignature(aggregatedSignature);
+    final spendBundle = unsignedSpendBundle.addSignature(aggregatedSignature);
+    return Tuple2(spendBundle, null);
   }
 
   static SpendBundle makeUnsignedSpendBundleForSpendableCats(
@@ -377,12 +412,13 @@ class CatWalletService extends BaseWalletService {
     return SpendBundle(coinSpends: spends);
   }
 
-  SpendBundle _makeStandardSpendBundleForFee({
+  Tuple2<SpendBundle, SignatureHashes?> _makeStandardSpendBundleForFee({
     required int fee,
     required List<Coin> standardCoins,
     required WalletKeychain keychain,
     required Puzzlehash? changePuzzlehash,
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAsset = const [],
+    bool unsigned = false,
   }) {
     assert(
       standardCoins.isNotEmpty,
@@ -405,6 +441,7 @@ class CatWalletService extends BaseWalletService {
       keychain: keychain,
       fee: fee,
       coinAnnouncementsToAssert: coinAnnouncementsToAsset,
+      unsigned: unsigned,
     );
   }
 

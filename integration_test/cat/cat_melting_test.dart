@@ -103,7 +103,7 @@ Future<void> main() async {
     keychain: keychain,
   );
 
-  await fullNodeSimulator.pushTransaction(sendBundle);
+  await fullNodeSimulator.pushTransaction(sendBundle.item1);
   await fullNodeSimulator.moveToNextBlock();
 
   final catCoins = await fullNodeSimulator.getCatCoinsByOuterPuzzleHashes([outerPuzzlehash]);

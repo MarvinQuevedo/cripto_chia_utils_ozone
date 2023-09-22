@@ -31,43 +31,45 @@ class BtcExchangeService {
       sweepPublicKey = requestorPublicKey;
     }
 
-    return baseWalletService.createSpendBundleBase(
-      payments: payments,
-      coinsInput: coinsInput,
-      changePuzzlehash: changePuzzlehash,
-      fee: fee,
-      originId: originId,
-      coinAnnouncementsToAssert: coinAnnouncementsToAssert,
-      puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
-      transformStandardSolution: (standardSolution) {
-        final totalPublicKey = sweepPublicKey + clawbackPublicKey;
+    return baseWalletService
+        .createSpendBundleBase(
+          payments: payments,
+          coinsInput: coinsInput,
+          changePuzzlehash: changePuzzlehash,
+          fee: fee,
+          originId: originId,
+          coinAnnouncementsToAssert: coinAnnouncementsToAssert,
+          puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
+          transformStandardSolution: (standardSolution) {
+            final totalPublicKey = sweepPublicKey + clawbackPublicKey;
 
-        return clawbackOrSweepSolution(
-          totalPublicKey: totalPublicKey,
-          clawbackDelaySeconds: clawbackDelaySeconds,
-          clawbackPublicKey: clawbackPublicKey,
-          sweepPaymentHash: sweepPaymentHash,
-          sweepPublicKey: sweepPublicKey,
-          delegatedSolution: standardSolution,
-          sweepPreimage: sweepPreimage,
-        );
-      },
-      makePuzzleRevealFromPuzzlehash: (puzzlehash) {
-        return generateEscrowPuzzle(
-          clawbackDelaySeconds: clawbackDelaySeconds,
-          clawbackPublicKey: clawbackPublicKey,
-          sweepPaymentHash: sweepPaymentHash,
-          sweepPublicKey: sweepPublicKey,
-        );
-      },
-      makeSignatureForCoinSpend: (coinSpend) {
-        return baseWalletService.makeSignature(
-          requestorPrivateKey,
-          coinSpend,
-          useSyntheticOffset: false,
-        );
-      },
-    );
+            return clawbackOrSweepSolution(
+              totalPublicKey: totalPublicKey,
+              clawbackDelaySeconds: clawbackDelaySeconds,
+              clawbackPublicKey: clawbackPublicKey,
+              sweepPaymentHash: sweepPaymentHash,
+              sweepPublicKey: sweepPublicKey,
+              delegatedSolution: standardSolution,
+              sweepPreimage: sweepPreimage,
+            );
+          },
+          makePuzzleRevealFromPuzzlehash: (puzzlehash) {
+            return generateEscrowPuzzle(
+              clawbackDelaySeconds: clawbackDelaySeconds,
+              clawbackPublicKey: clawbackPublicKey,
+              sweepPaymentHash: sweepPaymentHash,
+              sweepPublicKey: sweepPublicKey,
+            );
+          },
+          makeSignatureForCoinSpend: (coinSpend) {
+            return baseWalletService.makeSignature(
+              requestorPrivateKey,
+              coinSpend,
+              useSyntheticOffset: false,
+            );
+          },
+        )
+        .item1;
   }
 
   static Program generateEscrowPuzzle({

@@ -39,7 +39,7 @@ class ExchangeOfferWalletService {
       puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
     );
 
-    return initializationSpendBundle;
+    return initializationSpendBundle.item1;
   }
 
   SpendBundle createCancelationSpendBundle({
@@ -71,7 +71,7 @@ class ExchangeOfferWalletService {
       puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
     );
 
-    return cancelationSpendBundle;
+    return cancelationSpendBundle.item1;
   }
 
   SpendBundle createMessageSpendBundle({
@@ -141,7 +141,7 @@ class ExchangeOfferWalletService {
       puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
     );
 
-    return acceptanceSpendBundle;
+    return acceptanceSpendBundle.item1;
   }
 
   SpendBundle createMessageCoinDeclinationSpendBundle({
@@ -165,7 +165,7 @@ class ExchangeOfferWalletService {
       puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
     );
 
-    return declinationSpendBundle;
+    return declinationSpendBundle.item1;
   }
 
   SpendBundle createEscrowTransferSpendBundle({
@@ -203,7 +203,7 @@ class ExchangeOfferWalletService {
       puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
     );
 
-    return escrowSpendBundle;
+    return escrowSpendBundle.item1;
   }
 
   SpendBundle createSweepSpendBundle({
