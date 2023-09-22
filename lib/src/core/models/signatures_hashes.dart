@@ -20,6 +20,8 @@ class SignatureHashes {
     return SignatureHashes(signatureHashes: signatureHashes);
   }
 
+  List<String> get hashes => signatureHashes.map((e) => e.message.toHex()).toList();
+
   Map<String, dynamic> toMap() {
     return {
       'list': signatureHashes.map((e) => e.toJson()).toList(),
