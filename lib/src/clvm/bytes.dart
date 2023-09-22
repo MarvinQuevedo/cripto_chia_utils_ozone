@@ -45,6 +45,7 @@ class Bytes extends Comparable<Bytes> with ToBytesMixin implements List<int> {
   }
 
   static Bytes get empty => Bytes([]);
+  static Bytes get fillWithZeros => Bytes(List.filled(32, 0));
 
   Uint8List get byteList => _byteList;
 
