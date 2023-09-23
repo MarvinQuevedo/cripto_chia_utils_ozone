@@ -32,6 +32,7 @@ class StandardWalletService extends BaseWalletService {
         originId: originId,
         coinAnnouncementsToAssert: coinAnnouncementsToAssert,
         puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
+        useP2Delegate: keychain.isTangem,
         makePuzzleRevealFromPuzzlehash: makePuzzleRevealFromPuzzlehash ??
             (puzzlehash) {
               final walletVector = keychain.getWalletVector(puzzlehash);

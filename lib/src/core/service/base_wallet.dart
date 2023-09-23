@@ -28,8 +28,12 @@ class BaseWalletService {
     required JacobianPoint Function(CoinSpend coinSpend) makeSignatureForCoinSpend,
     MakeSignatureMessages? makeSignatureMessages,
     bool unsigned = false,
+    bool useP2Delegate = false,
   }) {
     Program makeSolutionFromConditions(List<Condition> conditions) {
+      if (useP2Delegate) {
+        return makeSolutionFromConditionsP2Delegate(conditions);
+      }
       final standardSolution = BaseWalletService.makeSolutionFromConditions(conditions);
       if (transformStandardSolution == null) {
         return standardSolution;
@@ -129,10 +133,12 @@ class BaseWalletService {
         primaryAssertCoinAnnouncement = AssertCoinAnnouncementCondition(coin.id, message);
 
         solution = makeSolutionFromConditions(conditions);
+        print(solution.toSource());
       } else {
         solution = makeSolutionFromConditions(
           [primaryAssertCoinAnnouncement!],
         );
+        print(solution.toSource());
       }
 
       final puzzle = makePuzzleRevealFromPuzzlehash(coin.puzzlehash);
@@ -312,6 +318,20 @@ class BaseWalletService {
         Program.fromBigInt(keywords['q']!),
         ...conditions.map((condition) => condition.program)
       ]),
+    );
+  }
+
+  static Program puzzle_for_conditions(Program conditions) {
+    return p2DelegatedConditionsPuzzleProgram.run(conditions).program;
+  }
+
+  static Program makeSolutionFromConditionsP2Delegate(List<Condition> conditions) {
+    final conditionProgram =
+        Program.list(conditions.map((condition) => condition.program).toList());
+    return Program.list(
+      [
+        conditionProgram,
+      ],
     );
   }
 
