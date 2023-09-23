@@ -13,7 +13,7 @@ class ChiaBaseResponse {
   factory ChiaBaseResponse.fromJson(Map<String, dynamic> json) {
     return ChiaBaseResponse(
       error: json['error'] as String?,
-      success: json['success'] as bool,
+      success: json['success'] as bool? ?? false,
     );
   }
   Map<String, dynamic> toJson() => <String, dynamic>{
