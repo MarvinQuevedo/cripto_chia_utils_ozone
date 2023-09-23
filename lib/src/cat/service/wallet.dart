@@ -136,11 +136,17 @@ class CatWalletService extends BaseWalletService {
           signatureHashes.aggreate(standartResult.item2);
         }
 
-        innerSolution = BaseWalletService.makeSolutionFromConditions(conditions);
+        innerSolution = keychain.isTangem
+            ? BaseWalletService.makeSolutionFromConditionsP2Delegate(conditions)
+            : BaseWalletService.makeSolutionFromConditions(conditions);
       } else {
-        innerSolution = BaseWalletService.makeSolutionFromConditions(
-          [primaryAssertCoinAnnouncement!],
-        );
+        innerSolution = keychain.isTangem
+            ? BaseWalletService.makeSolutionFromConditionsP2Delegate(
+                [primaryAssertCoinAnnouncement!],
+              )
+            : BaseWalletService.makeSolutionFromConditions(
+                [primaryAssertCoinAnnouncement!],
+              );
       }
 
       final innerPuzzle = standardWalletService.getPuzzleFromPublicKey(coinPublicKey);

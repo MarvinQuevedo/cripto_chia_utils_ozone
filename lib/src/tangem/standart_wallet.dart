@@ -34,4 +34,9 @@ class TangemStandardWalletService extends StandardWalletService {
       },
     );
   }
+
+  @override
+  Program getPuzzleFromPublicKey(JacobianPoint publicKey) {
+    return puzzleForPk(publicKey);
+  }
 }
