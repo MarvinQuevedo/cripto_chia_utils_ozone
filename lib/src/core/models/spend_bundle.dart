@@ -63,7 +63,9 @@ class SpendBundle with ToBytesMixin {
       : coinSpends = (json['coin_spends'] as Iterable)
             .map((dynamic e) => CoinSpend.fromJson(e as Map<String, dynamic>))
             .toList(),
-        aggregatedSignature = JacobianPoint.fromHexG2(json['aggregated_signature'] as String);
+        aggregatedSignature = json['aggregated_signature'] != null
+            ? JacobianPoint.fromHexG2(json['aggregated_signature'] as String)
+            : null;
 
   SpendBundle operator +(SpendBundle other) {
     final signatures = <JacobianPoint>[];
