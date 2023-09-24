@@ -1,4 +1,3 @@
-import 'standart_wallet.dart';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:tuple/tuple.dart';
 
