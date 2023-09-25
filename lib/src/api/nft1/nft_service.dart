@@ -114,7 +114,7 @@ class NftNodeWalletService {
       changePuzzlehash: changePuzzlehash,
       memos: memos,
     );
-    final response = await fullNode.pushTransaction(spendBundle);
+    final response = await fullNode.pushTransaction(spendBundle.item1);
     return response;
   }
 }

@@ -11,6 +11,7 @@ import 'package:tuple/tuple.dart';
 import '../models/contidions_args.dart';
 
 typedef MakeSignatureMessages = MessageSignTuple Function(CoinSpend coinSpend);
+typedef MakeSolutionFromConditions = Program Function(List<Condition> conditions);
 
 class BaseWalletService {
   BlockchainNetwork get blockchainNetwork => GetIt.I.get<BlockchainNetwork>();
@@ -413,6 +414,7 @@ class BaseWalletService {
     List<AssertPuzzleCondition> puzzleAnnouncementsToAssert = const [],
     Set<Bytes> coinAnnouncements = const {},
     Set<Bytes> puzzleAnnouncements = const {},
+    MakeSolutionFromConditions? makeSolutionFromConditions,
   }) {
     final conditions = <Condition>[];
     if (primaries.isNotEmpty) {
@@ -431,6 +433,9 @@ class BaseWalletService {
       (coinAnnouncement) => CreatePuzzleAnnouncementCondition(coinAnnouncement),
     ));
     conditions.addAll(puzzleAnnouncementsToAssert);
+    if (makeSolutionFromConditions != null) {
+      return makeSolutionFromConditions(conditions);
+    }
 
     return BaseWalletService.makeSolutionFromConditions(conditions);
   }

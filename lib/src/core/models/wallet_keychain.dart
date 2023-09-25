@@ -11,6 +11,7 @@ class WalletKeychain with ToBytesMixin {
     required this.unhardenedMap,
     required this.singletonWalletVectorsMap,
     this.isTangem = false,
+    this.unsigned = false,
   });
 
   factory WalletKeychain.fromWalletSets(List<WalletSet> walletSets) {
@@ -152,6 +153,7 @@ class WalletKeychain with ToBytesMixin {
   final LinkedHashMap<Puzzlehash, WalletVector> hardenedMap;
   final LinkedHashMap<Puzzlehash, UnhardenedWalletVector> unhardenedMap;
   final bool isTangem;
+  final bool unsigned;
 
   List<WalletVector> get hardenedWalletVectors => hardenedMap.values.toList();
   List<UnhardenedWalletVector> get unhardenedWalletVectors {
