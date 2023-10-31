@@ -28,7 +28,7 @@ class SignatureHashes {
     };
   }
 
-  void aggreate(SignatureHashes? other) {
+  void aggregate(SignatureHashes? other) {
     if (other == null) {
       return;
     }

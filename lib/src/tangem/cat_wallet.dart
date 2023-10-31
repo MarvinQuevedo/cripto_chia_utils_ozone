@@ -1,7 +1,7 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:tuple/tuple.dart';
 
-class TangemCatWallet extends CatWalletService {
+class TangemCatWalletService extends CatWalletService {
   final _standardWalletService = TangemStandardWalletService();
   StandardWalletService get standardWalletService => _standardWalletService;
 

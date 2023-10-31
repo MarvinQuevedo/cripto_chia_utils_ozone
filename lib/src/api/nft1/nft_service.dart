@@ -13,7 +13,9 @@ class NftNodeWalletService {
 
   /// convert FullCoin to use to transfer or for request offer
   Future<FullNFTCoinInfo> convertFullCoin(FullCoin coin) async {
-    final nftInfo = await NftWallet().getNFTFullCoinInfo(coin, buildKeychain: (phs) async {
+    final isTangem = keychain.isTangem;
+    final nftWallet = isTangem ? TangemNftWallet() : NftWallet();
+    final nftInfo = await nftWallet.getNFTFullCoinInfo(coin, buildKeychain: (phs) async {
       final founded = phs.where((element) =>
           keychain.getWalletVector(
             element,

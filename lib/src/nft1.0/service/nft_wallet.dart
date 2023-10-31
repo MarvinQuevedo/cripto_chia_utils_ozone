@@ -116,13 +116,13 @@ class NftWallet extends BaseWalletService {
       keychain: keychain,
     );
     SpendBundle spendBundle = signResponse.item1;
-    signaturesHashes.aggreate(signResponse.item2);
+    signaturesHashes.aggregate(signResponse.item2);
 
     spendBundle = SpendBundle.aggregate([spendBundle] + (additionalBundles ?? []));
 
     if (chiaSpendBundle != null) {
       spendBundle = SpendBundle.aggregate([spendBundle, chiaSpendBundle]);
-      signaturesHashes.aggreate(generateSpendsTuple.item3);
+      signaturesHashes.aggregate(generateSpendsTuple.item3);
     }
 
     if (unsigned) {
@@ -195,7 +195,7 @@ class NftWallet extends BaseWalletService {
         changePuzzlehash: changePuzzlehash,
       );
       feeSpendBundle = standartResponse.item1;
-      signatureHashes.aggreate(standartResponse.item2);
+      signatureHashes.aggregate(standartResponse.item2);
     }
 
     Program innerSol = this.makeSolution(
@@ -562,7 +562,7 @@ class NftWallet extends BaseWalletService {
     return Tuple2(didInnerhash, didBundle);
   }
 
-  Future<Offer> makeNft1Offer({
+  Future<Tuple2<Offer, SignatureHashes?>> makeNft1Offer({
     required WalletKeychain keychain,
     required Map<Bytes?, int> offerDict,
     required Map<Bytes, PuzzleInfo> driverDict,
@@ -574,7 +574,10 @@ class NftWallet extends BaseWalletService {
     required List<Coin> standardCoinsForFee,
     required bool old,
     required List<SpendBundle> extraSpendBundles,
+    required bool unsigned,
   }) async {
+    SignatureHashes signatureHashes = SignatureHashes();
+    final isTangem = keychain.isTangem;
     final DESIRED_OFFER_MOD = old ? OFFER_MOD_V1 : OFFER_MOD_V2;
     final DESIRED_OFFER_MOD_HASH = old ? OFFER_MOD_V1_HASH : OFFER_MOD_V2_HASH;
 
@@ -806,13 +809,20 @@ class NftWallet extends BaseWalletService {
       var amount = offerDict[assetId]!;
       if (amount < 0) {
         List<SpendBundle> txs = [];
-        BaseWalletService wallet = StandardWalletService();
+        BaseWalletService wallet =
+            isTangem ? TangemStandardWalletService() : StandardWalletService();
         if (assetId != null) {
           final type = driverDict[assetId]!["type"];
           if (type == AssetType.SINGLETON) {
             wallet = NftWallet();
+            if (isTangem) {
+              wallet = TangemNftWallet();
+            }
           } else {
             wallet = CatWalletService();
+            if (isTangem) {
+              wallet = TangemCatWalletService();
+            }
           }
         }
 
@@ -834,9 +844,11 @@ class NftWallet extends BaseWalletService {
             fee: feeLeftToPay,
             puzzleAnnouncementsToAssert: announcementsToAssert,
             changePuzzlehash: changePuzzlehash,
+            unsigned: unsigned,
           );
 
           txs = [standarBundle.item1];
+          signatureHashes.aggregate(standarBundle.item2);
         } else if (fungibleAssetDict[assetId] == null && wallet is NftWallet) {
           if (assetId == null) {
             throw Exception("Asset id is null");
@@ -871,6 +883,7 @@ class NftWallet extends BaseWalletService {
           );
 
           txs = [nftBundles.item1];
+          signatureHashes.aggregate(nftBundles.item2);
         } else if (wallet is CatWalletService) {
           List<Payment> catPayments = [];
           if (royaltyPayments[assetId] != null) {
@@ -897,9 +910,11 @@ class NftWallet extends BaseWalletService {
             standardCoinsForFee: standardCoinsForFee,
             puzzleAnnouncementsToAssert: announcementsToAssert,
             changePuzzlehash: changePuzzlehash,
+            unsigned: unsigned,
           );
 
           txs = [catBundle.item1];
+          signatureHashes.aggregate(catBundle.item2);
         }
         allTransactions.addAll(txs);
         feeLeftToPay = 0;
@@ -1045,11 +1060,15 @@ class NftWallet extends BaseWalletService {
     SpendBundle aggregateBundle = SpendBundle.aggregate([txsBundle, ...additionalBundles]);
 
     Offer offer = Offer(
-        requestedPayments: notarizedPayments,
-        bundle: aggregateBundle,
-        driverDict: driverDict,
-        old: old);
-    return offer;
+      requestedPayments: notarizedPayments,
+      bundle: aggregateBundle,
+      driverDict: driverDict,
+      old: old,
+    );
+    return Tuple2(
+      offer,
+      signatureHashes,
+    );
   }
 
   Future<PuzzleInfo> getPuzzleInfo(NFTCoinInfo nftCoin) async {

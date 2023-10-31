@@ -133,7 +133,7 @@ class CatWalletService extends BaseWalletService {
             unsigned: unsigned,
           );
           feeStandardSpendBundle = standartResult.item1;
-          signatureHashes.aggreate(standartResult.item2);
+          signatureHashes.aggregate(standartResult.item2);
         }
 
         innerSolution = keychain.isTangem
@@ -165,7 +165,7 @@ class CatWalletService extends BaseWalletService {
     final catSpendBundleResult =
         makeCatSpendBundleFromSpendableCats(immutableSpendableCats, keychain, unsigned: unsigned);
     final catSpendBundle = catSpendBundleResult.item1;
-    signatureHashes.aggreate(catSpendBundleResult.item2);
+    signatureHashes.aggregate(catSpendBundleResult.item2);
 
     if (feeStandardSpendBundle != null) {
       if (unsigned) {
