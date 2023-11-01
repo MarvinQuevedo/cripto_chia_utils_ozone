@@ -65,6 +65,10 @@ class SignatureHashes {
       final signaturePoint = JacobianPoint.fromBytesG2(signature);
       signatures.add(signaturePoint);
     }
+    if (spendBundle.aggregatedSignature != null) {
+      signatures.add(spendBundle.aggregatedSignature!);
+    }
+
     final aggregate = AugSchemeMPL.aggregate(signatures);
     return SpendBundle(
       coinSpends: spendBundle.coinSpends,
