@@ -217,7 +217,7 @@ Future<void> main() async {
       changePuzzlehash: maker.firstPuzzlehash,
     );
 
-    await fullNodeSimulator.pushTransaction(incorrectInitializationSpendBundle);
+    await fullNodeSimulator.pushTransaction(incorrectInitializationSpendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
     await maker.refreshCoins();
 

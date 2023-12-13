@@ -193,7 +193,7 @@ void main() {
       keychain: walletKeychain,
     );
 
-    walletService.validateSpendBundle(spendBundle);
+    walletService.validateSpendBundle(spendBundle.item1);
   });
 
   test('Should create valid spendbundle with fee', () {
@@ -205,7 +205,7 @@ void main() {
       fee: 10000,
     );
 
-    walletService.validateSpendBundle(spendBundle);
+    walletService.validateSpendBundle(spendBundle.item1);
   });
 
   test('Should create valid spendbundle with multiple payments', () {
@@ -217,7 +217,7 @@ void main() {
       fee: 10000,
     );
 
-    walletService.validateSpendBundle(spendBundle);
+    walletService.validateSpendBundle(spendBundle.item1);
   });
 
   test('Should create valid spendbundle with only fee', () {
@@ -229,7 +229,7 @@ void main() {
       fee: 10000,
     );
 
-    walletService.validateSpendBundle(spendBundle);
+    walletService.validateSpendBundle(spendBundle.item1);
   });
 
   test('Should create valid spendbundle with originId', () {
@@ -241,7 +241,7 @@ void main() {
       originId: coin2.id,
     );
 
-    walletService.validateSpendBundle(spendBundle);
+    walletService.validateSpendBundle(spendBundle.item1);
   });
 
   test('Should fail when given originId not in coins', () async {
@@ -265,7 +265,7 @@ void main() {
       keychain: walletKeychain,
     );
 
-    walletService.validateSpendBundle(spendBundle);
+    walletService.validateSpendBundle(spendBundle.item1);
   });
 
   test('Should throw exception on duplicate coin', () {
@@ -276,7 +276,7 @@ void main() {
       keychain: walletKeychain,
     );
     expect(
-      () => walletService.validateSpendBundle(spendBundle),
+      () => walletService.validateSpendBundle(spendBundle.item1),
       throwsA(isA<DuplicateCoinException>()),
     );
   });
@@ -289,7 +289,7 @@ void main() {
       keychain: walletKeychain,
     );
 
-    walletService.validateSpendBundle(spendBundle);
+    walletService.validateSpendBundle(spendBundle.item1);
   });
 
   test('Should throw exception when change puzzlehash is not given and there is change', () {

@@ -103,7 +103,7 @@ class CrossChainOfferService {
       fee: fee,
     );
 
-    await fullNode.pushTransaction(messageSpendBundle);
+    await fullNode.pushTransaction(messageSpendBundle.item1);
   }
 
   Future<bool> verifyMessageCoinReceipt(

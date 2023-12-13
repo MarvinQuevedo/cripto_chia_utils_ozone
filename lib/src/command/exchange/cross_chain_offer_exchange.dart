@@ -363,7 +363,7 @@ Future<void> acceptCrossChainOffer(ChiaFullNodeInterface fullNodeFromUrl) async 
         fee: 50,
       );
 
-      await fullNode.pushTransaction(messageSpendBundle);
+      await fullNode.pushTransaction(messageSpendBundle.item1);
 
       print('\nSending coin with memo to message address...\n');
     } else {

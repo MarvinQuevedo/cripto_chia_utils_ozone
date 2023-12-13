@@ -1,5 +1,4 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 
 import '../puzzles/skynft.clsp.hex.dart';
 export '../puzzles/skynft.clsp.hex.dart';

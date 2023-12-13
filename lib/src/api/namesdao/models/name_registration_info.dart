@@ -1,5 +1,4 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/utils/parsing/deep_pick_extension.dart';
 import 'package:deep_pick/deep_pick.dart';
 
 class NameRegistrationInfo with ToJsonMixin {

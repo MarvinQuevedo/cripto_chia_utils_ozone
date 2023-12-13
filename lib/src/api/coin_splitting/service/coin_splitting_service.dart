@@ -220,7 +220,7 @@ class CoinSplittingService {
       );
       parentIdsToLookFor.add(catCoin.id);
 
-      transactionFutures.add(fullNode.pushTransaction(spendBundle));
+      transactionFutures.add(fullNode.pushTransaction(spendBundle.item1));
       if (isFinished) {
         break;
       }
@@ -275,7 +275,8 @@ class CoinSplittingService {
       );
 
       parentIdsToLookFor.add(catCoin.id);
-      transactionFutures.add(fullNode.pushTransaction(catSpendBundle + standardSpendBundle));
+      transactionFutures
+          .add(fullNode.pushTransaction(catSpendBundle.item1 + standardSpendBundle.item1));
     }
     await Future.wait<void>(transactionFutures);
 
@@ -327,7 +328,7 @@ class CoinSplittingService {
       fee: totalFee,
     );
 
-    await fullNode.pushTransaction(joinSpendBundle);
+    await fullNode.pushTransaction(joinSpendBundle.item1);
     return waitForTransactionsAndGetFirstSpentIndex([coins.first.id]);
   }
 

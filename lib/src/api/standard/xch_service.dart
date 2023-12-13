@@ -42,7 +42,7 @@ class XchService {
       changePuzzlehash: changePuzzlehashToUse,
       fee: fee,
     );
-    final response = await fullNode.pushTransaction(spendBundle);
+    final response = await fullNode.pushTransaction(spendBundle.item1);
     return response;
   }
 

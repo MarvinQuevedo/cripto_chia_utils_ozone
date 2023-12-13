@@ -7,6 +7,7 @@ class WalletVector with ToBytesMixin {
     required this.childPrivateKey,
     required this.puzzlehash,
     required this.derivationIndex,
+    required this.publicKey,
     Map<Puzzlehash, Puzzlehash>? assetIdtoOuterPuzzlehash,
   }) {
     this.assetIdtoOuterPuzzlehash = assetIdtoOuterPuzzlehash ?? {};
@@ -16,10 +17,10 @@ class WalletVector with ToBytesMixin {
     final puzzlehash = Puzzlehash.fromStream(iterator);
 
     return WalletVector(
-      childPrivateKey: childPrivateKey,
-      puzzlehash: puzzlehash,
-      derivationIndex: derivationIndex,
-    );
+        childPrivateKey: childPrivateKey,
+        puzzlehash: puzzlehash,
+        derivationIndex: derivationIndex,
+        publicKey: null);
   }
 
   factory WalletVector.fromBytes(Bytes bytes, int derivationIndex) {
@@ -41,6 +42,7 @@ class WalletVector with ToBytesMixin {
       childPrivateKey: childPrivateKeyHardened,
       puzzlehash: puzzlehashHardened,
       derivationIndex: derivationIndex,
+      publicKey: null,
     );
   }
 
@@ -62,7 +64,9 @@ class WalletVector with ToBytesMixin {
 
   factory WalletVector.fromMap(Map<String, dynamic> map) {
     final childPrivateKey = PrivateKey.fromHex(map['childPrivateKey'] as String);
-    //final childPublicKey = childPrivateKey.getG1();
+    final childPublicKey = map['childPublicKey'] != null
+        ? JacobianPoint.fromHexG1(map['childPublicKey'] as String)
+        : null;
     final puzzlehash = Puzzlehash.fromHex(map['puzzlehash'] as String);
 
     var assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
@@ -79,14 +83,16 @@ class WalletVector with ToBytesMixin {
       childPrivateKey: childPrivateKey,
       derivationIndex: map['derivationIndex'] as int,
       puzzlehash: puzzlehash,
+      publicKey: childPublicKey,
       assetIdtoOuterPuzzlehash: assetIdtoOuterPuzzlehashMap,
     );
   }
 
   final PrivateKey childPrivateKey;
-  JacobianPoint get childPublicKey => childPrivateKey.getG1();
+  JacobianPoint get childPublicKey => publicKey ?? childPrivateKey.getG1();
   final Puzzlehash puzzlehash;
   final int derivationIndex;
+  final JacobianPoint? publicKey;
   late final Map<Puzzlehash, Puzzlehash> assetIdtoOuterPuzzlehash;
 
   WalletPuzzlehash get walletPuzzlehash =>
@@ -122,6 +128,7 @@ class UnhardenedWalletVector extends WalletVector {
     required super.childPrivateKey,
     required super.puzzlehash,
     required super.derivationIndex,
+    required super.publicKey,
     super.assetIdtoOuterPuzzlehash,
   });
 
@@ -140,6 +147,7 @@ class UnhardenedWalletVector extends WalletVector {
       childPrivateKey: childPrivateKeyUnhardened,
       puzzlehash: puzzlehashUnhardened,
       derivationIndex: derivationIndex,
+      publicKey: null,
     );
   }
 
@@ -179,12 +187,16 @@ class UnhardenedWalletVector extends WalletVector {
       puzzlehash: puzzlehash,
       assetIdtoOuterPuzzlehash: assetIdToOuterPuzzlehashMap,
       derivationIndex: derivationIndex,
+      publicKey: null,
     );
   }
   factory UnhardenedWalletVector.fromMap(Map<String, dynamic> map) {
     final childPrivateKey = PrivateKey.fromHex(map['childPrivateKey'] as String);
 
     final puzzlehash = Puzzlehash.fromHex(map['puzzlehash'] as String);
+    final publicKey = map['childPublicKey'] != null
+        ? JacobianPoint.fromHexG1(map['childPublicKey'] as String)
+        : null;
 
     var assetIdtoOuterPuzzlehashMap = <Puzzlehash, Puzzlehash>{};
     var assetIdtoOuterPuzzlehash = Map<String, String>.from(
@@ -200,6 +212,7 @@ class UnhardenedWalletVector extends WalletVector {
       childPrivateKey: childPrivateKey,
       derivationIndex: map['derivationIndex'] as int,
       puzzlehash: puzzlehash,
+      publicKey: publicKey,
       assetIdtoOuterPuzzlehash: assetIdtoOuterPuzzlehashMap,
     );
   }

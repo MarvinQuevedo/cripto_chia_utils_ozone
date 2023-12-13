@@ -71,45 +71,47 @@ class BtcToXchService {
     final requestorPublicKey = requestorPrivateKey.getG1();
     final fulfillerPublicKey = fulfillerPrivateKey.getG1();
 
-    return baseWalletService.createSpendBundleBase(
-      payments: payments,
-      coinsInput: coinsInput,
-      changePuzzlehash: changePuzzlehash,
-      fee: fee,
-      originId: originId,
-      coinAnnouncementsToAssert: coinAnnouncementsToAssert,
-      puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
-      makePuzzleRevealFromPuzzlehash: (puzzlehash) {
-        return BtcExchangeService.generateEscrowPuzzle(
-          clawbackDelaySeconds: clawbackDelaySeconds,
-          clawbackPublicKey: fulfillerPublicKey,
-          sweepPaymentHash: sweepPaymentHash,
-          sweepPublicKey: requestorPublicKey,
-        );
-      },
-      makeSignatureForCoinSpend: (coinSpend) {
-        final hiddenPuzzle = BtcExchangeService.generateHiddenPuzzle(
-          clawbackDelaySeconds: clawbackDelaySeconds,
-          clawbackPublicKey: fulfillerPublicKey,
-          sweepPaymentHash: sweepPaymentHash,
-          sweepPublicKey: requestorPublicKey,
-        );
+    return baseWalletService
+        .createSpendBundleBase(
+          payments: payments,
+          coinsInput: coinsInput,
+          changePuzzlehash: changePuzzlehash,
+          fee: fee,
+          originId: originId,
+          coinAnnouncementsToAssert: coinAnnouncementsToAssert,
+          puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
+          makePuzzleRevealFromPuzzlehash: (puzzlehash) {
+            return BtcExchangeService.generateEscrowPuzzle(
+              clawbackDelaySeconds: clawbackDelaySeconds,
+              clawbackPublicKey: fulfillerPublicKey,
+              sweepPaymentHash: sweepPaymentHash,
+              sweepPublicKey: requestorPublicKey,
+            );
+          },
+          makeSignatureForCoinSpend: (coinSpend) {
+            final hiddenPuzzle = BtcExchangeService.generateHiddenPuzzle(
+              clawbackDelaySeconds: clawbackDelaySeconds,
+              clawbackPublicKey: fulfillerPublicKey,
+              sweepPaymentHash: sweepPaymentHash,
+              sweepPublicKey: requestorPublicKey,
+            );
 
-        final totalPublicKey = requestorPublicKey + fulfillerPublicKey;
+            final totalPublicKey = requestorPublicKey + fulfillerPublicKey;
 
-        final totalPrivateKey = calculateTotalPrivateKey(
-          totalPublicKey,
-          hiddenPuzzle,
-          requestorPrivateKey,
-          fulfillerPrivateKey,
-        );
+            final totalPrivateKey = calculateTotalPrivateKey(
+              totalPublicKey,
+              hiddenPuzzle,
+              requestorPrivateKey,
+              fulfillerPrivateKey,
+            );
 
-        return baseWalletService.makeSignature(
-          totalPrivateKey,
-          coinSpend,
-          useSyntheticOffset: false,
-        );
-      },
-    );
+            return baseWalletService.makeSignature(
+              totalPrivateKey,
+              coinSpend,
+              useSyntheticOffset: false,
+            );
+          },
+        )
+        .item1;
   }
 }

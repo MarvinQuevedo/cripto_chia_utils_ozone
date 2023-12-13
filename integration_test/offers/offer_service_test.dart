@@ -78,7 +78,7 @@ Future<void> main() async {
     final targePh = keychain.puzzlehashes[3];
 
     // Request 100000000000 mojos for user NFT
-    final offer = await offerService.createOffer(
+    final resOffer = await offerService.createOffer(
       offerredAmounts: {
         OfferAssetData.singletonNft(
           launcherPuzhash: nftFullCoinInfo.launcherId,
@@ -95,6 +95,7 @@ Future<void> main() async {
       targetPuzzleHash: targePh,
       //fee: 1000000,
     );
+    final offer = resOffer.item1;
     final summary = offer.summary();
     print(summary);
     final requested = offer.requestedPayments;
@@ -117,7 +118,7 @@ Future<void> main() async {
 
     final changePh = keychain.puzzlehashes[2];
     final targePh = keychain.puzzlehashes[3];
-    final offer = await offerService.createOffer(
+    final resOffer = await offerService.createOffer(
       offerredAmounts: {
         null: -100000000000,
       },
@@ -129,6 +130,7 @@ Future<void> main() async {
       targetPuzzleHash: targePh,
       fee: 1000000,
     );
+    final offer = resOffer.item1;
     final summary = offer.summary();
     print(summary);
     final requested = offer.requestedPayments;
@@ -149,12 +151,15 @@ Future<void> main() async {
     final changePh = keychain.puzzlehashes[2];
     final targePh = keychain.puzzlehashes[3];
     final responseResult = await offerService.responseOffer(
-        fee: 1000000,
-        targetPuzzleHash: targePh,
-        offer: offer,
-        changePuzzlehash: changePh,
-        coinsToUse: xchCoins!);
-    expect(responseResult.item1.success, true);
+      fee: 1000000,
+      targetPuzzleHash: targePh,
+      offer: offer,
+      changePuzzlehash: changePh,
+      coinsToUse: xchCoins!,
+      environment: Environment.pureDart,
+      network: Network.testnet10,
+    );
+    expect(responseResult.item1?.success, true);
   });
 
   test('Create Cat offer, Offer USDS for XCH', () async {
@@ -188,7 +193,7 @@ Future<void> main() async {
     );
 
     // Request 100000000000 mojos for 1.000 USDS
-    final offer = await offerService.createOffer(
+    final resOffer = await offerService.createOffer(
       offerredAmounts: {
         OfferAssetData.cat(
           tailHash: usdsTailhash,
@@ -204,6 +209,7 @@ Future<void> main() async {
       targetPuzzleHash: targePh,
       //fee: 1000000,
     );
+    final offer = resOffer.item1;
     final summary = offer.summary();
     print(summary);
     final requested = offer.requestedPayments;
@@ -236,7 +242,7 @@ Future<void> main() async {
     );
 
     // Request 100000000000 mojos for 1.000 USDS
-    final offer = await offerService.createOffer(
+    final resOffer = await offerService.createOffer(
       offerredAmounts: {
         null: 100000000000,
       },
@@ -251,6 +257,7 @@ Future<void> main() async {
       targetPuzzleHash: targePh,
       //fee: 1000000,
     );
+    final offer = resOffer.item1;
     final summary = offer.summary();
     print(summary);
     final requested = offer.requestedPayments;
