@@ -9,12 +9,6 @@ class PlotNft with ToBytesMixin {
     required this.delayPuzzlehash,
   });
 
-  final Bytes launcherId;
-  final CoinPrototype singletonCoin;
-  final PoolState poolState;
-  final int delayTime;
-  final Puzzlehash delayPuzzlehash;
-
   factory PlotNft.fromBytes(Bytes bytes) {
     final iterator = bytes.iterator;
 
@@ -33,6 +27,29 @@ class PlotNft with ToBytesMixin {
     );
   }
 
+  final Bytes launcherId;
+  final CoinPrototype singletonCoin;
+  final PoolState poolState;
+  final int delayTime;
+  final Puzzlehash delayPuzzlehash;
+
+  Puzzlehash get p2Puzzlehash =>
+      PlotNftWalletService.launcherIdToP2Puzzlehash(launcherId, delayTime, delayPuzzlehash);
+
+  Future<Puzzlehash> get p2PuzzlehashAsync =>
+      PlotNftWalletService.launcherIdToP2PuzzlehashAsync(launcherId, delayTime, delayPuzzlehash);
+
+  Puzzlehash get contractPuzzlehash => PlotNftWalletService.launcherIdToP2Puzzlehash(
+        launcherId,
+        delayTime,
+        delayPuzzlehash,
+      );
+  Future<Puzzlehash> get contractPuzzlehashAsync =>
+      PlotNftWalletService.launcherIdToP2PuzzlehashAsync(
+        launcherId,
+        delayTime,
+        delayPuzzlehash,
+      );
   @override
   Bytes toBytes() {
     return launcherId +

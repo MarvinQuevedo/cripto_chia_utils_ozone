@@ -4,30 +4,30 @@ import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:test/expect.dart';
 import 'package:test/scaffolding.dart';
 
-void main() {
-  final keychainSecret = KeychainCoreSecret.generate();
+void main() async {
+  final keychainSecret = await KeychainCoreSecret.generateAsync();
 
-  final walletsSetList = <WalletSet>[];
-  for (var i = 0; i < 20; i++) {
-    final set1 = WalletSet.fromPrivateKey(keychainSecret.masterPrivateKey, i);
-    walletsSetList.add(set1);
-  }
+  final keychain = await WalletKeychain.fromCoreSecretAsync(
+    keychainSecret,
+    walletSize: 20,
+    plotNftWalletSize: 0,
+  );
 
   final assetIds = [Program.fromInt(0).hash(), Program.fromInt(1).hash()];
 
-  final walletKeychain = WalletKeychain.fromWalletSets(walletsSetList)
+  final walletKeychain = keychain
     ..addOuterPuzzleHashesForAssetId(assetIds[0])
     ..addOuterPuzzleHashesForAssetId(assetIds[1])
     ..getNextSingletonWalletVector(keychainSecret.masterPrivateKey)
     ..getNextSingletonWalletVector(keychainSecret.masterPrivateKey);
 
   test('should correctly serialize and deserialize a WalletKeychain', () {
-    final walletKeychainSerialized = walletKeychain.toBytes();
-    final walletKeychainDeserialized = WalletKeychain.fromBytes(walletKeychainSerialized);
+    final walletKeychainSerialized = walletKeychain.toMap();
+    final walletKeychainDeserialized = WalletKeychain.fromMap(walletKeychainSerialized);
 
     expect(
       walletKeychainDeserialized.hardenedWalletVectors.length,
-      equals(20),
+      equals(60),
     );
     expect(
       walletKeychainDeserialized.hardenedWalletVectors.length,
@@ -42,7 +42,7 @@ void main() {
     }
 
     expect(
-      walletKeychainDeserialized.unhardenedWalletVectors.length,
+      walletKeychainDeserialized.unhardenedMap.length,
       equals(60),
     );
 

@@ -35,24 +35,33 @@ class FullCoin extends CoinPrototype {
   FullCoin({
     this.parentCoinSpend,
     required this.coin,
-  })  : assetId = getTailHash(parentCoinSpend),
-        lineageProof = (parentCoinSpend?.puzzleReveal.uncurry().arguments.length ?? 0) > 2
-            ? Program.list([
-                Program.fromBytes(
-                  parentCoinSpend!.coin.parentCoinInfo,
-                ),
-                // third argument to the cat puzzle is the inner puzzle
-                Program.fromBytes(
-                  parentCoinSpend.puzzleReveal.uncurry().arguments[2].hash(),
-                ),
-                Program.fromInt(parentCoinSpend.coin.amount)
-              ])
-            : Program.nil,
-        super(
+  }) : super(
           parentCoinInfo: coin.parentCoinInfo,
           puzzlehash: coin.puzzlehash,
           amount: coin.amount,
-        );
+        ) {
+    assetId = getTailHash(parentCoinSpend);
+    if (parentCoinSpend != null) {
+      try {
+        if ((parentCoinSpend?.puzzleReveal.uncurry().arguments.length ?? 0) > 2) {
+          lineageProof = Program.list([
+            Program.fromBytes(
+              parentCoinSpend!.coin.parentCoinInfo,
+            ),
+            // third argument to the cat puzzle is the inner puzzle
+            Program.fromBytes(
+              parentCoinSpend!.puzzleReveal.uncurry().arguments[2].hash(),
+            ),
+            Program.fromInt(parentCoinSpend!.coin.amount)
+          ]);
+        } else {
+          lineageProof = Program.nil;
+        }
+      } catch (e) {}
+    } else {
+      lineageProof = Program.nil;
+    }
+  }
 
   String toFormatedAmount(String symbol) {
     switch (type) {
@@ -80,5 +89,9 @@ class FullCoin extends CoinPrototype {
   SpendType get type {
     final t = this.parentCoinSpend?.type;
     return t ?? SpendType.standard;
+  }
+
+  Coin toCoin() {
+    return coin;
   }
 }

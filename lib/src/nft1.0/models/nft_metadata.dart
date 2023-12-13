@@ -19,6 +19,10 @@ class NftMetadata {
 
   final int editionTotal;
 
+  final int royaltyPc;
+
+  final Puzzlehash royaltyPh;
+
   NftMetadata({
     required this.uris,
     required this.hash,
@@ -28,6 +32,8 @@ class NftMetadata {
     this.licenseHash,
     this.editionNumber = 1,
     this.editionTotal = 1,
+    this.royaltyPc = 5,
+    required this.royaltyPh,
   });
 
   NftMetadata copyWith({
@@ -39,6 +45,8 @@ class NftMetadata {
     Bytes? licenseHash,
     int? editionNumber,
     int? editionTotal,
+    int? royaltyPc,
+    Puzzlehash? royaltyPh,
   }) {
     return NftMetadata(
       uris: uris ?? this.uris,
@@ -49,6 +57,8 @@ class NftMetadata {
       licenseHash: licenseHash ?? this.licenseHash,
       editionNumber: editionNumber ?? this.editionNumber,
       editionTotal: editionTotal ?? this.editionTotal,
+      royaltyPc: royaltyPc ?? this.royaltyPc,
+      royaltyPh: royaltyPh ?? this.royaltyPh,
     );
   }
 

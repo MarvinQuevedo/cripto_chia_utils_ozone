@@ -1,7 +1,6 @@
 // ignore_for_file: constant_identifier_names
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/utils/serialization.dart';
 
 class AuthenticationPayload {
   const AuthenticationPayload({

@@ -1,10 +1,28 @@
 import '../../../chia_crypto_utils.dart';
-import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 import '../models/deconstructed_singleton_puzzle.dart';
+
+Program puzzleForSingletonV1_1(
+  Bytes launcherId,
+  Program innerPuzzle, {
+  Bytes? launcherHash,
+}) {
+  return SINGLETON_TOP_LAYER_MOD_v1_1.curry([
+    Program.cons(
+      Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
+      Program.cons(
+        Program.fromBytes(launcherId),
+        Program.fromBytes(
+          launcherHash ?? LAUNCHER_PUZZLE_HASH,
+        ),
+      ),
+    ),
+    innerPuzzle
+  ]);
+}
 
 DeconstructedSingletonPuzzle? mathSingletonPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
-  if (uncurried.program.hash() == SINGLETON_MOD_HASH) {
+  if (uncurried.program.hash() == SINGLETON_TOP_LAYER_MOD_V1_1_HASH) {
     final nftArgs = uncurried.arguments;
 
     final singletonStruct = nftArgs[0];
@@ -54,12 +72,12 @@ Program solutionForSingleton({
   ]);
 }
 
-class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
+class SingletonOuterPuzzle extends OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     if (constructor.also != null) {
-      innerPuzzle =
-          outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: innerPuzzle);
+      innerPuzzle = OuterPuzzleDriver.constructPuzzle(
+          constructor: constructor.also!, innerPuzzle: innerPuzzle);
     }
 
     Bytes launcherHash = SINGLETON_LAUNCHER_HASH;
@@ -67,7 +85,7 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
     if (constructor["launcher_ph"] != null) {
       launcherHash = Bytes.fromHex(constructor["launcher_ph"]);
     }
-    return SingletonService.puzzleForSingleton(
+    return puzzleForSingletonV1_1(
       launcherId,
       innerPuzzle,
       launcherHash: launcherHash,
@@ -85,10 +103,10 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
     if (matched != null) {
       final Map<String, dynamic> constructorDict = {
         "type": AssetType.SINGLETON,
-        "launcher_id": matched.launcherPuzzhash.toHexWithPrefix(),
+        "launcher_id": matched.singletonLauncherId.toHexWithPrefix(),
         "launcher_ph": matched.launcherPuzzhash.toHexWithPrefix(),
       };
-      final next = matchPuzzle(matched.innerPuzzle);
+      final next = OuterPuzzleDriver.matchPuzzle(matched.innerPuzzle);
       if (next != null) {
         constructorDict["also"] = next.info;
       }
@@ -112,24 +130,29 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
     }
 
     final coin = CoinPrototype.fromBytes(coinBytes);
-    final parentSpend = CoinSpend.fromBytes(Bytes.fromHex(solver["parent_spend"]));
+    final Bytes solverParentSpend = solver["parent_spend"];
+    CoinSpend parentSpend = CoinSpend.fromBytes(solverParentSpend);
+
     final parentCoin = parentSpend.coin;
+
     if (constructor.also != null) {
-      innerSolution = outerPuzzle.solvePuzzle(
-          constructor: constructor.also!,
-          solver: solver,
-          innerPuzzle: innerPuzzle,
-          innerSolution: innerSolution);
+      innerSolution = OuterPuzzleDriver.solvePuzzle(
+        constructor: constructor.also!,
+        solver: solver,
+        innerPuzzle: innerPuzzle,
+        innerSolution: innerSolution,
+      );
     }
-    final mathced = mathSingletonPuzzle(parentSpend.puzzleReveal);
-    if (mathced == null) {
+    final matched = mathSingletonPuzzle(parentSpend.puzzleReveal);
+    if (matched == null) {
       throw Exception("Math fail SingletonPuzzle");
     }
+    final parentInnerPuzzle = matched.innerPuzzle;
 
     return solutionForSingleton(
       lineageProof: LineageProof(
-          parentName: parentCoin.parentCoinInfo,
-          innerPuzzleHash: mathced.innerPuzzle.hash(),
+          parentName: Puzzlehash(parentCoin.parentCoinInfo),
+          innerPuzzleHash: parentInnerPuzzle.hash(),
           amount: parentCoin.amount),
       amount: coin.amount,
       innerSolution: innerSolution,
@@ -142,9 +165,9 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
     if (matched != null) {
       final innerPuzzle = matched.innerPuzzle;
       if (constructor.also != null) {
-        final deepInnerPuzzle = outerPuzzle.getInnerPuzzle(
+        final deepInnerPuzzle = OuterPuzzleDriver.getInnerPuzzle(
           constructor: constructor.also!,
-          puzzleReveal: puzzleReveal,
+          puzzleReveal: innerPuzzle,
         );
         return deepInnerPuzzle;
       }
@@ -158,7 +181,7 @@ class SingletonOuterPuzzle extends outerPuzzle.OuterPuzzle {
   Program? getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
     final myInnerSolution = solution.filterAt("rrf");
     if (constructor.also != null) {
-      final deepInnerSolution = outerPuzzle.getInnerSolution(
+      final deepInnerSolution = OuterPuzzleDriver.getInnerSolution(
         constructor: constructor.also!,
         solution: myInnerSolution,
       );

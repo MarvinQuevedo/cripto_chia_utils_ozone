@@ -1,17 +1,21 @@
 name: chia_crypto_utils
 description: Chia Crypto Utils repository provides an object model for working with Chia primitives serving as a basis for a Chia client.
-version: 1.0.15
+version: 1.0.16
 repository: https://github.com/irulast/chia-crypto-utils
 
 environment:
-  sdk: '>=2.15.0 <3.0.0'
+  sdk: '>=2.18.0 <3.0.0'
 
 scripts:
   integration_tests: 'dart test integration_test/ --concurrency=1'
 
 dependencies:
   args: ^2.3.1
-  bech32m: ^0.2.2
+  bech32: ^0.2.2
+  bech32m: 
+    git:
+      url: https://github.com/MarvinQuevedo/bech32m
+      ref: 9862f20f356af305cf691d55225b4bb3fac4cab2
   bip39: ^1.0.6
   crypto: ^3.0.1
   equatable: ^2.0.3
@@ -23,15 +27,20 @@ dependencies:
   quiver: ^3.0.1+1
   yaml: ^3.1.1
   tuple: ^2.0.0
-  intl: ^0.17.0
+  intl: ^0.18.0
+  bs58: ^1.0.2
+  compute: ^1.0.2
+  deep_pick: ^1.0.0
+  csv: ^5.0.2
+  
+   
 
 dev_dependencies:
-  csv: ^5.0.1
-  http: ^0.13.4
-  lints: ^1.0.0
-  rps: ^0.6.3
+  http: ^1.1.0
+  lints: ^2.1.0
+  #rps: ^0.6.3
   test: ^1.19.3
-  very_good_analysis: ^2.4.0
+   
 
 false_secrets:
   - /lib/src/networks/chia/mainnet/ssl/private_full_node.key

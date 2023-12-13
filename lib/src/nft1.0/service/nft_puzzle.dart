@@ -1,5 +1,6 @@
+// ignore_for_file: unused_local_variable
+
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/nft1.0/index.dart';
 import 'package:tuple/tuple.dart';
 
 Program _parseValue(dynamic value) {
@@ -40,7 +41,7 @@ class NftService {
     required Bytes singletonId,
     required Program innerPuzzle,
   }) {
-    return SingletonService.puzzleForSingleton(
+    return puzzleForSingletonV1_1(
       singletonId,
       innerPuzzle,
       launcherHash: LAUNCHER_PUZZLE_HASH,
@@ -53,7 +54,7 @@ class NftService {
       required Bytes metadataUpdaterHash,
       required Program innerPuzzle}) {
     final singletonStruct = Program.cons(
-      Program.fromBytes(SINGLETON_MOD_HASH),
+      Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
       Program.cons(
         Program.fromBytes(singletonId),
         Program.fromBytes(
@@ -68,7 +69,7 @@ class NftService {
       innerPuzzle: innerPuzzle,
     );
 
-    return SINGLETON_TOP_LAYER_MOD.curry([singletonStruct, sinletonInnerPuzzle]);
+    return SINGLETON_TOP_LAYER_MOD_v1_1.curry([singletonStruct, sinletonInnerPuzzle]);
   }
 
   static NFTInfo getNftInfoFromPuzzle(NFTCoinInfo nftCoinInfo) {
@@ -125,7 +126,7 @@ class NftService {
   }
 
   static Program constructOwnershipLayer(
-          {required currentOwner,
+          {required Bytes? currentOwner,
           required Program transferProgram,
           required Program innerPuzzle}) =>
       puzzleForOwnershipLayer(
@@ -142,19 +143,17 @@ class NftService {
     Puzzlehash? royaltyPuzzleHash,
   }) {
     final singletonStruct = Program.cons(
-      Program.fromBytes(SINGLETON_MOD_HASH),
+      Program.fromBytes(SINGLETON_TOP_LAYER_MOD_V1_1_HASH),
       Program.cons(
         Program.fromBytes(nftId),
-        Program.fromBytes(
-          LAUNCHER_PUZZLE_HASH,
-        ),
+        Program.fromBytes(LAUNCHER_PUZZLE_HASH),
       ),
     );
     if (royaltyPuzzleHash == null) {
       royaltyPuzzleHash = p2Puzzle.hash();
     }
 
-    final transferProgram = NFT_STATE_LAYER_MOD.curry([
+    final transferProgram = NFT_TRANSFER_PROGRAM_DEFAULT.curry([
       singletonStruct,
       Program.fromBytes(royaltyPuzzleHash),
       Program.fromInt(percentage),
@@ -234,7 +233,6 @@ class NftService {
         }
         final memo = conditionList.last.first().atom;
         puzzlehashForDerivation = memo;
-        print("Got back puzhash from solution: ${puzzlehashForDerivation.toHex()}");
       }
     }
     if (puzzlehashForDerivation == null) {
@@ -245,8 +243,6 @@ class NftService {
 
   Program recurryNftPuzzle(
       {required UncurriedNFT unft, required Program solution, required Program newInnerPuzzle}) {
-    print("Generating NFT puzzle with ownership support: ${solution.toSource()}");
-
     final conditions = unft.p2Puzzle.run(unft.getInnermostSolution(solution)).program;
     Bytes? newDidId = unft.ownerDid;
     Bytes? newPuzhash;
@@ -255,13 +251,13 @@ class NftService {
       if (condition.first().toInt() == -10) {
         // this is the change owner magic condition
         newDidId = condition.filterAt("rf").atom;
+        if (newDidId.isEmpty) {
+          newDidId = null;
+        }
       } else if (condition.first().toInt() == 51) {
         newPuzhash = condition.filterAt("rf").atom;
       }
     }
-    print(
-      "Found NFT puzzle details: ${newDidId?.toHexWithPrefix()} ${newPuzhash?.toHexWithPrefix()}",
-    );
 
     if (unft.transferProgram == null) {
       throw Exception("TransferProgram in uncurriedNFT can't be null");
@@ -285,6 +281,9 @@ class NftService {
         // this is the change owner magic condition
 
         newDidId = condition.filterAt("rf").atom;
+        if (newDidId.isEmpty) {
+          newDidId = null;
+        }
       }
     }
     return newDidId;

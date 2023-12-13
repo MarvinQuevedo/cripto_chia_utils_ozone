@@ -1,5 +1,4 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/core/service/base_wallet.dart';
 import 'package:chia_crypto_utils/src/plot_nft/models/exceptions/invalid_pool_singleton_exception.dart';
 
 class PlotNftWalletService extends BaseWalletService {
@@ -30,7 +29,7 @@ class PlotNftWalletService extends BaseWalletService {
       isInitialState: true,
     );
 
-    final fullPoolingPuzzle = SingletonService.puzzleForSingleton(launcherCoin.id, innerPuzzle);
+    final fullPoolingPuzzle = SingletonService.puzzleForSingletonV1(launcherCoin.id, innerPuzzle);
     final puzzlehash = fullPoolingPuzzle.hash();
 
     final plotNftExtraData = PlotNftExtraData(
@@ -73,7 +72,7 @@ class PlotNftWalletService extends BaseWalletService {
 
     final launcherSpendBundle = SpendBundle(coinSpends: [launcherCoinSpend]);
 
-    return createLauncherSpendBundle + launcherSpendBundle;
+    return createLauncherSpendBundle.item1 + launcherSpendBundle;
   }
 
   Program poolStateToInnerPuzzle({
@@ -181,11 +180,24 @@ class PlotNftWalletService extends BaseWalletService {
     Puzzlehash delayedPuzzlehash,
   ) {
     return SingletonService.createP2SingletonPuzzle(
-      singletonModHash: singletonTopLayerV1_1Program.hash(),
+      singletonModHash: singletonTopLayerProgram.hash(),
       launcherId: launcherId,
       secondsDelay: secondsDelay,
       delayedPuzzlehash: delayedPuzzlehash,
     ).hash();
+  }
+
+  static Future<Puzzlehash> launcherIdToP2PuzzlehashAsync(
+    Bytes launcherId,
+    int secondsDelay,
+    Puzzlehash delayedPuzzlehash,
+  ) async {
+    return SingletonService.createP2SingletonPuzzleAsync(
+      singletonModHash: singletonTopLayerProgram.hash(),
+      launcherId: launcherId,
+      secondsDelay: secondsDelay,
+      delayedPuzzlehash: delayedPuzzlehash,
+    ).then((value) => value.hash());
   }
 
   void validateSingletonPuzzlehash({
@@ -202,7 +214,7 @@ class PlotNftWalletService extends BaseWalletService {
       delayTime: delayTime,
     );
 
-    final fullPuzzle = SingletonService.puzzleForSingleton(launcherId, innerPuzzle);
+    final fullPuzzle = SingletonService.puzzleForSingletonV1(launcherId, innerPuzzle);
 
     if (fullPuzzle.hash() != singletonPuzzlehash) {
       throw InvalidPoolSingletonException();

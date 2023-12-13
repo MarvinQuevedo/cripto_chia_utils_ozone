@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/standard/puzzles/default_hidden_puzzle/default_hidden_puzzle.clvm.hex.dart';
-import 'package:chia_crypto_utils/src/standard/puzzles/p2_delegated_puzzle_or_hidden_puzzle/p2_delegated_puzzle_or_hidden_puzzle.clvm.hex.dart';
 import 'package:crypto/crypto.dart';
 
 // cribbed from https://github.com/Chia-Network/chia-blockchain/blob/4bd5c53f48cb049eff36c87c00d21b1f2dd26b27/chia/wallet/derive_keys.py
@@ -106,11 +105,17 @@ PrivateKey masterSkToPoolingAuthenticationSk(
 
 // cribbed from https://github.com/Chia-Network/chia-blockchain/blob/4bd5c53f48cb049eff36c87c00d21b1f2dd26b27/chia/wallet/puzzles/p2_delegated_puzzle_or_hidden_puzzle.py
 Program getPuzzleFromPk(JacobianPoint publicKey) {
+  return getPuzzleFromPkAndHiddenPuzzle(publicKey, defaultHiddenPuzzleProgram);
+}
+
+Program getPuzzleFromPkAndHiddenPuzzle(JacobianPoint publicKey, Program hiddenPuzzleProgram) {
   final syntheticPubKey = calculateSyntheticPublicKeyProgram.run(
-    Program.list([
-      Program.fromBytes(publicKey.toBytes()),
-      Program.fromBytes(defaultHiddenPuzzleProgram.hash())
-    ]),
+    Program.list(
+      [
+        Program.fromBytes(publicKey.toBytes()),
+        Program.fromBytes(hiddenPuzzleProgram.hash()),
+      ],
+    ),
   );
 
   final curried = p2DelegatedPuzzleOrHiddenPuzzleProgram.curry([syntheticPubKey.program]);
@@ -124,6 +129,18 @@ final groupOrder = BigInt.parse(
 
 BigInt calculateSyntheticOffset(JacobianPoint publicKey) {
   final blob = sha256.convert(publicKey.toBytes() + defaultHiddenPuzzleProgram.hash()).bytes;
+
+  final offset = bytesToBigInt(blob, Endian.big, signed: true);
+
+  final newOffset = offset % groupOrder;
+  return newOffset;
+}
+
+BigInt calculateSyntheticOffsetFromHiddenPuzzle(
+  JacobianPoint publicKey,
+  Program hiddenPuzzleProgram,
+) {
+  final blob = sha256.convert(publicKey.toBytes() + hiddenPuzzleProgram.hash()).bytes;
 
   final offset = bytesToBigInt(blob, Endian.big, signed: true);
 
@@ -166,4 +183,22 @@ PrivateKey masterSkToRootWalletSkUnhardened(PrivateKey master) {
   final root = derivePathUnhardened(PrivateKey.fromBytes(master.toBytes()), [12381, 8444, 2]);
   //final r1 = DeriveKeys.masterSkToRootWalletSk(master);
   return PrivateKey.fromBytes(root.toBytes());
+}
+
+PrivateKey calculateTotalPrivateKey(
+  JacobianPoint totalPublicKey,
+  Program hiddenPuzzle,
+  PrivateKey firstPrivateKey,
+  PrivateKey secondPrivateKey,
+) {
+  final syntheticOffset = calculateSyntheticOffsetFromHiddenPuzzle(totalPublicKey, hiddenPuzzle);
+
+  final firstSecret = BigInt.parse(firstPrivateKey.toHex(), radix: 16) % groupOrder;
+  final secondSecret = BigInt.parse(secondPrivateKey.toHex(), radix: 16) % groupOrder;
+
+  final totalSecret = firstSecret + secondSecret + syntheticOffset;
+
+  final totalPrivateKey = PrivateKey.fromBigInt(totalSecret);
+
+  return totalPrivateKey;
 }

@@ -1,9 +1,8 @@
 import '../../../chia_crypto_utils.dart';
-import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 
 DeconstructedUpdateMetadataPuzzle? mathMetadataLayerPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
-  if (uncurried.program.hash() == NFT_STATE_LAYER_MOD_HASH) {
+  if (uncurried.program == NFT_STATE_LAYER_MOD) {
     final nftArgs = uncurried.arguments;
 
     final metadata = nftArgs[1];
@@ -36,17 +35,31 @@ Program solutionForMetadataLayer({required int amount, required Program innerSol
   ]);
 }
 
-class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
+class MetadataOurterPuzzle extends OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     if (constructor.also != null) {
-      innerPuzzle =
-          outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: innerPuzzle);
+      innerPuzzle = OuterPuzzleDriver.constructPuzzle(
+        constructor: constructor.also!,
+        innerPuzzle: innerPuzzle,
+      );
+    }
+    Program metadata;
+    if (constructor["metadata"] is Program) {
+      metadata = constructor["metadata"];
+    } else {
+      metadata = Program.parse(constructor["metadata"]);
+    }
+    Bytes updaterHash;
+    if (constructor["updater_hash"] is Bytes) {
+      updaterHash = constructor["updater_hash"];
+    } else {
+      updaterHash = Bytes.fromHex(constructor["updater_hash"] as String);
     }
 
     return puzzleForMetadataLayer(
-      metadata: constructor["metadata"],
-      metadataUpdaterHash: constructor["updater_hash"],
+      metadata: metadata,
+      metadataUpdaterHash: updaterHash,
       innerPuzzle: innerPuzzle,
     );
   }
@@ -71,7 +84,8 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
         "metadata": matched.metadata.toSource(),
         "updater_hash": matched.metadataUpdaterHash.toHexWithPrefix(),
       };
-      final next = matchPuzzle(matched.innerPuzzle);
+      final innerPuzzle = matched.innerPuzzle;
+      final next = OuterPuzzleDriver.matchPuzzle(innerPuzzle);
       if (next != null) {
         constructorDict["also"] = next.info;
       }
@@ -97,7 +111,7 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
     final coin = CoinPrototype.fromBytes(coinBytes);
 
     if (constructor.also != null) {
-      innerSolution = outerPuzzle.solvePuzzle(
+      innerSolution = OuterPuzzleDriver.solvePuzzle(
           constructor: constructor.also!,
           solver: solver,
           innerPuzzle: innerPuzzle,
@@ -113,9 +127,9 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
     if (matched != null) {
       final innerPuzzle = matched.innerPuzzle;
       if (constructor.also != null) {
-        final deopInnerPuzzle = outerPuzzle.getInnerPuzzle(
+        final deopInnerPuzzle = OuterPuzzleDriver.getInnerPuzzle(
           constructor: constructor.also!,
-          puzzleReveal: puzzleReveal,
+          puzzleReveal: innerPuzzle,
         );
         return deopInnerPuzzle;
       }
@@ -129,8 +143,10 @@ class MetadataOurterPuzzle extends outerPuzzle.OuterPuzzle {
   Program? getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
     final myInnerSolution = solution.first();
     if (constructor.also != null) {
-      final deepInnerSolution =
-          outerPuzzle.getInnerSolution(constructor: constructor.also!, solution: myInnerSolution);
+      final deepInnerSolution = OuterPuzzleDriver.getInnerSolution(
+        constructor: constructor.also!,
+        solution: myInnerSolution,
+      );
       return deepInnerSolution;
     }
     return myInnerSolution;

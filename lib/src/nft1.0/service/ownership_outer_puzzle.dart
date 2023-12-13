@@ -1,10 +1,9 @@
 import '../../../chia_crypto_utils.dart';
-import '../../core/models/outer_puzzle.dart' as outerPuzzle;
 import '../models/deconstructed_ownership_outer_puzzle.dart';
 
 DeconstructedOwnershipOuterPuzzle? mathOwnershipLayerPuzzle(Program puzzle) {
   final uncurried = puzzle.uncurry();
-  if (uncurried.program.hash() == OWNERSHIP_LAYER_MOD_HASH) {
+  if (uncurried.program.hash() == NFT_OWNERSHIP_LAYER_HASH) {
     final nftArgs = uncurried.arguments;
 
     final currentOwner = nftArgs[1];
@@ -23,42 +22,59 @@ DeconstructedOwnershipOuterPuzzle? mathOwnershipLayerPuzzle(Program puzzle) {
 /// [currentOwner] Can be Program, Bytes, Hex String or CLVM program String
 Program puzzleForOwnershipLayer(
     {required currentOwner, required Program transferProgram, required Program innerPuzzle}) {
-  Program _currentOwner;
+  Program _currentOwner = Program.nil;
   if (currentOwner is Program) {
     _currentOwner = currentOwner;
   } else if (currentOwner is Bytes) {
     _currentOwner = Program.fromBytes(currentOwner);
-  } else if (currentOwner == null) {
-    _currentOwner = Program.fromInt(0);
+  } else if (currentOwner is String && (currentOwner).contains("0x")) {
+    _currentOwner = Program.fromBytes(Bytes.fromHex(currentOwner));
   } else {
-    if ((currentOwner as String).contains("0x")) {
-      _currentOwner = Program.fromHex(currentOwner);
-    } else {
+    try {
       _currentOwner = Program.parse(currentOwner);
-    }
+    } catch (e) {}
   }
-  return OWNERSHIP_LAYER_MOD.curry(
-      [Program.fromBytes(OWNERSHIP_LAYER_MOD_HASH), _currentOwner, transferProgram, innerPuzzle]);
+
+  return NFT_OWNERSHIP_LAYER.curry(
+    [
+      Program.fromBytes(NFT_OWNERSHIP_LAYER_HASH),
+      _currentOwner,
+      transferProgram,
+      innerPuzzle,
+    ],
+  );
 }
 
 Program solutionForOwnershipLayer({required Program innerSolution}) {
   return Program.list([innerSolution]);
 }
 
-class OwnershipOuterPuzzle extends outerPuzzle.OuterPuzzle {
+class OwnershipOuterPuzzle extends OuterPuzzle {
   @override
   Program constructPuzzle({required PuzzleInfo constructor, required Program innerPuzzle}) {
     if (constructor.also != null) {
-      innerPuzzle =
-          outerPuzzle.constructPuzzle(constructor: constructor.also!, innerPuzzle: innerPuzzle);
+      innerPuzzle = OuterPuzzleDriver.constructPuzzle(
+        constructor: constructor.also!,
+        innerPuzzle: innerPuzzle,
+      );
     }
     final transfer_program_info = constructor["transfer_program"];
     Program transfer_program;
     if (transfer_program_info is Program) {
       transfer_program = transfer_program_info;
     } else {
-      transfer_program = outerPuzzle.constructPuzzle(
-        constructor: transfer_program_info,
+      PuzzleInfo? constructor;
+      if (transfer_program_info is Map<String, dynamic>) {
+        constructor = PuzzleInfo(transfer_program_info);
+      } else if (transfer_program_info is PuzzleInfo) {
+        constructor = transfer_program_info;
+      }
+      if (constructor == null) {
+        throw Exception("Can't conver  $transfer_program_info to PuzzleInfo");
+      }
+
+      transfer_program = OuterPuzzleDriver.constructPuzzle(
+        constructor: constructor,
         innerPuzzle: innerPuzzle,
       );
     }
@@ -79,13 +95,14 @@ class OwnershipOuterPuzzle extends outerPuzzle.OuterPuzzle {
   PuzzleInfo? matchPuzzle(Program puzzle) {
     final matched = mathOwnershipLayerPuzzle(puzzle);
     if (matched != null) {
-      final tpMatch = outerPuzzle.matchPuzzle(matched.transferProgram);
+      final tpMatch = OuterPuzzleDriver.matchPuzzle(matched.transferProgram);
+
       final Map<String, dynamic> constructorDict = {
         "type": AssetType.OWNERSHIP,
         "owner": matched.currentOwner.isEmpty ? "()" : matched.currentOwner.toHexWithPrefix(),
         "transfer_program": tpMatch == null ? matched.transferProgram.toSource() : tpMatch.info,
       };
-      final next = matchPuzzle(matched.innerPuzzle);
+      final next = OuterPuzzleDriver.matchPuzzle(matched.innerPuzzle);
       if (next != null) {
         constructorDict["also"] = next.info;
       }
@@ -100,15 +117,16 @@ class OwnershipOuterPuzzle extends outerPuzzle.OuterPuzzle {
       required Solver solver,
       required Program innerPuzzle,
       required Program innerSolution}) {
+    Program deepSolution = innerSolution;
     if (constructor.also != null) {
-      innerSolution = outerPuzzle.solvePuzzle(
+      deepSolution = OuterPuzzleDriver.solvePuzzle(
           constructor: constructor.also!,
           solver: solver,
           innerPuzzle: innerPuzzle,
           innerSolution: innerSolution);
     }
 
-    return solutionForOwnershipLayer(innerSolution: innerSolution);
+    return solutionForOwnershipLayer(innerSolution: deepSolution);
   }
 
   @override
@@ -117,11 +135,11 @@ class OwnershipOuterPuzzle extends outerPuzzle.OuterPuzzle {
     if (matched != null) {
       final innerPuzzle = matched.innerPuzzle;
       if (constructor.also != null) {
-        final deopInnerPuzzle = outerPuzzle.getInnerPuzzle(
+        final deepInnerPuzzle = OuterPuzzleDriver.getInnerPuzzle(
           constructor: constructor.also!,
-          puzzleReveal: puzzleReveal,
+          puzzleReveal: innerPuzzle,
         );
-        return deopInnerPuzzle;
+        return deepInnerPuzzle;
       }
       return innerPuzzle;
     } else {
@@ -132,9 +150,12 @@ class OwnershipOuterPuzzle extends outerPuzzle.OuterPuzzle {
   @override
   Program? getInnerSolution({required PuzzleInfo constructor, required Program solution}) {
     final myInnerSolution = solution.first();
+
     if (constructor.also != null) {
-      final deepInnerSolution =
-          outerPuzzle.getInnerSolution(constructor: constructor.also!, solution: myInnerSolution);
+      final deepInnerSolution = OuterPuzzleDriver.getInnerSolution(
+        constructor: constructor.also!,
+        solution: myInnerSolution,
+      );
       return deepInnerSolution;
     }
     return myInnerSolution;

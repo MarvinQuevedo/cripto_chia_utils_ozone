@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import '../../../chia_crypto_utils.dart';
@@ -60,7 +61,7 @@ class NFTInfo {
 
   final Puzzlehash p2Puzzlehash;
 
-  final launcherPuzzlehash = singletonLauncherProgram.hash;
+  final launcherPuzzlehash = singletonLauncherProgram.hash();
 
   NftAddress get nftAddress => NftAddress.fromPuzzlehash(this.launcherId);
 
@@ -87,27 +88,29 @@ class NFTInfo {
 
   factory NFTInfo.fromJson(Map<String, dynamic> json, {String prefix = "xch"}) {
     return NFTInfo(
-        launcherId: Puzzlehash.fromHex(json['launcher_id'] as String),
-        nftCoinId: Bytes.fromHex(json['nft_coin_id'] as String),
-        didOwner: Bytes.fromHex(json['did_owner'] as String),
-        royaltyPercentage: json['royalty'] as int,
-        dataUris: List<String>.from(json['data_uris'] as List),
-        dataHash: json['data_hash'] as String,
-        metadataUris: List<String>.from(json['metadata_uris'] as List),
-        metadataHash: json['metadata_hash'] as String,
-        licenseUris: List<String>.from(json['license_uris'] as List),
-        licenseHash: json['license_hash'] as String,
-        chainInfo: json["chain_info"] as String,
-        p2Puzzlehash: Puzzlehash.fromHex(json["p2_puzzle_hash"]),
-        mintHeight: json["mint_height"],
-        pendingTransaction: json["pending_transaction"],
-        royaltyAddress: json["royalty_puzzle_hash"] != null
-            ? Address.fromPuzzlehash(Puzzlehash.fromHex(json["royalty_puzzle_hash"]), prefix)
-            : null,
-        seriesNumber: json['series_number'],
-        seriesTotal: json["series_total"],
-        supportsDid: json["supports_did"],
-        updaterPuzzlehash: Bytes.fromHex(json['updater_puzhash']));
+      launcherId: Puzzlehash.fromHex(json['launcher_id'] as String),
+      nftCoinId: Bytes.fromHex(json['nft_coin_id'] as String),
+      didOwner: json['did_owner'] != null ? Bytes.fromHex(json['did_owner'] as String) : null,
+      royaltyPercentage: json['royalty'] as int,
+      dataUris: List<String>.from(json['data_uris'] as List),
+      dataHash: json['data_hash'] as String,
+      metadataUris: List<String>.from(json['metadata_uris'] as List),
+      metadataHash: json['metadata_hash'] as String,
+      licenseUris: List<String>.from(json['license_uris'] as List),
+      licenseHash: json['license_hash'] as String,
+      chainInfo: json["chain_info"] as String,
+      p2Puzzlehash: Puzzlehash.fromHex(json["p2_puzzle_hash"] as String),
+      mintHeight: json["mint_height"] as int,
+      pendingTransaction: json["pending_transaction"] as bool,
+      royaltyAddress: json["royalty_puzzle_hash"] != null
+          ? Address.fromPuzzlehash(
+              Puzzlehash.fromHex(json["royalty_puzzle_hash"] as String), prefix)
+          : null,
+      seriesNumber: json['series_number'] as int,
+      seriesTotal: json["series_total"] as int,
+      supportsDid: json["supports_did"] as bool,
+      updaterPuzzlehash: Bytes.fromHex(json['updater_puzhash']),
+    );
   }
 
   Map<String, dynamic> toMap() {
@@ -125,13 +128,32 @@ class NFTInfo {
       "chain_info": chainInfo,
       'mint_height': mintHeight,
       'pending_transaction': pendingTransaction,
-      'royalty_puzzle_hash': royaltyAddress,
+      'royalty_puzzle_hash': royaltyAddress?.toPuzzlehash().toHex(),
       "series_number": seriesNumber,
       "series_total": seriesTotal,
       "supports_did": supportsDid,
       "nft_address": nftAddress.address,
-      "p2_puzzle_hash": p2Puzzlehash.toHex()
+      "p2_puzzle_hash": p2Puzzlehash.toHex(),
+      "updater_puzhash": updaterPuzzlehash.toHex(),
     };
+  }
+
+  static Future<NFTInfo> fromUncurriedAsync(
+      {required UncurriedNFT uncurriedNFT,
+      required CoinPrototype currentCoin,
+      int? mintHeight,
+      Coin? genesisCoin,
+      String addressPrefix = 'xch'}) async {
+    return spawnAndWaitForIsolate(
+      taskArgument: _FromUncurriedArguments(
+          uncurriedNFT: uncurriedNFT,
+          currentCoin: currentCoin,
+          mintHeight: mintHeight,
+          genesisCoin: genesisCoin,
+          addressPrefix: addressPrefix),
+      isolateTask: uncurriedNftIsolate,
+      handleTaskCompletion: NFTInfo.fromJson,
+    );
   }
 
   static NFTInfo fromUncurried(
@@ -153,37 +175,66 @@ class NFTInfo {
     for (var uri in uncurriedNFT.licenseUris.toList()) {
       licenceUris.add(utf8.decode(uri.atom));
     }
-    print(dataUris);
 
     if (mintHeight == null) {
       mintHeight = genesisCoin!.spentBlockIndex;
     }
+    final launcherId = Puzzlehash(uncurriedNFT.singletonLauncherId.atom);
     return NFTInfo(
-        launcherId: Puzzlehash(uncurriedNFT.launcherPuzhash.atom),
-        p2Puzzlehash: uncurriedNFT.p2Puzzle.hash(),
-        nftCoinId: currentCoin.id,
-        didOwner: uncurriedNFT.ownerDid,
-        royaltyPercentage: uncurriedNFT.tradePricePercentage,
-        dataUris: dataUris,
-        metadataUris: metaUris,
-        licenseUris: licenceUris,
-        dataHash: uncurriedNFT.dataHash.atom.toHex(),
-        metadataHash: uncurriedNFT.metaHash.atom.toHex(),
-        licenseHash: uncurriedNFT.licenseHash.atom.toHex(),
-        chainInfo: uncurriedNFT.metadata.toSource(),
-        mintHeight: mintHeight,
-        pendingTransaction: false,
-        royaltyAddress: uncurriedNFT.royaltyPuzzlehash != null
-            ? Address.fromPuzzlehash(uncurriedNFT.royaltyPuzzlehash!, addressPrefix)
-            : null,
-        seriesNumber: uncurriedNFT.seriesNumber.toInt(),
-        seriesTotal: uncurriedNFT.seriesTotal.toInt(),
-        updaterPuzzlehash: uncurriedNFT.metadataUpdaterHash.atom,
-        supportsDid: uncurriedNFT.supportDid);
+      launcherId: launcherId,
+      p2Puzzlehash: uncurriedNFT.p2Puzzle.hash(),
+      nftCoinId: currentCoin.id,
+      didOwner: uncurriedNFT.ownerDid,
+      royaltyPercentage: uncurriedNFT.tradePricePercentage,
+      dataUris: dataUris,
+      metadataUris: metaUris,
+      licenseUris: licenceUris,
+      dataHash: uncurriedNFT.dataHash.atom.toHex(),
+      metadataHash: uncurriedNFT.metaHash.atom.toHex(),
+      licenseHash: uncurriedNFT.licenseHash.atom.toHex(),
+      chainInfo: uncurriedNFT.metadata.toSource(),
+      mintHeight: mintHeight,
+      pendingTransaction: false,
+      royaltyAddress: uncurriedNFT.royaltyPuzzlehash != null
+          ? Address.fromPuzzlehash(uncurriedNFT.royaltyPuzzlehash!, addressPrefix)
+          : null,
+      seriesNumber: uncurriedNFT.seriesNumber.toInt(),
+      seriesTotal: uncurriedNFT.seriesTotal.toInt(),
+      updaterPuzzlehash: uncurriedNFT.metadataUpdaterHash.atom,
+      supportsDid: uncurriedNFT.supportDid,
+    );
   }
 
   @override
   String toString() {
     return "NftInfo ${toMap()}";
   }
+}
+
+FutureOr<Map<String, dynamic>> uncurriedNftIsolate(_FromUncurriedArguments taskArgument) async {
+  final info = NFTInfo.fromUncurried(
+    uncurriedNFT: taskArgument.uncurriedNFT,
+    currentCoin: taskArgument.currentCoin,
+    mintHeight: taskArgument.mintHeight,
+    genesisCoin: taskArgument.genesisCoin,
+    addressPrefix: taskArgument.addressPrefix,
+  );
+  final map = info.toMap();
+  return map;
+}
+
+class _FromUncurriedArguments {
+  final UncurriedNFT uncurriedNFT;
+  final CoinPrototype currentCoin;
+  final int? mintHeight;
+  final Coin? genesisCoin;
+  final String addressPrefix;
+
+  _FromUncurriedArguments({
+    required this.uncurriedNFT,
+    required this.currentCoin,
+    required this.mintHeight,
+    required this.genesisCoin,
+    required this.addressPrefix,
+  });
 }

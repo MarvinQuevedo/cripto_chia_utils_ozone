@@ -27,11 +27,6 @@ class WalletSet {
       derivationIndex: derivationIndex,
     );
   }
-
-  final WalletVector hardened;
-  final UnhardenedWalletVector unhardened;
-  final int derivationIndex;
-
   factory WalletSet.fromPrivateKeyWithRoot({
     required PrivateKey rootChildPrivateKey,
     required PrivateKey rootChildPrivateKeyUnhardened,
@@ -44,10 +39,10 @@ class WalletSet {
     final puzzlehashHardened = Puzzlehash(puzzleHardened.hash());
 
     final hardened = WalletVector(
-      childPrivateKey: childPrivateKeyHardened,
-      //childPublicKey: childPublicKeyHardened,
-      puzzlehash: puzzlehashHardened,
-    );
+        childPrivateKey: childPrivateKeyHardened,
+        derivationIndex: derivationIndex,
+        puzzlehash: puzzlehashHardened,
+        publicKey: null);
 
     final childPrivateKeyUnhardened =
         rootWalletSkToWalletSkUnhardened(rootChildPrivateKeyUnhardened, derivationIndex);
@@ -57,10 +52,10 @@ class WalletSet {
     final puzzlehashUnhardened = Puzzlehash(puzzleUnhardened.hash());
 
     final unhardened = UnhardenedWalletVector(
-      childPrivateKey: childPrivateKeyUnhardened,
-      // childPublicKey: childPublicKeyUnhardened,
-      puzzlehash: puzzlehashUnhardened,
-    );
+        childPrivateKey: childPrivateKeyUnhardened,
+        derivationIndex: derivationIndex,
+        puzzlehash: puzzlehashUnhardened,
+        publicKey: null);
 
     return WalletSet(
       hardened: hardened,
@@ -87,4 +82,8 @@ class WalletSet {
       derivationIndex: derivationIndex,
     );
   }
+
+  final WalletVector hardened;
+  final UnhardenedWalletVector unhardened;
+  final int derivationIndex;
 }

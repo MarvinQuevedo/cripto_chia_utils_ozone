@@ -17,6 +17,14 @@ class CreatePuzzleAnnouncementCondition implements Condition {
     ]);
   }
 
+  static bool isThisCondition(Program condition) {
+    final conditionParts = condition.toList();
+    if (conditionParts.length < 3 || conditionParts[0].toInt() != conditionCode) {
+      return false;
+    }
+    return true;
+  }
+
   @override
   String toString() => 'CreatePuzzleAnnouncementCondition(code: $conditionCode, message: $message)';
 }
