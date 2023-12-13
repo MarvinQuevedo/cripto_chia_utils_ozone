@@ -11,7 +11,8 @@ class OffersService {
     required this.keychain,
   });
 
-  StandardWalletService get walletService => StandardWalletService();
+  StandardWalletService get walletService =>
+      keychain.isTangem ? TangemStandardWalletService() : StandardWalletService();
 
   Future<AnalizedOffer?> analizeOffer({
     required int fee,
@@ -29,12 +30,14 @@ class OffersService {
     return analizedOffer;
   }
 
-  Future<Tuple2<ChiaBaseResponse, Offer>> responseOffer({
+  Future<Tuple3<ChiaBaseResponse?, Offer, SignatureHashes?>> responseOffer({
     required int fee,
     required Puzzlehash targetPuzzleHash,
     required Offer offer,
     required Puzzlehash changePuzzlehash,
     required List<FullCoin> coinsToUse,
+    required Environment environment,
+    required Network network,
   }) async {
     final tradeManager = TradeManagerService();
 
@@ -50,11 +53,11 @@ class OffersService {
         ),
         fee: fee,
         royaltyPercentage: analizedOffer.royaltyPer,
-        royaltyAmount: analizedOffer.royaltyAmount,
+        royaltyAmounts: analizedOffer.royaltyAmounts,
         requesteAmounts: TradeManagerService().convertOfferedToRequested(analizedOffer.offered),
         coinsToUse: coinsToUse);
 
-    final completedOffer = await tradeManager.responseOffer(
+    final completeRes = await tradeManager.responseOffer(
       groupedCoins: preparedData.selectedCoins,
       keychain: preparedData.keychain,
       fee: fee,
@@ -62,18 +65,26 @@ class OffersService {
       changePuzzlehash: changePuzzlehash,
       offer: offer,
       buildKeychainForNft: (phs) async => keychain,
+      enviroment: environment,
+      network: network,
+      extraSpendBundles: [],
     );
+    final completedOffer = completeRes.item1;
 
     if (completedOffer.isValid()) {
-      final spendBundle = completedOffer.toValidSpend(arbitragePh: changePuzzlehash);
-      final chiaResponse = await fullNode.pushTransaction(spendBundle);
-      return Tuple2(chiaResponse, completedOffer);
+      if (!keychain.unsigned) {
+        final spendBundle = completedOffer.toValidSpend(arbitragePh: changePuzzlehash);
+        final chiaResponse = await fullNode.pushTransaction(spendBundle);
+        return Tuple3(chiaResponse, completedOffer, null);
+      } else {
+        return Tuple3(null, completedOffer, completeRes.item2);
+      }
     } else {
       throw Exception('Offer repsonse is not valid');
     }
   }
 
-  Future<Offer> createOffer({
+  Future<Tuple2<Offer, SignatureHashes?>> createOffer({
     required Puzzlehash targetPuzzleHash,
     int fee = 0,
     required List<FullCoin> coins,
@@ -82,12 +93,15 @@ class OffersService {
     bool isOld = false,
     required Puzzlehash changePuzzlehash,
   }) async {
+    //final unsigned = keychain.unsigned;
+    final isTangem = keychain.isTangem;
     final preparedData = await _prepareOfferDataForTrade(
       offerredAmounts: offerredAmounts,
       requesteAmounts: requesteAmounts,
       fee: fee,
       coinsToUse: coins,
     );
+    final nftWallet = isTangem ? TangemNftWallet() : NftWallet();
 
     for (final asset in preparedData.nftCoins.keys) {
       final launcherId = asset!.assetId!;
@@ -97,7 +111,7 @@ class OffersService {
         final nftOfferAssetData = OfferAssetData.singletonNft(launcherPuzhash: launcherId);
         preparedData.selectedCoins[nftOfferAssetData] = [nft];
       } else {
-        final nftCoinData = await NftWallet().getNFTFullCoinInfo(
+        final nftCoinData = await nftWallet.getNFTFullCoinInfo(
           nft,
           buildKeychain: (Set<Puzzlehash> phs) async {
             return keychain;
@@ -108,7 +122,7 @@ class OffersService {
       }
     }
 
-    final offer = await TradeManagerService().createOffer(
+    final offerRes = await TradeManagerService().createOffer(
       groupedCoins: preparedData.selectedCoins,
       requestedAmounts: requesteAmounts,
       offerredAmounts: offerredAmounts,
@@ -117,8 +131,9 @@ class OffersService {
       targetPuzzleHash: targetPuzzleHash,
       isOld: isOld,
       changePuzzlehash: changePuzzlehash,
+      extraSpendBundles: [],
     );
-    return offer;
+    return offerRes;
   }
 
   Future<_PreparedOfferDataForTradeService> _prepareOfferDataForTrade({
@@ -126,7 +141,7 @@ class OffersService {
     required List<FullCoin> coinsToUse,
     required int fee,
     int? royaltyPercentage,
-    int? royaltyAmount,
+    Map<Bytes?, int?>? royaltyAmounts,
     required Map<OfferAssetData?, List<int>> requesteAmounts,
   }) async {
     Map<OfferAssetData?, List<FullCoin>> coins = {};
@@ -154,7 +169,7 @@ class OffersService {
         final xchCoins = _filterCoins(coinsToUse, asset);
         final selectedCoins = _getCoinsForAmount(
           xchCoins,
-          (value.abs() + fee.abs() + (royaltyAmount?.abs() ?? 0)),
+          (value.abs() + fee.abs() + (royaltyAmounts?[null]?.abs() ?? 0)),
         );
 
         coins[asset] = selectedCoins.map((e) {
@@ -176,7 +191,7 @@ class OffersService {
 
         final selectedCoins = _getCoinsForAmount(
           catCoins,
-          value.abs() + (royaltyAmount?.abs() ?? 0),
+          value.abs() + (royaltyAmounts?[asset.assetId!]?.abs() ?? 0),
         );
 
         coins[asset] = selectedCoins.map((e) {

@@ -128,7 +128,7 @@ class DidWallet extends BaseWalletService {
     );
 
     SpendBundle fullSpend = SpendBundle.aggregate([
-      txRecord,
+      txRecord.item1,
       eveSpend,
       launcherSb,
     ]);

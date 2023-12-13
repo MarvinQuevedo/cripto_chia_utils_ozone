@@ -3,7 +3,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/notification/index.dart';
 import 'package:test/expect.dart';
 import 'package:test/scaffolding.dart';
 
@@ -218,7 +217,7 @@ Future<void> main() async {
       changePuzzlehash: maker.firstPuzzlehash,
     );
 
-    await fullNodeSimulator.pushTransaction(incorrectInitializationSpendBundle);
+    await fullNodeSimulator.pushTransaction(incorrectInitializationSpendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
     await maker.refreshCoins();
 

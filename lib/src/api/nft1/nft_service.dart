@@ -13,7 +13,9 @@ class NftNodeWalletService {
 
   /// convert FullCoin to use to transfer or for request offer
   Future<FullNFTCoinInfo> convertFullCoin(FullCoin coin) async {
-    final nftInfo = await NftWallet().getNFTFullCoinInfo(coin, buildKeychain: (phs) async {
+    final isTangem = keychain.isTangem;
+    final nftWallet = isTangem ? TangemNftWallet() : NftWallet();
+    final nftInfo = await nftWallet.getNFTFullCoinInfo(coin, buildKeychain: (phs) async {
       final founded = phs.where((element) =>
           keychain.getWalletVector(
             element,
@@ -81,7 +83,7 @@ class NftNodeWalletService {
     }
     FullCoin nftCoin = mainHidratedCoins.first;
     print(nftCoin.type);
-    final foundedCoins = await fullNode.getAllLinageSingletonCoin(nftCoin);
+    final foundedCoins = await fullNode.getAllLinageSingletonCoin(nftCoin, onlyFirst: true);
     final eveCcoin = foundedCoins.first;
     final uncurriedNft = UncurriedNFT.tryUncurry(eveCcoin.parentCoinSpend!.puzzleReveal);
     if (uncurriedNft!.supportDid) {
@@ -97,12 +99,14 @@ class NftNodeWalletService {
   }
 
   /// Allow transfer a NFT to other wallet
-  Future<ChiaBaseResponse> transferNFt(
-      {required Puzzlehash targePuzzlehash,
-      required FullNFTCoinInfo nftCoinInfo,
-      int fee = 0,
-      required List<CoinPrototype> standardCoinsForFee,
-      required Puzzlehash changePuzzlehash}) async {
+  Future<ChiaBaseResponse> transferNFt({
+    required Puzzlehash targePuzzlehash,
+    required FullNFTCoinInfo nftCoinInfo,
+    int fee = 0,
+    required List<CoinPrototype> standardCoinsForFee,
+    required Puzzlehash changePuzzlehash,
+    List<String> memos = const [],
+  }) async {
     final spendBundle = await NftWallet().createTransferSpendBundle(
       nftCoin: nftCoinInfo.toNftCoinInfo(),
       keychain: keychain,
@@ -110,8 +114,9 @@ class NftNodeWalletService {
       standardCoinsForFee: standardCoinsForFee,
       fee: fee,
       changePuzzlehash: changePuzzlehash,
+      memos: memos,
     );
-    final response = await fullNode.pushTransaction(spendBundle);
+    final response = await fullNode.pushTransaction(spendBundle.item1);
     return response;
   }
 }

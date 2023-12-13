@@ -1,7 +1,5 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
-import '../index.dart';
-
 class NotificationWalletService {
   NotificationWalletService();
 
@@ -63,7 +61,7 @@ class NotificationWalletService {
       puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
     );
 
-    final totalSpendBundle = notificationSpendBundle + standardSpendBundle;
+    final totalSpendBundle = notificationSpendBundle + standardSpendBundle.item1;
     return totalSpendBundle;
   }
 }

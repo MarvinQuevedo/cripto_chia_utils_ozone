@@ -4,8 +4,6 @@ import 'dart:async';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
-import '../../../notification/index.dart';
-
 class SimulatorFullNodeInterface extends ChiaFullNodeInterface {
   SimulatorFullNodeInterface(this.fullNode) : super(fullNode);
 

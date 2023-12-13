@@ -1,10 +1,18 @@
+import 'dart:async';
+import 'dart:collection';
 import 'dart:typed_data';
+
+import 'package:tuple/tuple.dart';
 
 import '../../cat/index.dart';
 import '../../clvm.dart';
+import '../../context/index.dart';
 import '../../core/index.dart';
 import '../../nft1.0/index.dart';
 import '../../standard/index.dart';
+import '../../tangem/cat_wallet.dart';
+import '../../tangem/nft_wallet.dart';
+import '../../tangem/standart_wallet.dart';
 import '../../utils.dart';
 import '../index.dart';
 import '../utils/build_keychain.dart';
@@ -15,33 +23,61 @@ class TradeManagerService extends BaseWalletService {
 
   /// `generate_secure_bundle` simulates a wallet's `generate_signed_transaction`
   /// but doesn't bother with non-offer announcements
-  Offer createOfferBundle(
-      {required List<FullCoin> selectedCoins,
-      required List<AssertPuzzleCondition> announcements,
-      required Map<Bytes?, int> offeredAmounts,
-      required WalletKeychain keychain,
-      required int fee,
-      required Puzzlehash changePuzzlehash,
-      required Map<Bytes, PuzzleInfo> driverDict,
-      required Map<Bytes?, List<NotarizedPayment>> notarizedPayments,
-      required bool old}) {
+  Tuple2<Offer, SignatureHashes?> createOfferBundle({
+    required Map<OfferAssetData?, List<FullCoin>> selectedCoins,
+    required List<AssertPuzzleCondition> announcements,
+    required Map<Bytes?, int> offeredAmounts,
+    required WalletKeychain keychain,
+    required int fee,
+    required Puzzlehash changePuzzlehash,
+    required Map<Bytes, PuzzleInfo> driverDict,
+    required Map<Bytes?, List<NotarizedPayment>> notarizedPayments,
+    required bool old,
+    required List<SpendBundle> extraSpendBundles,
+  }) {
+    final isTangem = keychain.isTangem;
+    final unsigned = keychain.unsigned;
+    final signatureHashes = SignatureHashes();
     final transactions = <SpendBundle>[];
 
-    final feeLeftToPay = fee;
+    transactions.addAll(extraSpendBundles);
 
-    offeredAmounts.forEach((assetId, amount) {
+    int feeLeftToPay = fee;
+    List<Coin> xchCoins = (selectedCoins[null] ?? []).map((e) => e.toCoin()).toList();
+
+    List<MapEntry<Bytes?, int>> entries = offeredAmounts.entries.toList();
+    entries.sort((a, b) {
+      if (a.key == null && b.key == null) {
+        return 0;
+      } else if (a.key == null) {
+        return -1;
+      } else if (b.key == null) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
+
+    LinkedHashMap<Bytes?, int> sortedOfferedAmounts = LinkedHashMap.fromEntries(entries);
+
+    sortedOfferedAmounts.forEach((assetId, amount) {
       if (assetId == null) {
-        final standarBundle = StandardWalletService().createSpendBundle(
+        final wallet = isTangem ? TangemStandardWalletService() : StandardWalletService();
+        final standarBundle = wallet.createSpendBundle(
           payments: [
             Payment(offeredAmounts[assetId]!.abs(), Offer.ph(old)),
           ],
-          coinsInput: selectedCoins,
+          coinsInput: xchCoins,
           keychain: keychain,
           fee: feeLeftToPay,
           puzzleAnnouncementsToAssert: announcements,
           changePuzzlehash: changePuzzlehash,
+          unsigned: unsigned,
         );
-        transactions.add(standarBundle);
+        transactions.add(standarBundle.item1);
+        signatureHashes.aggregate(standarBundle.item2);
+        feeLeftToPay = 0;
+        xchCoins = [];
       } else {
         bool isCat = driverDict[assetId]!.type == AssetType.CAT;
 
@@ -51,13 +87,15 @@ class TradeManagerService extends BaseWalletService {
               Offer.ph(old).toBytes(),
             ]),
           ];
-          final catCoins = selectedCoins
-              .where((element) => element.isCatCoin)
+          final catCoins = selectedCoins[OfferAssetData.cat(tailHash: assetId)]!
               .map((e) => e.toCatCoin())
               .toList();
-          final standardsCoins =
-              selectedCoins.where((element) => !element.isCatCoin).map((e) => e.coin).toList();
-          final catBundle = CatWalletService().createSpendBundle(
+          var standardsCoins = <Coin>[];
+          if (feeLeftToPay > 0) {
+            standardsCoins = xchCoins;
+          }
+          final wallet = isTangem ? TangemCatWalletService() : CatWalletService();
+          final catBundle = wallet.createSpendBundle(
             payments: catPayments,
             catCoinsInput: catCoins,
             keychain: keychain,
@@ -65,10 +103,13 @@ class TradeManagerService extends BaseWalletService {
             standardCoinsForFee: standardsCoins,
             puzzleAnnouncementsToAssert: announcements,
             changePuzzlehash: changePuzzlehash,
+            unsigned: unsigned,
           );
-          final catBytes = catBundle.toBytes();
+          final catBytes = catBundle.item1.toBytes();
           final _ = SpendBundle.fromBytes(catBytes);
-          transactions.add(catBundle);
+          transactions.add(catBundle.item1);
+          signatureHashes.aggregate(catBundle.item2);
+          feeLeftToPay = 0;
         } else {
           throw Exception("Not implemented for ${driverDict[assetId]?.type}}");
         }
@@ -80,28 +121,34 @@ class TradeManagerService extends BaseWalletService {
       (previousValue, spendBundle) => previousValue + spendBundle,
     );
 
-    return Offer(
+    return Tuple2(
+      Offer(
         requestedPayments: notarizedPayments,
         bundle: totalSpendBundle,
         driverDict: driverDict,
-        old: old);
+        old: old,
+      ),
+      signatureHashes,
+    );
   }
 
-  Offer createOfferForIds(
-      {required List<FullCoin> coins,
-      required Map<Bytes, PuzzleInfo> driverDict,
-      required Map<Bytes?, List<Payment>> requiredPayments,
-      required Map<Bytes?, int> offeredAmounts,
-      int fee = 0,
-      validateOnly = false,
-      required Puzzlehash changePuzzlehash,
-      required WalletKeychain keychain,
-      required bool old}) {
+  Tuple2<Offer, SignatureHashes?> createOfferForIds({
+    required Map<OfferAssetData?, List<FullCoin>> coins,
+    required Map<Bytes, PuzzleInfo> driverDict,
+    required Map<Bytes?, List<Payment>> requiredPayments,
+    required Map<Bytes?, int> offeredAmounts,
+    int fee = 0,
+    validateOnly = false,
+    required Puzzlehash changePuzzlehash,
+    required WalletKeychain keychain,
+    required bool old,
+    required List<SpendBundle> extraSpendBundles,
+  }) {
     final chiaRequestedPayments = requiredPayments;
-
+    final coinsList = coins.values.expand((element) => element).toList();
     final chiaNotariedPayments = Offer.notarizePayments(
       requestedPayments: chiaRequestedPayments,
-      coins: coins,
+      coins: coinsList,
     );
     final chiaAnnouncements = Offer.calculateAnnouncements(
       notarizedPayment: chiaNotariedPayments,
@@ -119,6 +166,7 @@ class TradeManagerService extends BaseWalletService {
       notarizedPayments: chiaNotariedPayments,
       driverDict: driverDict,
       old: old,
+      extraSpendBundles: extraSpendBundles,
     );
 
     return chiaOffer;
@@ -127,6 +175,8 @@ class TradeManagerService extends BaseWalletService {
   Future<Map<OfferAssetData?, List<FullCoin>>> prepareFullCoins(
     List<FullCoin> coins, {
     required BuildKeychain? buildKeychain,
+    required bool isTangem,
+    required bool unsigned,
   }) async {
     final groupedCoins = <OfferAssetData?, List<FullCoin>>{};
     for (final coin in coins) {
@@ -135,6 +185,8 @@ class TradeManagerService extends BaseWalletService {
         final FullNFTCoinInfo nftCoin = await constructFullNftCoin(
           fullCoin: coin,
           buildKeychain: buildKeychain,
+          isTangem: isTangem,
+          unsigned: unsigned,
         );
         final nftAssetData = OfferAssetData.singletonNft(
           launcherPuzhash: nftCoin.launcherId,
@@ -178,7 +230,7 @@ class TradeManagerService extends BaseWalletService {
     return null;
   }
 
-  int calculateRoyaltyAmount(int fungibleAmount, int percentageRaw) {
+  static int calculateRoyaltyAmount({required int fungibleAmount, required int percentageRaw}) {
     return (fungibleAmount.abs() * (percentageRaw / 10000)).floor();
   }
 
@@ -193,7 +245,7 @@ class TradeManagerService extends BaseWalletService {
     final takeOfferDict = <Bytes?, int>{};
     Map<OfferAssetData?, int> offerredAmounts = {};
     int? royaltyPercentage;
-    int? royaltyAmount;
+    Map<Bytes?, int?>? royaltyAmounts;
 
     final arbitrage = offer.arbitrage();
     final offerDriverDict = offer.driverDict;
@@ -259,21 +311,28 @@ class TradeManagerService extends BaseWalletService {
       }
     });
 
-    if (royaltyPercentage != null && fungibleAssetAmount.length == 1) {
-      final fungibleAmount = fungibleAssetAmount.values.first;
-      royaltyAmount = calculateRoyaltyAmount(fungibleAmount, royaltyPercentage!);
+    if (royaltyPercentage != null && fungibleAssetAmount.length >= 1) {
+      royaltyAmounts = {};
+      for (var key in fungibleAssetAmount.keys) {
+        final fungibleAmount = fungibleAssetAmount[key]!;
+        royaltyAmounts[key] = calculateRoyaltyAmount(
+          fungibleAmount: fungibleAmount,
+          percentageRaw: royaltyPercentage!,
+        );
+      }
     }
 
     final invertOfferred = convertRequestedToOffered(requestedAmounts);
     final invertRequested = convertOfferedToRequested(offerredAmounts);
 
     return AnalizedOffer(
-        offered: invertOfferred,
-        requested: invertRequested,
-        isOld: isOld,
-        royaltyAmount: royaltyAmount,
-        royaltyPer: royaltyPercentage,
-        fungibleAmounts: fungibleAssetAmount);
+      offered: invertOfferred,
+      requested: invertRequested,
+      isOld: isOld,
+      royaltyAmounts: royaltyAmounts,
+      royaltyPer: royaltyPercentage,
+      fungibleAmounts: fungibleAssetAmount,
+    );
   }
 
   Map<OfferAssetData?, int> convertRequestedToOffered(Map<OfferAssetData?, List<int>> requested) {
@@ -294,7 +353,7 @@ class TradeManagerService extends BaseWalletService {
     return result;
   }
 
-  Future<Offer> responseOffer({
+  Future<Tuple2<Offer, SignatureHashes?>> responseOffer({
     required Map<OfferAssetData?, List<FullCoin>> groupedCoins,
     required WalletKeychain keychain,
     required int fee,
@@ -303,8 +362,13 @@ class TradeManagerService extends BaseWalletService {
     List<Coin>? standardCoinsForFee,
     required Offer offer,
     required BuildKeychain buildKeychainForNft,
+    required List<SpendBundle> extraSpendBundles,
+    required Network network,
+    required Environment enviroment,
   }) async {
     final isOld = offer.old;
+    final unsigned = keychain.unsigned;
+    final isTangem = keychain.isTangem;
 
     final analizedOffer = await analizeOffer(
       fee: fee,
@@ -324,7 +388,12 @@ class TradeManagerService extends BaseWalletService {
     }
     final requestedAmounts = convertOfferedToRequested(analizedOffer!.offered);
     final offeredAmounts = convertRequestedToOffered(analizedOffer.requested);
-    final preparedCoins = await prepareFullCoins(coins, buildKeychain: buildKeychainForNft);
+    final preparedCoins = await prepareFullCoins(
+      coins,
+      buildKeychain: buildKeychainForNft,
+      isTangem: isTangem,
+      unsigned: unsigned,
+    );
 
     Map<Bytes, PuzzleInfo> offerDriverDict = offer.driverDict;
     final preparedData = await _prepareOfferData(
@@ -335,7 +404,7 @@ class TradeManagerService extends BaseWalletService {
       targetPuzzleHash: targetPuzzleHash,
       offerDriverDict: offerDriverDict,
       royaltyPercentage: analizedOffer.royaltyPer,
-      royaltyAmount: analizedOffer.royaltyAmount,
+      royaltyAmounts: analizedOffer.royaltyAmounts,
     );
     offerDriverDict = preparedData.driverDict;
 
@@ -351,7 +420,7 @@ class TradeManagerService extends BaseWalletService {
           throw Exception("Offered NFT coin not found ${preparedData.nftOfferedLauncher!.toHex()}");
         }
       }
-      final nftWallet = NftWallet();
+
       if (standardCoinsForFee == null && offeredAmounts[null] == null && fee > 0) {
         throw Exception("Standard coins for fee not found for NFT Offer");
       }
@@ -365,36 +434,56 @@ class TradeManagerService extends BaseWalletService {
         }
       });
 
-      final nftOffer = await nftWallet.makeNft1Offer(
-        offerDict: offerDict,
-        driverDict: offerDriverDict,
-        changePuzzlehash: changePuzzlehash,
-        keychain: keychain,
-        old: isOld,
-        fee: fee,
-        selectedCoins: preparedCoins,
-        standardCoinsForFee: standardCoinsForFee ?? [],
-        targetPuzzleHash: targetPuzzleHash,
+      final offerSpenBundle = await spawnAndWaitForIsolate(
+        taskArgument: MakeNft1OfferIsolatedArguments(
+          offerDict: offerDict,
+          driverDict: offerDriverDict,
+          changePuzzlehash: changePuzzlehash,
+          keychain: keychain,
+          old: isOld,
+          fee: fee,
+          selectedCoins: preparedCoins,
+          standardCoinsForFee: standardCoinsForFee ?? [],
+          targetPuzzleHash: targetPuzzleHash,
+          extraSpendBundles: extraSpendBundles,
+          network: network,
+          environment: enviroment,
+        ),
+        isolateTask: makeNft1OfferIsolate,
+        handleTaskCompletion: decodeMapSpendResponse,
+      );
+      final nftOffer = Offer.fromSpendBundle(
+        offerSpenBundle.item1,
+      );
+      final completedOffer = Offer.aggregate(
+        [offer, nftOffer],
       );
 
-      final completedOffer = Offer.aggregate([offer, nftOffer]);
-
-      return completedOffer;
+      return Tuple2(
+        completedOffer,
+        offerSpenBundle.item2,
+      );
     } else {
       final offerWallet = TradeManagerService();
       final responseOffer = await offerWallet.createOfferForIds(
-        coins: coins,
-        driverDict: preparedData.driverDict,
-        requiredPayments: preparedData.payments,
-        offeredAmounts: preparedData.offerredAmounts,
-        changePuzzlehash: changePuzzlehash,
-        keychain: keychain,
-        old: isOld,
-        fee: fee,
-      );
+          coins: groupedCoins,
+          driverDict: preparedData.driverDict,
+          requiredPayments: preparedData.payments,
+          offeredAmounts: preparedData.offerredAmounts,
+          changePuzzlehash: changePuzzlehash,
+          keychain: keychain,
+          old: isOld,
+          fee: fee,
+          extraSpendBundles: extraSpendBundles);
 
-      final completedOffer = Offer.aggregate([offer, responseOffer]);
-      return completedOffer;
+      final completedOffer = Offer.aggregate([
+        offer,
+        responseOffer.item1,
+      ]);
+      return Tuple2(
+        completedOffer,
+        responseOffer.item2,
+      );
     }
   }
 
@@ -408,7 +497,7 @@ class TradeManagerService extends BaseWalletService {
   /// [targetPuzzleHash] - puzzlehash to use for offer
   /// [isOld] - is old offer
   /// [changePuzzlehash] - puzzlehash to use for change
-  Future<Offer> createOffer(
+  Future<Tuple2<Offer, SignatureHashes?>> createOffer(
       {required Map<OfferAssetData?, List<FullCoin>> groupedCoins,
       required Map<OfferAssetData?, List<int>> requestedAmounts,
       required Map<OfferAssetData?, int> offerredAmounts,
@@ -417,7 +506,9 @@ class TradeManagerService extends BaseWalletService {
       required Puzzlehash targetPuzzleHash,
       required bool isOld,
       required Puzzlehash changePuzzlehash,
+      required List<SpendBundle> extraSpendBundles,
       List<Coin>? standardCoinsForFee}) async {
+    final unsigned = keychain.unsigned;
     List<FullCoin> coins = [];
 
     groupedCoins.forEach((key, value) {
@@ -502,7 +593,7 @@ class TradeManagerService extends BaseWalletService {
         }
       });
 
-      final nftWallet = NftWallet();
+      final NftWallet nftWallet = keychain.isTangem ? TangemNftWallet() : NftWallet();
 
       final nftOffer = await nftWallet.makeNft1Offer(
         offerDict: offerDict,
@@ -514,12 +605,14 @@ class TradeManagerService extends BaseWalletService {
         selectedCoins: preparedCoins,
         standardCoinsForFee: standardCoinsForFee ?? [],
         targetPuzzleHash: targetPuzzleHash,
+        extraSpendBundles: extraSpendBundles,
+        unsigned: unsigned,
       );
       return nftOffer;
     } else {
       final offerWallet = TradeManagerService();
       final offer = offerWallet.createOfferForIds(
-        coins: coins,
+        coins: preparedCoins,
         driverDict: preparedData.driverDict,
         requiredPayments: preparedData.payments,
         offeredAmounts: preparedData.offerredAmounts,
@@ -527,6 +620,7 @@ class TradeManagerService extends BaseWalletService {
         keychain: keychain,
         old: isOld,
         fee: fee,
+        extraSpendBundles: extraSpendBundles,
       );
       return offer;
     }
@@ -557,15 +651,16 @@ class TradeManagerService extends BaseWalletService {
     return driverDict;
   }
 
-  Future<PreparedTradeData> _prepareOfferData(
-      {required Map<OfferAssetData?, List<int>> requestedAmounts,
-      required Map<OfferAssetData?, int> offerredAmounts,
-      required int fee,
-      required Map<OfferAssetData?, List<FullCoin>> coins,
-      required Puzzlehash targetPuzzleHash,
-      Map<Bytes, PuzzleInfo>? offerDriverDict,
-      int? royaltyPercentage,
-      int? royaltyAmount}) async {
+  Future<PreparedTradeData> _prepareOfferData({
+    required Map<OfferAssetData?, List<int>> requestedAmounts,
+    required Map<OfferAssetData?, int> offerredAmounts,
+    required int fee,
+    required Map<OfferAssetData?, List<FullCoin>> coins,
+    required Puzzlehash targetPuzzleHash,
+    Map<Bytes, PuzzleInfo>? offerDriverDict,
+    int? royaltyPercentage,
+    Map<Bytes?, int?>? royaltyAmounts,
+  }) async {
     Bytes? nftOfferedLauncher;
     bool requestedLauncher = false;
     Map<OfferAssetData, FullNFTCoinInfo> nftCoins = {};
@@ -657,11 +752,111 @@ class TradeManagerService extends BaseWalletService {
   }
 
   Future<FullNFTCoinInfo> constructFullNftCoin(
-      {required FullCoin fullCoin, required BuildKeychain? buildKeychain}) async {
-    final result = await NftWallet().getNFTFullCoinInfo(
+      {required FullCoin fullCoin,
+      required BuildKeychain? buildKeychain,
+      required bool isTangem,
+      required bool unsigned}) async {
+    final wallet = isTangem ? TangemNftWallet() : NftWallet();
+    final result = await wallet.getNFTFullCoinInfo(
       fullCoin,
       buildKeychain: buildKeychain,
     );
     return result.item1;
   }
+}
+
+FutureOr<Map<String, dynamic>> makeNft1OfferIsolate(
+    MakeNft1OfferIsolatedArguments taskArgument) async {
+  ChiaNetworkContextWrapper().registerNetworkContext(
+    taskArgument.network,
+    environment: taskArgument.environment,
+  );
+  final nftWallet = NftWallet();
+
+  final nftOffer = await nftWallet.makeNft1Offer(
+    offerDict: taskArgument.offerDict,
+    driverDict: taskArgument.driverDict,
+    changePuzzlehash: taskArgument.changePuzzlehash,
+    keychain: taskArgument.keychain,
+    old: taskArgument.old,
+    fee: taskArgument.fee,
+    selectedCoins: taskArgument.selectedCoins,
+    standardCoinsForFee: taskArgument.standardCoinsForFee,
+    targetPuzzleHash: taskArgument.targetPuzzleHash,
+    extraSpendBundles: taskArgument.extraSpendBundles,
+    unsigned: taskArgument.keychain.unsigned,
+  );
+  final resultJson = {
+    "spend_bundle": nftOffer.item1.toSpendBundle().toJson(),
+    "signature_hashes": nftOffer.item2?.toMap(),
+  };
+  return resultJson;
+}
+
+class CreateOfferArgumentsIsolated {
+  final Map<OfferAssetData?, List<FullCoin>> groupedCoins;
+  final Map<OfferAssetData?, List<int>> requestedAmounts;
+  final Map<OfferAssetData?, int> offerredAmounts;
+  final WalletKeychain keychain;
+  final int fee;
+  final Puzzlehash targetPuzzleHash;
+  final bool isOld;
+  final Puzzlehash changePuzzlehash;
+  final List<Coin>? standardCoinsForFee;
+  final Network network;
+  final List<SpendBundle> extraSpendBundles;
+
+  CreateOfferArgumentsIsolated({
+    required this.groupedCoins,
+    required this.requestedAmounts,
+    required this.offerredAmounts,
+    required this.keychain,
+    required this.fee,
+    required this.targetPuzzleHash,
+    required this.isOld,
+    required this.changePuzzlehash,
+    this.standardCoinsForFee,
+    required this.network,
+    required this.extraSpendBundles,
+  });
+}
+
+class MakeNft1OfferIsolatedArguments {
+  final WalletKeychain keychain;
+  final Map<Bytes?, int> offerDict;
+  final Map<Bytes, PuzzleInfo> driverDict;
+  final Puzzlehash targetPuzzleHash;
+  final Map<OfferAssetData?, List<FullCoin>> selectedCoins;
+  final int fee;
+  final int? mintCoinAmount;
+  final Puzzlehash? changePuzzlehash;
+  final List<Coin> standardCoinsForFee;
+  final bool old;
+  final List<SpendBundle> extraSpendBundles;
+  final Network network;
+  final Environment environment;
+  MakeNft1OfferIsolatedArguments({
+    required this.keychain,
+    required this.offerDict,
+    required this.driverDict,
+    required this.targetPuzzleHash,
+    required this.selectedCoins,
+    required this.standardCoinsForFee,
+    required this.old,
+    required this.extraSpendBundles,
+    this.mintCoinAmount,
+    this.changePuzzlehash,
+    required this.fee,
+    required this.network,
+    required this.environment,
+  });
+}
+
+Tuple2<SpendBundle, SignatureHashes?> decodeMapSpendResponse(Map<String, dynamic> dataMap) {
+  final spendBundleJson = dataMap["spend_bundle"];
+  final signatureHashesJson = dataMap["signature_hashes"];
+  final spendBundle = SpendBundle.fromJson(spendBundleJson);
+  final signatureHashes =
+      signatureHashesJson != null ? SignatureHashes.fromMap(signatureHashesJson) : null;
+  return Tuple2(spendBundle, signatureHashes);
 }

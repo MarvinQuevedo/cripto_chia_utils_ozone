@@ -14,13 +14,13 @@ class AnalizedOffer {
   /// If true, this offer use the old trade program
   final bool isOld;
   final int? royaltyPer;
-  final int? royaltyAmount;
+  final Map<Bytes?, int?>? royaltyAmounts;
 
   AnalizedOffer(
       {required this.requested,
       required this.offered,
       required this.isOld,
       required this.royaltyPer,
-      required this.royaltyAmount,
+      required this.royaltyAmounts,
       required this.fungibleAmounts});
 }

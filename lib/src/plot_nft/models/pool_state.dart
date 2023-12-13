@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/plot_nft/models/exceptions/invalid_plot_nft_exception.dart';
-import 'package:chia_crypto_utils/src/utils/serialization.dart';
 
 class PoolState with ToBytesMixin {
   PoolState({

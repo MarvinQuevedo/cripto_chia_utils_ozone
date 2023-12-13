@@ -42,5 +42,13 @@ class LineageProof {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'parent_name': parentName?.toHex(),
+      'inner_puzzle_hash': innerPuzzleHash?.toHex(),
+      'amount': amount,
+    };
+  }
+
   bool isNone() => parentName == null && innerPuzzleHash == null && amount == null;
 }

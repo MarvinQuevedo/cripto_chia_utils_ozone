@@ -1,7 +1,6 @@
 // ignore_for_file: unused_local_variable
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/core/models/conditions/announcement.dart';
 import 'package:test/test.dart';
 
 Puzzlehash str_to_tail_hash(String tail_str) {
@@ -36,7 +35,7 @@ Offer generate_secure_bundle(
           keychain: keychain,
           fee: feeLeftToPay,
           changePuzzlehash: changePuzzlehash);
-      transactions.add(standarBundle);
+      transactions.add(standarBundle.item1);
     } else if (coin.assetId != null) {
       final catBundle = CatWalletService().createSpendBundle(
         payments: [Payment(offeredAmounts[coin.assetId]!, Offer.ph(false))],
@@ -46,7 +45,7 @@ Offer generate_secure_bundle(
         fee: feeLeftToPay,
         puzzleAnnouncementsToAssert: announcements,
       );
-      transactions.add(catBundle);
+      transactions.add(catBundle.item1);
     }
   }
   final totalSpendBundle = transactions.fold<SpendBundle>(

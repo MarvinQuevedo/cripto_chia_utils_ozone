@@ -3,8 +3,6 @@ import 'dart:math';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/exchange/btc/exchange_offer_record/exceptions/missing_message_coin_child_exception.dart';
 
-import '../../../../notification/index.dart';
-
 class ExchangeOfferService {
   ExchangeOfferService(this.fullNode);
 
@@ -527,7 +525,7 @@ class ExchangeOfferService {
       keychain: keychain,
       changePuzzlehash: changePuzzlehash,
     );
-    final totalSpendBundle = standardSpendBundle + feeSpendBundle;
+    final totalSpendBundle = standardSpendBundle + feeSpendBundle.item1;
     return totalSpendBundle;
   }
 

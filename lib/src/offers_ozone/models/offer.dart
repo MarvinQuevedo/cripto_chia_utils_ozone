@@ -1,8 +1,8 @@
+import 'dart:async';
+
 import 'package:bech32m/bech32m.dart';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:quiver/iterables.dart';
-
-import '../../core/models/conditions/announcement.dart';
 
 final OFFERS_HASHES = {OFFER_MOD_HASH, OFFER_MOD_V1_HASH};
 final OFFER_MOD_OLD_HASH = OFFER_MOD_V1_HASH;
@@ -686,10 +686,26 @@ class Offer {
     return encoded;
   }
 
+  static String toBench32Bytes(
+      {required Bytes compressedBytes, String prefix = "offer", int? compressionVersion}) {
+    final offerBytes = compressedBytes;
+
+    final encoded = OfferSegwitEncoder().convert(Segwit(prefix, offerBytes));
+    return encoded;
+  }
+
   static Offer fromBench32(String offerBech32) {
     final bytes = Bytes(OfferSegwitDecoder().convert(offerBech32).program);
 
     return try_offer_decompression(bytes);
+  }
+
+  static Future<Offer> fromBench32Aync(String offerBech32) async {
+    final spendBundle = await spawnAndWaitForIsolate(
+        taskArgument: offerBech32,
+        isolateTask: fromBench32Isolate,
+        handleTaskCompletion: SpendBundle.fromJson);
+    return Offer.fromSpendBundle(spendBundle);
   }
 
   static Offer try_offer_decompression(Bytes dataBytes) {
@@ -715,4 +731,9 @@ Map<String, dynamic> _keysToStrings(Map<Bytes?, dynamic> dic) {
     }
   });
   return result;
+}
+
+FutureOr<Map<String, dynamic>> fromBench32Isolate(String taskArgument) {
+  final spendBundle = Offer.fromBench32(taskArgument);
+  return spendBundle.toSpendBundle().toJson();
 }

@@ -135,7 +135,7 @@ Future<void> main() async {
       changePuzzlehash: xchHolder.firstPuzzlehash,
     );
 
-    await fullNodeSimulator.pushTransaction(escrowSpendBundle);
+    await fullNodeSimulator.pushTransaction(escrowSpendBundle.item1);
 
     await fullNodeSimulator.moveToNextBlock();
 
@@ -285,7 +285,7 @@ Future<void> main() async {
       changePuzzlehash: xchHolder.firstPuzzlehash,
     );
 
-    await fullNodeSimulator.pushTransaction(escrowSpendBundle);
+    await fullNodeSimulator.pushTransaction(escrowSpendBundle.item1);
 
     await fullNodeSimulator.moveToNextBlock();
 

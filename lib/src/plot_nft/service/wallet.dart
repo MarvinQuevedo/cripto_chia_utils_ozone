@@ -72,7 +72,7 @@ class PlotNftWalletService extends BaseWalletService {
 
     final launcherSpendBundle = SpendBundle(coinSpends: [launcherCoinSpend]);
 
-    return createLauncherSpendBundle + launcherSpendBundle;
+    return createLauncherSpendBundle.item1 + launcherSpendBundle;
   }
 
   Program poolStateToInnerPuzzle({

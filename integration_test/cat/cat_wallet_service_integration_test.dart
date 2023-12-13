@@ -93,7 +93,7 @@ Future<void> main() async {
     keychain: keychain,
   );
 
-  await fullNodeSimulator.pushTransaction(sendBundle);
+  await fullNodeSimulator.pushTransaction(sendBundle.item1);
   await fullNodeSimulator.moveToNextBlock();
 
   final senderOuterPuzzlehash = WalletKeychain.makeOuterPuzzleHash(senderPuzzlehash, assetId);
@@ -125,7 +125,7 @@ Future<void> main() async {
       changePuzzlehash: senderPuzzlehash,
       keychain: keychain,
     );
-    await fullNodeSimulator.pushTransaction(spendBundle);
+    await fullNodeSimulator.pushTransaction(spendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     final senderEndingBalance = await fullNodeSimulator.getBalance([senderOuterPuzzlehash]);
@@ -166,7 +166,7 @@ Future<void> main() async {
       fee: fee,
       standardCoinsForFee: standardCoinsForTest,
     );
-    await fullNodeSimulator.pushTransaction(spendBundle);
+    await fullNodeSimulator.pushTransaction(spendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     final senderEndingStandardCoinBalance = await fullNodeSimulator.getBalance([senderPuzzlehash]);
@@ -240,7 +240,7 @@ Future<void> main() async {
       fee: fee,
       standardCoinsForFee: standardCoinsForTest,
     );
-    await fullNodeSimulator.pushTransaction(spendBundle);
+    await fullNodeSimulator.pushTransaction(spendBundle.item1);
     await fullNodeSimulator.moveToNextBlock();
 
     final senderEndingStandardCoinBalance = await fullNodeSimulator.getBalance([senderPuzzlehash]);

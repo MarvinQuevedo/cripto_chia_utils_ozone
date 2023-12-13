@@ -4,8 +4,6 @@ import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/core/models/blockchain_state.dart';
 import 'package:chia_crypto_utils/src/plot_nft/models/exceptions/invalid_pool_singleton_exception.dart';
 
-import '../../notification/index.dart';
-
 class ChiaFullNodeInterface {
   const ChiaFullNodeInterface(this.fullNode);
   factory ChiaFullNodeInterface.fromURL(
@@ -209,7 +207,8 @@ class ChiaFullNodeInterface {
     return hydrated.first;
   }
 
-  Future<List<FullCoin>> getAllLinageSingletonCoin(FullCoin parentCoin) async {
+  Future<List<FullCoin>> getAllLinageSingletonCoin(FullCoin parentCoin,
+      {bool onlyFirst = false}) async {
     Coin lastCoin = parentCoin.coin;
     List<Coin> allCoins = [];
 
@@ -224,7 +223,11 @@ class ChiaFullNodeInterface {
         print("Warning: would not be more than one children");
         lastCoin = children.first;
       }
+
       allCoins.add(lastCoin);
+      if (onlyFirst) {
+        break;
+      }
     }
     final hydrated = await hydrateFullCoins(allCoins);
     return hydrated;

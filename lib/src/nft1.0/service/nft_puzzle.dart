@@ -1,5 +1,6 @@
+// ignore_for_file: unused_local_variable
+
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/nft1.0/index.dart';
 import 'package:tuple/tuple.dart';
 
 Program _parseValue(dynamic value) {
@@ -232,7 +233,6 @@ class NftService {
         }
         final memo = conditionList.last.first().atom;
         puzzlehashForDerivation = memo;
-        print("Got back puzhash from solution: ${puzzlehashForDerivation.toHex()}");
       }
     }
     if (puzzlehashForDerivation == null) {
@@ -243,8 +243,6 @@ class NftService {
 
   Program recurryNftPuzzle(
       {required UncurriedNFT unft, required Program solution, required Program newInnerPuzzle}) {
-    print("Generating NFT puzzle with ownership support: ${solution.toSource()}");
-
     final conditions = unft.p2Puzzle.run(unft.getInnermostSolution(solution)).program;
     Bytes? newDidId = unft.ownerDid;
     Bytes? newPuzhash;
@@ -253,13 +251,13 @@ class NftService {
       if (condition.first().toInt() == -10) {
         // this is the change owner magic condition
         newDidId = condition.filterAt("rf").atom;
+        if (newDidId.isEmpty) {
+          newDidId = null;
+        }
       } else if (condition.first().toInt() == 51) {
         newPuzhash = condition.filterAt("rf").atom;
       }
     }
-    print(
-      "Found NFT puzzle details: ${newDidId?.toHexWithPrefix()} ${newPuzhash?.toHexWithPrefix()}",
-    );
 
     if (unft.transferProgram == null) {
       throw Exception("TransferProgram in uncurriedNFT can't be null");
@@ -283,6 +281,9 @@ class NftService {
         // this is the change owner magic condition
 
         newDidId = condition.filterAt("rf").atom;
+        if (newDidId.isEmpty) {
+          newDidId = null;
+        }
       }
     }
     return newDidId;

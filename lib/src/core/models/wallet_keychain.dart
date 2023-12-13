@@ -10,6 +10,8 @@ class WalletKeychain with ToBytesMixin {
     required this.hardenedMap,
     required this.unhardenedMap,
     required this.singletonWalletVectorsMap,
+    this.isTangem = false,
+    this.unsigned = false,
   });
 
   factory WalletKeychain.fromWalletSets(List<WalletSet> walletSets) {
@@ -150,6 +152,8 @@ class WalletKeychain with ToBytesMixin {
 
   final LinkedHashMap<Puzzlehash, WalletVector> hardenedMap;
   final LinkedHashMap<Puzzlehash, UnhardenedWalletVector> unhardenedMap;
+  final bool isTangem;
+  final bool unsigned;
 
   List<WalletVector> get hardenedWalletVectors => hardenedMap.values.toList();
   List<UnhardenedWalletVector> get unhardenedWalletVectors {
@@ -348,6 +352,7 @@ class WalletKeychain with ToBytesMixin {
   factory WalletKeychain.fromMap(Map<String, dynamic> json) {
     final hardened = json['hardenedMap'] as Map<String, dynamic>;
     final unhardened = json['unhardenedMap'] as Map<String, dynamic>;
+    final isTangem = json['isTangem'] as bool;
 
     final hardenedMap = LinkedHashMap<Puzzlehash, WalletVector>();
     final unhardenedMap = LinkedHashMap<Puzzlehash, UnhardenedWalletVector>();
@@ -379,11 +384,13 @@ class WalletKeychain with ToBytesMixin {
     return WalletKeychain(
         hardenedMap: hardenedMap,
         unhardenedMap: unhardenedMap,
-        singletonWalletVectorsMap: singletonWalletVectorsMap);
+        singletonWalletVectorsMap: singletonWalletVectorsMap,
+        isTangem: isTangem);
   }
 
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{};
+    map['isTangem'] = isTangem;
     map['hardenedMap'] = hardenedMap.map((k, v) => MapEntry(k.toHex(), v.toMap()));
     map['unhardenedMap'] = unhardenedMap.map((k, v) => MapEntry(k.toHex(), v.toMap()));
     map['singletonWalletVectorsMap'] =

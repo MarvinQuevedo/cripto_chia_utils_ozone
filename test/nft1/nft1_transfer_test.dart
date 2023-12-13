@@ -85,13 +85,14 @@ Future<void> main() async {
         keychain: keychain,
         targetPuzzleHash: targetPuzzleHash,
         standardCoinsForFee: [],
+        memos: [],
         fee: 0);
 
-    print("coins additions = ${transferBundle.additions.length}");
+    print("coins additions = ${transferBundle.item1.additions.length}");
 
-    final newUserNftCoin = transferBundle.additions.first;
+    final newUserNftCoin = transferBundle.item1.additions.first;
     CoinSpend? parentCoinSpend;
-    for (var coinSpend in transferBundle.coinSpends) {
+    for (var coinSpend in transferBundle.item1.coinSpends) {
       if (newUserNftCoin.parentCoinInfo == coinSpend.coin.id) {
         parentCoinSpend = coinSpend;
         break;
