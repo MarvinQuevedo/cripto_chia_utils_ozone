@@ -17,7 +17,7 @@ class CatWalletService extends BaseWalletService {
     required List<Payment> payments,
     required List<CatCoin> catCoinsInput,
     required WalletKeychain keychain,
-      List<Payment> xchPayments= const[],
+    List<Payment> xchPayments = const [],
     Puzzlehash? changePuzzlehash,
     List<Coin> standardCoinsForFee = const [],
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
