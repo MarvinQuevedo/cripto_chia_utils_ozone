@@ -9,6 +9,7 @@ class TangemCatWalletService extends CatWalletService {
   Tuple2<SpendBundle, SignatureHashes?> createSpendBundle({
     required List<Payment> payments,
     required List<CatCoin> catCoinsInput,
+    List<Payment> xchPayments = const [],
     required WalletKeychain keychain,
     Puzzlehash? changePuzzlehash,
     List<Coin> standardCoinsForFee = const [],
@@ -27,6 +28,7 @@ class TangemCatWalletService extends CatWalletService {
       puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
       fee: fee,
       unsigned: unsigned,
+      xchPayments: xchPayments,
     );
   }
 }

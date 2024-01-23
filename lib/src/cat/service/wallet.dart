@@ -17,6 +17,7 @@ class CatWalletService extends BaseWalletService {
     required List<Payment> payments,
     required List<CatCoin> catCoinsInput,
     required WalletKeychain keychain,
+    List<Payment> xchPayments = const [],
     Puzzlehash? changePuzzlehash,
     List<Coin> standardCoinsForFee = const [],
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
@@ -131,6 +132,7 @@ class CatWalletService extends BaseWalletService {
             keychain: keychain,
             changePuzzlehash: changePuzzlehash,
             unsigned: unsigned,
+            xchPayments: xchPayments,
           );
           feeStandardSpendBundle = standartResult.item1;
           signatureHashes.aggregate(standartResult.item2);
@@ -421,6 +423,7 @@ class CatWalletService extends BaseWalletService {
   Tuple2<SpendBundle, SignatureHashes?> _makeStandardSpendBundleForFee({
     required int fee,
     required List<Coin> standardCoins,
+    required List<Payment> xchPayments,
     required WalletKeychain keychain,
     required Puzzlehash? changePuzzlehash,
     List<AssertCoinAnnouncementCondition> coinAnnouncementsToAsset = const [],
@@ -441,7 +444,7 @@ class CatWalletService extends BaseWalletService {
     );
 
     return standardWalletService.createSpendBundle(
-      payments: [],
+      payments: xchPayments,
       coinsInput: standardCoins,
       changePuzzlehash: changePuzzlehash,
       keychain: keychain,
