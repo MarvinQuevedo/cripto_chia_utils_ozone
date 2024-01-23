@@ -1,6 +1,22 @@
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
 
+String replaceDigitsWithZeros(String number) {
+  try {
+    String numberString = number.toString();
+    int nonZeroIndex = numberString.indexOf(
+        numberString.split('').firstWhere((char) => char != '0' && char != '.' && char != ','));
+    if (nonZeroIndex != -1) {
+      String truncatedNumberString = numberString.substring(0, nonZeroIndex + 4);
+      truncatedNumberString += '0' * (numberString.length - nonZeroIndex - 4);
+      return truncatedNumberString;
+    }
+    return numberString;
+  } catch (e) {
+    return number;
+  }
+}
+
 class LocaleProvider {
   List? languages = [];
   String locale = "en";
@@ -73,7 +89,8 @@ String _toRegionalString(
     required int decimals,
     required String? symbol,
     required double value,
-    bool removeZeros = true}) {
+    bool removeZeros = true,
+    bool addZeros = false}) {
   final defaultLocale = _getDefaultLocaleName;
   final formatAsset = NumberFormat.simpleCurrency(
     name: "",
@@ -89,6 +106,12 @@ String _toRegionalString(
       decimals,
     );
   } else {
+    if (addZeros) {
+      return (replaceDigitsWithZeros(formatAsset.format(rawValue)) +
+              ' ' +
+              (symbol?.toUpperCase() ?? ''))
+          .trim();
+    }
     return (formatAsset.format(rawValue) + ' ' + (symbol?.toUpperCase() ?? '')).trim();
   }
 }
@@ -99,6 +122,7 @@ extension IntDoubleParsing on int {
     required int decimals,
     String? symbol,
     bool removeZeros = true,
+    bool addZeros = false,
   }) {
     final rawValue = this / math.pow(10, decimals);
     return _toRegionalString(
@@ -107,6 +131,7 @@ extension IntDoubleParsing on int {
       symbol: symbol,
       value: rawValue,
       removeZeros: removeZeros,
+      addZeros: addZeros,
     );
   }
 }
@@ -117,6 +142,7 @@ extension DoubleParsing on double {
     required int decimals,
     String? symbol,
     bool removeZeros = true,
+    bool addZeros = false,
   }) {
     return _toRegionalString(
       decimals: decimals,
@@ -124,6 +150,7 @@ extension DoubleParsing on double {
       symbol: symbol,
       value: this,
       removeZeros: removeZeros,
+      addZeros: addZeros,
     );
   }
 }
