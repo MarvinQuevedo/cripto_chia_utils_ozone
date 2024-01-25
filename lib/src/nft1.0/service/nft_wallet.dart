@@ -841,7 +841,7 @@ class NftWallet extends BaseWalletService {
             payments: payments,
             coinsInput: coins!.toList(),
             keychain: keychain,
-            fee: feeLeftToPay,
+            fee: fee,
             puzzleAnnouncementsToAssert: announcementsToAssert,
             changePuzzlehash: changePuzzlehash,
             unsigned: unsigned,
