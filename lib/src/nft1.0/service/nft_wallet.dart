@@ -865,7 +865,13 @@ class NftWallet extends BaseWalletService {
             }
           }
           final payments = [
-            Payment(amount.abs(), DESIRED_OFFER_MOD_HASH),
+            Payment(
+              amount.abs(),
+              DESIRED_OFFER_MOD_HASH,
+              memos: <Puzzlehash>[
+                DESIRED_OFFER_MOD_HASH,
+              ],
+            ),
           ];
           final nftBundles = wallet.generateSignedSpendBundle(
             payments: payments,
@@ -894,6 +900,9 @@ class NftWallet extends BaseWalletService {
               Payment(
                 royPaymentSum.abs(),
                 DESIRED_OFFER_MOD_HASH,
+                memos: <Puzzlehash>[
+                  DESIRED_OFFER_MOD_HASH,
+                ],
               ),
             );
           }
@@ -901,7 +910,13 @@ class NftWallet extends BaseWalletService {
           final catCoins = selectedCoins[offerAssetData]!.map((e) => e.toCatCoin()).toList();
           final catBundle = CatWalletService().createSpendBundle(
             payments: [
-              Payment(amount.abs(), DESIRED_OFFER_MOD_HASH),
+              Payment(
+                amount.abs(),
+                DESIRED_OFFER_MOD_HASH,
+                memos: <Puzzlehash>[
+                  DESIRED_OFFER_MOD_HASH,
+                ],
+              ),
               ...catPayments,
             ],
             catCoinsInput: catCoins,
