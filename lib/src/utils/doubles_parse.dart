@@ -98,7 +98,7 @@ String _toRegionalString(
     decimalDigits: decimals,
   );
   final rawValue = value;
-  if (removeZeros) {
+  if (removeZeros && decimals > 0) {
     return removeTrailingZeros(
       rawValue,
       formatAsset.format(rawValue),
