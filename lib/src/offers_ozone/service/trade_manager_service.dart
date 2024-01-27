@@ -332,6 +332,7 @@ class TradeManagerService extends BaseWalletService {
       royaltyAmounts: royaltyAmounts,
       royaltyPer: royaltyPercentage,
       fungibleAmounts: fungibleAssetAmount,
+      coins: offer.getOfferedCoins(),
     );
   }
 

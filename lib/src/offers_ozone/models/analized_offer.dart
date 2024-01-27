@@ -1,5 +1,4 @@
-import '../../clvm/bytes.dart';
-import '../index.dart';
+import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
 class AnalizedOffer {
   /// List of payments that are requested for you
@@ -16,11 +15,15 @@ class AnalizedOffer {
   final int? royaltyPer;
   final Map<Bytes?, int?>? royaltyAmounts;
 
-  AnalizedOffer(
-      {required this.requested,
-      required this.offered,
-      required this.isOld,
-      required this.royaltyPer,
-      required this.royaltyAmounts,
-      required this.fungibleAmounts});
+  final Map<Bytes?, List<CoinPrototype>>? coins;
+
+  AnalizedOffer({
+    required this.requested,
+    required this.offered,
+    required this.isOld,
+    required this.royaltyPer,
+    required this.royaltyAmounts,
+    required this.fungibleAmounts,
+    this.coins,
+  });
 }
