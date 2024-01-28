@@ -60,6 +60,23 @@ class TradeManagerService extends BaseWalletService {
 
     LinkedHashMap<Bytes?, int> sortedOfferedAmounts = LinkedHashMap.fromEntries(entries);
 
+    if (entries.isEmpty && feeLeftToPay > 0) {
+      final wallet = isTangem ? TangemStandardWalletService() : StandardWalletService();
+      final standarBundle = wallet.createSpendBundle(
+        payments: [],
+        coinsInput: xchCoins,
+        keychain: keychain,
+        fee: feeLeftToPay,
+        puzzleAnnouncementsToAssert: announcements,
+        changePuzzlehash: changePuzzlehash,
+        unsigned: unsigned,
+      );
+      transactions.add(standarBundle.item1);
+      signatureHashes.aggregate(standarBundle.item2);
+      feeLeftToPay = 0;
+      xchCoins = [];
+    }
+
     sortedOfferedAmounts.forEach((assetId, amount) {
       if (assetId == null) {
         final wallet = isTangem ? TangemStandardWalletService() : StandardWalletService();
@@ -409,7 +426,8 @@ class TradeManagerService extends BaseWalletService {
     );
     offerDriverDict = preparedData.driverDict;
 
-    if (preparedData.nftOfferedLauncher != null || preparedData.requestedLauncher) {
+    if ((preparedData.nftOfferedLauncher != null || preparedData.requestedLauncher) &&
+        analizedOffer.requested.isNotEmpty) {
       Map<Bytes?, int> offerDict = {};
 
       if (preparedData.nftOfferedLauncher != null) {
