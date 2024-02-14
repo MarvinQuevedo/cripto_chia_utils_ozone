@@ -37,38 +37,38 @@ class NftWallet extends BaseWalletService {
     required NFTCoinInfo nftCoin,
     required WalletKeychain keychain,
     required Puzzlehash targetPuzzleHash,
-    Puzzlehash? changePuzzlehash,
-    int fee = 0,
     required List<CoinPrototype> standardCoinsForFee,
     required List<String> memos,
+    Puzzlehash? changePuzzlehash,
+    int fee = 0,
+    Bytes? newOwner,
+    Bytes? newDidInnerhash,
   }) {
     return generateSignedSpendBundle(
-        payments: [
-          Payment(
-            nftCoin.coin.amount,
+      payments: [
+        Payment(
+          nftCoin.coin.amount,
+          targetPuzzleHash,
+          memos: <Bytes>[
             targetPuzzleHash,
-            memos: <Bytes>[
-              targetPuzzleHash,
-              ...memos.map<Bytes>((e) {
-                if (e.startsWith("0x")) {
-                  return Bytes.fromHex(e);
-                } else {
-                  return e.toBytes();
-                }
-              }).toList()
-            ],
-          )
-        ],
-        /*  coins: [
-          nftCoin.coin
-        ], */
-        fee: fee,
-        changePuzzlehash: changePuzzlehash,
-        keychain: keychain,
-        nftCoin: nftCoin,
-        standardCoinsForFee: standardCoinsForFee,
-        newOwner: null,
-        newDidInnerhash: null);
+            ...memos.map<Bytes>((e) {
+              if (e.startsWith("0x")) {
+                return Bytes.fromHex(e);
+              } else {
+                return e.toBytes();
+              }
+            }).toList()
+          ],
+        )
+      ],
+      newOwner: newOwner,
+      fee: fee,
+      changePuzzlehash: changePuzzlehash,
+      keychain: keychain,
+      nftCoin: nftCoin,
+      standardCoinsForFee: standardCoinsForFee,
+      newDidInnerhash: newDidInnerhash,
+    );
   }
 
   Tuple2<SpendBundle, SignatureHashes?> generateSignedSpendBundle({
@@ -1237,6 +1237,8 @@ class CreateTransferArguments {
   final List<String> memos;
   final Environment enviroment;
   final Network network;
+  final Bytes? newOwner;
+  final Bytes? newDidInnerhash;
 
   CreateTransferArguments({
     required this.nftCoin,
@@ -1246,7 +1248,9 @@ class CreateTransferArguments {
     required this.memos,
     required this.enviroment,
     required this.network,
-    this.changePuzzlehash,
     required this.fee,
+    required this.newOwner,
+    required this.newDidInnerhash,
+    this.changePuzzlehash,
   });
 }

@@ -102,10 +102,12 @@ class NftNodeWalletService {
   Future<ChiaBaseResponse> transferNFt({
     required Puzzlehash targePuzzlehash,
     required FullNFTCoinInfo nftCoinInfo,
-    int fee = 0,
     required List<CoinPrototype> standardCoinsForFee,
     required Puzzlehash changePuzzlehash,
     List<String> memos = const [],
+    int fee = 0,
+    Bytes? newOwner,
+    Bytes? newDidInnerhash,
   }) async {
     final spendBundle = await NftWallet().createTransferSpendBundle(
       nftCoin: nftCoinInfo.toNftCoinInfo(),
@@ -115,6 +117,8 @@ class NftNodeWalletService {
       fee: fee,
       changePuzzlehash: changePuzzlehash,
       memos: memos,
+      newDidInnerhash: newDidInnerhash,
+      newOwner: newOwner,
     );
     final response = await fullNode.pushTransaction(spendBundle.item1);
     return response;
