@@ -439,6 +439,14 @@ class BaseWalletService {
 
     return BaseWalletService.makeSolutionFromConditions(conditions);
   }
+
+  static List<T> extractConditionsFromProgramList<T>(
+    List<Program> result,
+    ConditionChecker<T> conditionChecker,
+    ConditionFromProgramConstructor<T> conditionFromProgramConstructor,
+  ) {
+    return result.where(conditionChecker).map((p) => conditionFromProgramConstructor(p)).toList();
+  }
 }
 
 class CoinSpendAndSignature {

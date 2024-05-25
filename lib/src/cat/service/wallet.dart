@@ -61,8 +61,13 @@ class CatWalletService extends BaseWalletService {
     final spendableCats = <SpendableCat>[];
     var first = true;
     for (final catCoin in catCoins) {
-      final coinWalletVector = keychain.getWalletVector(catCoin.puzzlehash);
-      final coinPublicKey = coinWalletVector!.childPublicKey;
+      var coinWalletVector = keychain.getWalletVector(catCoin.puzzlehash);
+
+      if (coinWalletVector == null) {
+        final p2Puzzlehash = catCoin.getP2PuzzlehashSync();
+        coinWalletVector = keychain.getWalletVectorOrThrow(p2Puzzlehash);
+      }
+      final coinPublicKey = coinWalletVector.childPublicKey;
 
       Program? innerSolution;
       // if first coin, make inner solution with output

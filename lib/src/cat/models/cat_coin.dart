@@ -94,4 +94,78 @@ class CatCoin extends CoinPrototype with ToBytesMixin {
   @override
   String toString() =>
       'CatCoin(id: $id, parentCoinInfo: $parentCoinInfo, puzzlehash: $puzzlehash, amount: $amount, assetId: $assetId)';
+
+  /// see [getP2Puzzlehash] for documentation
+  Puzzlehash getP2PuzzlehashSync({Set<Puzzlehash> puzzlehashesToFilterBy = const {}}) {
+    final result = _calculateCatP2PuzzleHashTask(
+      _CalculateCatP2PuzzleHashArgument(this, puzzlehashesToFilterBy),
+    );
+    if (result == null) {
+      throw InvalidCatException(
+        message: 'No matching parent create coin conditions for cat coin $id',
+      );
+    }
+    return Puzzlehash.fromHex(result);
+  }
+
+  String? _calculateCatP2PuzzleHashTask(_CalculateCatP2PuzzleHashArgument args) {
+    final catCoin = args.coin;
+    final puzzleHashesToCheck = args.puzzlehashesToFilterBy;
+    final innerSolution = catCoin.parentCoinSpend.solution.toList()[0];
+    final innerPuzzle = catCoin.parentCoinSpend.puzzleReveal.uncurry().arguments[2];
+    final result = innerPuzzle.run(innerSolution).program.toList();
+
+    final createCoinConditions = BaseWalletService.extractConditionsFromProgramList(
+      result,
+      (program) {
+        final isCondition = CreateCoinCondition.isThisCondition(program);
+        if (!isCondition) {
+          return false;
+        }
+
+        try {
+          final _ = CreateCoinCondition.fromProgram(program);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      },
+      CreateCoinCondition.fromProgram,
+    );
+
+    // first, look for single matching amount
+    final matchingAmountConditions =
+        createCoinConditions.where((element) => element.amount == catCoin.amount);
+
+    if (matchingAmountConditions.length == 1) {
+      return matchingAmountConditions.single.destinationPuzzlehash.toHex();
+    }
+
+    final shouldCheckPuzzleHashes = puzzleHashesToCheck.isNotEmpty;
+
+    for (final createCoinCondition in matchingAmountConditions) {
+      final potentialP2PuzzleHash = createCoinCondition.destinationPuzzlehash;
+      // optionally filter by client provided puzzle hashes
+      if (shouldCheckPuzzleHashes && !puzzleHashesToCheck.contains(potentialP2PuzzleHash)) {
+        continue;
+      }
+      final outerPuzzleHash = WalletKeychain.makeOuterPuzzleHashForCatProgram(
+        potentialP2PuzzleHash,
+        catCoin.assetId,
+        catProgramV2,
+      );
+
+      if (outerPuzzleHash == catCoin.puzzlehash) {
+        return potentialP2PuzzleHash.toHex();
+      }
+    }
+    return null;
+  }
+}
+
+class _CalculateCatP2PuzzleHashArgument {
+  final CatCoin coin;
+  final Set<Puzzlehash> puzzlehashesToFilterBy;
+
+  _CalculateCatP2PuzzleHashArgument(this.coin, this.puzzlehashesToFilterBy);
 }

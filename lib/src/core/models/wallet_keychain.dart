@@ -4,6 +4,7 @@ import 'dart:collection';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:bip39/bip39.dart' as bip39;
+import 'package:chia_crypto_utils/src/core/exceptions/keychain_mismatch_exception.dart';
 
 class WalletKeychain with ToBytesMixin {
   WalletKeychain({
@@ -400,6 +401,26 @@ class WalletKeychain with ToBytesMixin {
 
   static List<String> generateMnemonic({int strength = 256}) {
     return bip39.generateMnemonic(strength: strength).split(" ");
+  }
+
+  WalletVector getWalletVectorOrThrow(Puzzlehash puzzlehash) {
+    final walletVector = getWalletVector(puzzlehash);
+    if (walletVector == null) throw KeychainMismatchException(puzzlehash);
+    return walletVector;
+  }
+
+  static Puzzlehash makeOuterPuzzleHashForCatProgram(
+    Puzzlehash innerPuzzleHash,
+    Puzzlehash assetId,
+    Program program,
+  ) {
+    final solution = Program.list([
+      Program.fromBytes(program.hash()),
+      Program.fromBytes(assetId),
+      Program.fromBytes(innerPuzzleHash),
+    ]);
+    final result = curryAndTreehashProgram.run(solution);
+    return Puzzlehash(result.program.atom);
   }
 }
 
