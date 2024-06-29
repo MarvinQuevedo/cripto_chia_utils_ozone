@@ -127,6 +127,10 @@ class AugSchemeMPL {
     };
   }
 
+  static JacobianPoint hashAugScheme(JacobianPoint pk, List<int> message) {
+    return g2Map(pk.toBytes() + message, augSchemeDst);
+  }
+
   static Future<JacobianPoint> signAsync(PrivateKey sk, List<int> message) {
     return spawnAndWaitForIsolate(
       taskArgument: SignArguments(sk, message),
