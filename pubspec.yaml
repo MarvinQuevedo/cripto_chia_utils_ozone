@@ -32,8 +32,11 @@ dependencies:
   compute: ^1.0.2
   deep_pick: ^1.0.0
   csv: ^5.0.2
-  
-   
+  # chia peer protocol
+  web_socket_channel: ^2.2.0
+  pointycastle: ^3.7.3
+  convert: ^3.1.1
+  buffer: ^1.2.2  
 
 dev_dependencies:
   http: ^1.1.0

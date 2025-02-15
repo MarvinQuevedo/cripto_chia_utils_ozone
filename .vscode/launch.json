@@ -53,6 +53,12 @@
             "program": "test/did/did_puzzles_test.dart"
         },
         {
+            "name": "streameable test",
+            "type": "dart",
+            "request": "launch",
+            "program": "test/stremeable/stremeable_test.dart"
+        },
+        {
             "name": "offer cicle2",
             "type": "dart",
             "request": "launch",

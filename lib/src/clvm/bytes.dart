@@ -9,6 +9,16 @@ import 'package:chia_crypto_utils/src/clvm/exceptions/unexpected_end_of_bytes_ex
 import 'package:crypto/crypto.dart';
 import 'package:hex/hex.dart';
 
+class Bytes32 extends Puzzlehash {
+  static const bytesLength = 32;
+  static const hexLength = 64;
+  Bytes32(List<int> bytesList) : super(bytesList) {
+    if (bytesList.length != bytesLength) {
+      throw ArgumentError('Bytes32 must have 32 bytes');
+    }
+  }
+}
+
 class Puzzlehash extends Bytes {
   Puzzlehash(List<int> bytesList) : super(bytesList) {
     if (bytesList.length != bytesLength) {
