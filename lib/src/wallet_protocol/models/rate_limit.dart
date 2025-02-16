@@ -141,6 +141,10 @@ class RateLimiter {
 
     return passed;
   }
+
+  Future<void> releasePermit() async {
+    await Future.delayed(Duration(seconds: resetSeconds));
+  }
 }
 
 int _time() {

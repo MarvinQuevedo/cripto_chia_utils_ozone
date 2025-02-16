@@ -13,6 +13,18 @@ class Request {
       _completer.complete(message);
     }
   }
+
+  void releasePermit() {
+    _releasePermit?.call();
+  }
+
+  void setAsCompleted(ChiaProtocolMessage message) {
+    if (!_completer.isCompleted) {
+      _completer.complete(message);
+    } else {
+      print('Request already completed');
+    }
+  }
 }
 
 class RequestMap {

@@ -8,6 +8,7 @@ import 'package:chia_crypto_utils/src/wallet_protocol/models/request_map.dart';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/wallet_protocol_models.dart';
 import 'package:tuple/tuple.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:synchronized/synchronized.dart';
 
 class PeerOptions {
   final double rateLimitFactor;
@@ -22,6 +23,7 @@ class Peer {
   final InternetAddress address;
   final int port;
   final RateLimiter _outboundRateLimiter;
+  final _rateLimiterLock = Lock();
 
   Peer._(
     this._ws,
@@ -122,7 +124,16 @@ class Peer {
 
   Future<ChiaProtocolMessage> _requestRaw<T extends ChiaProtocolMessage>(T body) async {
     final completer = Completer<ChiaProtocolMessage>();
-    final id = await _requests.insert(completer);
+    final id = await _requests.insert(
+      Request(
+        completer,
+        () async {
+          await _rateLimiterLock.synchronized(() {
+            return _outboundRateLimiter.releasePermit();
+          });
+        },
+      ),
+    );
 
     await _sendRaw(ChiaProtocolMessage(
       msgType: body.msgType,
@@ -135,12 +146,16 @@ class Peer {
 
   Future<void> _sendRaw(ChiaProtocolMessage message) async {
     while (true) {
-      if (!_outboundRateLimiter.handleMessage(message)) {
+      final canSend = await _rateLimiterLock.synchronized(() {
+        return _outboundRateLimiter.handleMessage(message);
+      });
+
+      if (!canSend) {
         await Future.delayed(Duration(seconds: 1));
         continue;
       }
 
-      await _ws.sink.add(message.toBytes());
+      _ws.sink.add(message.toStreamBytes());
       break;
     }
   }
@@ -153,7 +168,7 @@ class Peer {
           return;
         }
 
-        final message = Message.fromBytes(data);
+        final message = ChiaProtocolMessage.fromStreamBytes(Bytes(data));
 
         if (message.id == null) {
           _messageController.add(message);
@@ -166,7 +181,7 @@ class Peer {
           return;
         }
 
-        request.complete(message);
+        request.setAsCompleted(message);
       },
       onError: (error) {
         print('WebSocket error: $error');

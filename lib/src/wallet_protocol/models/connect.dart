@@ -3,7 +3,7 @@
 import 'dart:async';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/handshack.dart';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/message.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/misc.dart';
+import 'package:chia_crypto_utils/src/wallet_protocol/models/peer.dart';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/protocol_message_type.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:tuple/tuple.dart';

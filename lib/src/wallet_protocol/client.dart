@@ -2,8 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:chia_crypto_utils/src/wallet_protocol/models/message.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/misc.dart';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/network.dart';
+
+import 'models/peer.dart';
 
 class Client {
   final String networkId;
@@ -17,21 +18,16 @@ class Client {
 
   PeerNetwork get getNetwork => network;
 
-  Future<StreamController<ChiaProtocolMessage>> connect(
+  Future<Stream<ChiaProtocolMessage>> connect(
     InternetAddress socketAddr,
     PeerOptions options,
   ) async {
-    final result = await connectPeer(
-      networkId,
-      connector,
-      socketAddr,
-      options,
-    );
+    final connectResult = await Peer.connectFullUri("wss://${socketAddr.address}/ws", options);
 
-    final peer = result.item1;
-    final receiver = result.item2;
+    final peer = connectResult.item1;
+    final receiver = connectResult.item2;
 
-    final ipAddr = peer.socketAddr.address;
+    final ipAddr = InternetAddress(socketAddr.address);
 
     if (state.isBanned(ipAddr)) {
       throw ClientError('BannedPeer');
