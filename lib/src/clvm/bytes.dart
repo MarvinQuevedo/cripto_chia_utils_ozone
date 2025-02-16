@@ -17,6 +17,14 @@ class Bytes32 extends Puzzlehash {
       throw ArgumentError('Bytes32 must have 32 bytes');
     }
   }
+
+  factory Bytes32.fromHex(String phHex) {
+    return Bytes32(Bytes.fromHex(phHex));
+  }
+
+  factory Bytes32.fromStream(Iterator<int> iterator) {
+    return Bytes32(iterator.extractBytesAndAdvance(bytesLength));
+  }
 }
 
 class Puzzlehash extends Bytes {

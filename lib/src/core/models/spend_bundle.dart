@@ -146,6 +146,12 @@ class SpendBundle with ToBytesMixin {
     return SpendBundle(coinSpends: coinSpends, aggregatedSignature: signature);
   }
 
+  factory SpendBundle.fromStreamReader(StreamReader reader) {
+    final coinSpends = reader.readList(CoinSpend.fromStreamReader);
+    final aggregatedSignature = reader.readStreamG2();
+    return SpendBundle(coinSpends: coinSpends, aggregatedSignature: aggregatedSignature);
+  }
+
   void debug() {
     for (final spend in coinSpends) {
       print('---------');

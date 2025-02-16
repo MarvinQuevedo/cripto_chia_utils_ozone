@@ -16,7 +16,7 @@ class CoinState with utils.Streamable {
   @override
   utils.Bytes toStreamBytes() {
     final streamWriter = utils.StreamWriter();
-    streamWriter.writeBytes(coin.toStreamBytes());
+    streamWriter.writeStreamable(coin);
     streamWriter.writeOptional(spentHeight, (value) => streamWriter.writeUint32(value));
     streamWriter.writeOptional(createdHeight, (value) => streamWriter.writeUint32(value));
     return streamWriter.toBytes();

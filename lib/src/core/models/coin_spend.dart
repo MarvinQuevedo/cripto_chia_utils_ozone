@@ -1,6 +1,7 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/wallet_protocol/models/index.dart';
 import '../../did/puzzles/did_puzzles.dart' as didPuzzles;
 import '../../offers_ozone/models/full_coin.dart' as fullCoin;
 
@@ -82,6 +83,12 @@ class CoinSpend with ToBytesMixin {
   factory CoinSpend.fromBytes(Bytes bytes) {
     final iterator = bytes.iterator;
     return CoinSpend.fromStream(iterator);
+  }
+  factory CoinSpend.fromStreamReader(StreamReader reader) {
+    final coin = StreamableCoin.fromStreamReader(reader);
+    final puzzleReveal = Program.deserialize(reader.readBytes());
+    final solution = Program.deserialize(reader.readBytes());
+    return CoinSpend(coin: coin, puzzleReveal: puzzleReveal, solution: solution);
   }
   factory CoinSpend.fromStream(Iterator<int> iterator) {
     final coin = CoinPrototype.fromStream(iterator);

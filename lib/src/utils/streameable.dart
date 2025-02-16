@@ -1,12 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:chia_crypto_utils/src/wallet_protocol/models/header_block.dart';
 import 'package:tuple/tuple.dart';
 
 import '../../chia_crypto_utils.dart';
 import '../wallet_protocol/models/index.dart';
-import '../wallet_protocol/models/vd_info.dart';
 
 Bytes streamClass(List<dynamic> fields) {
   StreamWriter writer = StreamWriter();
@@ -86,11 +84,11 @@ class StreamWriter {
   }
 
   void writeBytes32(Bytes32 value) {
-    _buffer.add(value);
+    _buffer.add(value.byteList);
   }
 
   void writeBytes100(Bytes100 value) {
-    _buffer.add(value);
+    _buffer.add(value.byteList);
   }
 
   void writeString(String value) {
@@ -141,7 +139,8 @@ class StreamWriter {
   Bytes toBytes() => Bytes(_buffer.toBytes());
 
   void writeStreamable(Streamable streamable) {
-    writeBytes(streamable.toStreamBytes());
+    final streamBytes = streamable.toStreamBytes();
+    _buffer.add(streamBytes.byteList);
   }
 }
 
@@ -233,6 +232,11 @@ class StreamReader {
     return list;
   }
 
+  JacobianPoint readStreamG2() {
+    final bytes = readBytes96();
+    return JacobianPoint.fromBytesG2(bytes.byteList);
+  }
+
   List<dynamic> readTupleList<T, R>() {
     final length = readUint32();
     final list = <dynamic>[];
@@ -272,6 +276,17 @@ class StreamReader {
 
   T? readOptionalStreamable<T extends Streamable>(T Function(StreamReader reader) parser) {
     return readOptional(() => readStreamable(parser));
+  }
+
+  @override
+  String toString() {
+    return Bytes(_data.buffer.asUint8List()).toHex();
+  }
+
+  Bytes readBytes96() {
+    final bytes = Uint8List.view(_data.buffer, _offset, 96);
+    _offset += 96;
+    return Bytes(bytes);
   }
 }
 
