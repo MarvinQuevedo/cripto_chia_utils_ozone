@@ -78,7 +78,7 @@ class Handshake with Streamable {
     final protocolVersion = reader.readString();
     final softwareVersion = reader.readString();
     final serverPort = reader.readUint16();
-    final nodeType = NodeType.fromValue(reader.readUint8());
+    final nodeTypeRaw = reader.readUint8();
     final capabilities = reader
         .readTupleList<Uint16List, String>()
         .map((e) => Tuple2(e.item1 as int, e.item2 as String))
@@ -88,7 +88,7 @@ class Handshake with Streamable {
       protocolVersion: protocolVersion,
       softwareVersion: softwareVersion,
       serverPort: serverPort,
-      nodeType: nodeType.index,
+      nodeType: nodeTypeRaw,
       capabilities: List<Tuple2<int, String>>.from(capabilities),
     );
   }
