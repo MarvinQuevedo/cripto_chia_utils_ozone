@@ -1,10 +1,12 @@
 // cripto_chia_utils_ozone/lib/src/wallet_protocol/models/connect.dart
 
 import 'dart:async';
+import 'dart:io';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/handshack.dart';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/message.dart';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/peer.dart';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/protocol_message_type.dart';
+import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:tuple/tuple.dart';
 import 'package:logging/logging.dart';
@@ -17,13 +19,75 @@ class ChiaWebSocket {
   final String networkId;
   final PeerOptions options;
 
-  ChiaWebSocket({
-    required String url,
+  ChiaWebSocket._({
+    required this.channel,
     required this.networkId,
     required this.options,
-  }) : channel = WebSocketChannel.connect(Uri.parse(url));
+  });
 
-  Future<Tuple2<ChiaWebSocket, StreamController<ChiaProtocolMessage>>> connect() async {
+  static Future<ChiaWebSocket> connect({
+    required String url,
+    required String networkId,
+    required PeerOptions options,
+    String? certPath,
+    String? keyPath,
+  }) async {
+    final uri = Uri.parse(url);
+    WebSocketChannel channel;
+
+    // Create a secure WebSocket similar to Peer class
+    channel = await _createSecureWebSocket(
+      uri,
+      allowSelfSigned: true,
+      certPath: certPath,
+      keyPath: keyPath,
+    );
+
+    return ChiaWebSocket._(
+      channel: channel,
+      networkId: networkId,
+      options: options,
+    );
+  }
+
+  // Helper method to create a secure WebSocket with option to allow self-signed certificates
+  static Future<WebSocketChannel> _createSecureWebSocket(Uri uri,
+      {bool allowSelfSigned = true, String? certPath, String? keyPath}) async {
+    if (allowSelfSigned) {
+      // Create a SecurityContext with the provided certificate and key if available
+      final context = SecurityContext();
+
+      if (certPath != null && keyPath != null) {
+        try {
+          context.useCertificateChain(certPath);
+          context.usePrivateKey(keyPath);
+        } catch (e) {
+          print('Error loading certificate or key: $e');
+        }
+      }
+
+      // Connect to the host directly
+      final socket = await SecureSocket.connect(
+        uri.host,
+        uri.port,
+        onBadCertificate: (_) => true,
+        context: context,
+      );
+
+      // Create a WebSocket connection manually
+      final webSocket = WebSocket.fromUpgradedSocket(
+        socket,
+        serverSide: false,
+      );
+
+      return IOWebSocketChannel(webSocket);
+    } else {
+      // Use the standard connection method if self-signed certs aren't allowed
+      return WebSocketChannel.connect(uri);
+    }
+  }
+
+  Future<Tuple2<ChiaWebSocket, StreamController<ChiaProtocolMessage>>> initConnection() async {
     try {
       await channel.ready;
       _logger.info('Connected to WebSocket');
@@ -44,12 +108,13 @@ class ChiaWebSocket {
         ],
       );
 
-      // Send handshake
-      send(handshake);
+      final firstMessageCompleter = Completer<ChiaProtocolMessage>();
 
       // Listen for response
       channel.stream.listen((dynamic data) async {
         final message = ChiaProtocolMessage.fromStreamBytes(data);
+        firstMessageCompleter.complete(message);
+        print('message: ${message.toJson()}');
 
         if (message.msgType != ProtocolMessageTypes.handshake.value) {
           throw ClientErrors.invalidResponse(
@@ -77,6 +142,12 @@ class ChiaWebSocket {
         controller.add(message);
       });
 
+      // Send handshake
+      send(handshake);
+
+      final message = await firstMessageCompleter.future;
+      print('message: ${message.toJson()}');
+
       return Tuple2(this, controller);
     } catch (e) {
       _logger.severe('Failed to connect: $e');
@@ -95,7 +166,8 @@ class ChiaWebSocket {
   void send(dynamic data) {
     if (data is Handshake) {
       final bytes = data.toStreamBytes();
-      channel.sink.add(bytes);
+      print('send bytes: ${bytes.toHex()}');
+      channel.sink.add(bytes.byteList);
     } else {
       channel.sink.add(data);
     }

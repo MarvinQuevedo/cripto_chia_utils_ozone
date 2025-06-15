@@ -7,11 +7,13 @@ class PeerNetwork {
   final int defaultPort;
   final List<int> genesisChallenge; // Equivalent to Bytes32
   final List<String> dnsIntroducers;
+  final String id;
 
   PeerNetwork({
     required this.defaultPort,
     required this.genesisChallenge,
     required this.dnsIntroducers,
+    required this.id,
   });
 
   // Factory constructor for mainnet
@@ -19,6 +21,7 @@ class PeerNetwork {
     ChiaNetworkContextWrapper()
         .registerNetworkContext(Network.mainnet, environment: Environment.flutter);
     return PeerNetwork(
+      id: 'mainnet',
       defaultPort: 8444,
       genesisChallenge: MAINNET_CONSTANTS.genesisChallenge, // You'll need to define this constant
       dnsIntroducers: [
@@ -35,6 +38,7 @@ class PeerNetwork {
     ChiaNetworkContextWrapper()
         .registerNetworkContext(Network.testnet10, environment: Environment.flutter);
     return PeerNetwork(
+      id: 'testnet11',
       defaultPort: 58444,
       genesisChallenge: TESTNET11_CONSTANTS.genesisChallenge, // You'll need to define this constant
       dnsIntroducers: ['dns-introducer-testnet11.chia.net'],

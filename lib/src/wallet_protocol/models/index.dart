@@ -7,3 +7,5 @@ export 'bytes.dart';
 export 'vd_info.dart';
 export 'reward_chain_sub_slot.dart';
 export 'sub_slot_proofs.dart';
+export 'connect.dart';
+export 'handshack.dart';

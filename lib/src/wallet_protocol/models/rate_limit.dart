@@ -4,11 +4,11 @@ import 'package:chia_crypto_utils/src/wallet_protocol/models/message.dart';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/protocol_message_type.dart';
 
 class RateLimits {
-  late final RateLimit defaultSettings;
-  late final double nonTxFrequency;
-  late final double nonTxMaxTotalSize;
-  late final Map<ProtocolMessageTypes, RateLimit> tx;
-  late final Map<ProtocolMessageTypes, RateLimit> other;
+  RateLimit? defaultSettings;
+  double? nonTxFrequency;
+  double? nonTxMaxTotalSize;
+  Map<ProtocolMessageTypes, RateLimit>? tx;
+  Map<ProtocolMessageTypes, RateLimit>? other;
 
   RateLimits({
     required this.defaultSettings,
@@ -23,8 +23,8 @@ class RateLimits {
       defaultSettings: defaultSettings,
       nonTxFrequency: nonTxFrequency,
       nonTxMaxTotalSize: nonTxMaxTotalSize,
-      tx: Map.from(tx),
-      other: Map.from(other),
+      tx: Map.from(tx ?? {}),
+      other: Map.from(other ?? {}),
     );
   }
 
@@ -32,12 +32,13 @@ class RateLimits {
     defaultSettings = other.defaultSettings;
     nonTxFrequency = other.nonTxFrequency;
     nonTxMaxTotalSize = other.nonTxMaxTotalSize;
-    tx.addAll(other.tx);
-    other.addAll(other.other);
+    tx?.addAll(other.tx ?? {});
+    this.other?.addAll(other.other ?? {});
   }
 
   void addAll(Map<ProtocolMessageTypes, RateLimit> settings) {
-    tx.addAll(settings);
+    tx?.addAll(settings);
+    other?.addAll(settings);
   }
 
   static final RateLimits v1RateLimits = _initV1RateLimits();
@@ -98,30 +99,31 @@ class RateLimiter {
     bool passed = () {
       var limits = rateLimits.defaultSettings;
 
-      if (rateLimits.tx.containsKey(message.msgType)) {
-        limits = rateLimits.tx[message.msgType]!;
-      } else if (rateLimits.other.containsKey(message.msgType)) {
-        limits = rateLimits.other[message.msgType]!;
+      if (rateLimits.tx?.containsKey(message.msgType) ?? false) {
+        limits = rateLimits.tx![message.msgType]!;
+      } else if (rateLimits.other?.containsKey(message.msgType) ?? false) {
+        limits = rateLimits.other![message.msgType]!;
 
         newNonTxCount += 1.0;
         newNonTxSize += size;
 
-        if (newNonTxCount > rateLimits.nonTxFrequency * limitFactor) {
+        if (newNonTxCount > (rateLimits.nonTxFrequency ?? 0.0) * limitFactor) {
           return false;
         }
 
-        if (newNonTxSize > rateLimits.nonTxMaxTotalSize * limitFactor) {
+        if (newNonTxSize > (rateLimits.nonTxMaxTotalSize ?? 0.0) * limitFactor) {
           return false;
         }
       }
 
-      final maxTotalSize = limits.maxTotalSize ?? (limits.frequency * limits.maxSize);
+      final maxTotalSize =
+          limits?.maxTotalSize ?? (limits?.frequency ?? 0.0) * (limits?.maxSize ?? 0.0);
 
-      if (newMessageCount > limits.frequency * limitFactor) {
+      if (newMessageCount > (limits?.frequency ?? 0.0) * limitFactor) {
         return false;
       }
 
-      if (size > limits.maxSize) {
+      if (size > (limits?.maxSize ?? 0.0)) {
         return false;
       }
 

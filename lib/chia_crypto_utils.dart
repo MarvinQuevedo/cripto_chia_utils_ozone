@@ -20,3 +20,4 @@ export 'src/utils/parsing/deep_pick_extension.dart';
 export 'src/tangem/cat_wallet.dart';
 export 'src/tangem/standart_wallet.dart';
 export 'src/tangem/nft_wallet.dart';
+export 'src/wallet_protocol/index.dart';

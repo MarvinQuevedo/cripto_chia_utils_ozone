@@ -1,199 +1,92 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
+import 'dart:convert';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/client_error.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/message.dart';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/rate_limit.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/request_map.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/wallet_protocol_models.dart';
 import 'package:tuple/tuple.dart';
+import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:synchronized/synchronized.dart';
 
 class PeerOptions {
   final double rateLimitFactor;
 
-  PeerOptions({this.rateLimitFactor = 0.6});
+  const PeerOptions({this.rateLimitFactor = 0.6});
 }
 
 class Peer {
-  final WebSocketChannel _ws;
-  final StreamController<ChiaProtocolMessage> _messageController;
-  final RequestMap _requests;
+  final WebSocketChannel connection;
   final InternetAddress address;
   final int port;
-  final RateLimiter _outboundRateLimiter;
-  final _rateLimiterLock = Lock();
+  DateTime lastMessage;
+  int bytesRead;
+  int bytesWritten;
+  int? peerServerPort;
+  int? nodeType;
+  String protocolVersion;
+  String softwareVersion;
+  String networkId;
+  List<Tuple2<int, String>> capabilities;
+  bool isConnected;
 
-  Peer._(
-    this._ws,
-    this._messageController,
-    this._requests,
-    this.address,
-    this.port,
-    this._outboundRateLimiter,
-  ) {
-    _handleInboundMessages();
-  }
+  Peer({
+    required this.connection,
+    required this.address,
+    required this.port,
+    required this.protocolVersion,
+    required this.softwareVersion,
+    required this.networkId,
+    required this.capabilities,
+    this.peerServerPort,
+    this.nodeType,
+    DateTime? lastMessage,
+    int? bytesRead,
+    int? bytesWritten,
+    bool? isConnected,
+  })  : lastMessage = lastMessage ?? DateTime.now(),
+        bytesRead = bytesRead ?? 0,
+        bytesWritten = bytesWritten ?? 0,
+        isConnected = isConnected ?? true;
 
-  static Future<Tuple2<Peer, Stream<ChiaProtocolMessage>>> connect(
-    String host,
-    int port,
-    PeerOptions options,
-  ) async {
-    final uri = Uri.parse('wss://$host:$port/ws');
-    final ws = WebSocketChannel.connect(uri);
-
-    final address = await InternetAddress.lookup(host).then((addresses) => addresses.first);
-
-    return _createPeer(
-      ws,
-      address,
-      port,
-      options,
-    );
-  }
-
-  static Future<Tuple2<Peer, Stream<ChiaProtocolMessage>>> connectFullUri(
-    String uri,
-    PeerOptions options,
-  ) async {
-    final ws = WebSocketChannel.connect(Uri.parse(uri));
-    final host = uri.split(':')[1].replaceAll('//', '');
-    final port = int.parse(uri.split(':')[2].split('/')[0]);
-
-    final address = await InternetAddress.lookup(host).then((addresses) => addresses.first);
-
-    return _createPeer(ws, address, port, options);
-  }
-
-  static Future<Tuple2<Peer, Stream<ChiaProtocolMessage>>> _createPeer(
-    WebSocketChannel ws,
-    InternetAddress address,
-    int port,
-    PeerOptions options,
-  ) async {
-    final messageController = StreamController<ChiaProtocolMessage>.broadcast();
-    final requests = RequestMap();
-    final rateLimiter = RateLimiter(
-      incoming: false,
-      resetSeconds: 60,
-      limitFactor: options.rateLimitFactor,
-      rateLimits: RateLimits.v2RateLimits,
-    );
-
-    final peer = Peer._(
-      ws,
-      messageController,
-      requests,
-      address,
-      port,
-      rateLimiter,
-    );
-
-    return Tuple2(peer, messageController.stream);
-  }
-
-  Future<void> sendTransaction(SpendBundle spendBundle) async {
-    await requestInfallible(
-      SendTransaction(spendBundle),
-      fromBytes: (bytes) => SendTransaction.fromBytes(
-        Bytes(bytes),
-      ),
-    );
-  }
-
-  // ... Other request methods following similar pattern ...
-
-  Future<void> send<T extends ChiaProtocolMessage>(T body) async {
-    await _sendRaw(ChiaProtocolMessage(
-      msgType: body.msgType,
-      id: null,
-      data: body.toStreamBytes(),
-    ));
-  }
-
-  Future<R> requestInfallible<R extends ChiaProtocolMessage, B extends ChiaProtocolMessage>(B body,
-      {required R Function(List<int>) fromBytes}) async {
-    final message = await _requestRaw(body);
-    if (message.msgType != body.msgType) {
-      throw ClientErrors.invalidResponse([body.msgType], message.msgType);
+  Future<void> sendMessage(ChiaProtocolMessage message) async {
+    if (!isConnected) {
+      throw Exception('Peer is not connected');
     }
-    return fromBytes(message.data);
-  }
-
-  Future<ChiaProtocolMessage> _requestRaw<T extends ChiaProtocolMessage>(T body) async {
-    final completer = Completer<ChiaProtocolMessage>();
-    final id = await _requests.insert(
-      Request(
-        completer,
-        () async {
-          await _rateLimiterLock.synchronized(() {
-            return _outboundRateLimiter.releasePermit();
-          });
-        },
-      ),
-    );
-
-    await _sendRaw(ChiaProtocolMessage(
-      msgType: body.msgType,
-      id: id,
-      data: body.toStreamBytes(),
-    ));
-
-    return completer.future;
-  }
-
-  Future<void> _sendRaw(ChiaProtocolMessage message) async {
-    while (true) {
-      final canSend = await _rateLimiterLock.synchronized(() {
-        return _outboundRateLimiter.handleMessage(message);
-      });
-
-      if (!canSend) {
-        await Future.delayed(Duration(seconds: 1));
-        continue;
-      }
-
-      _ws.sink.add(message.toStreamBytes());
-      break;
-    }
-  }
-
-  void _handleInboundMessages() {
-    _ws.stream.listen(
-      (data) {
-        if (data is! List<int>) {
-          print('Received unexpected message type: ${data.runtimeType}');
-          return;
-        }
-
-        final message = ChiaProtocolMessage.fromStreamBytes(Bytes(data));
-
-        if (message.id == null) {
-          _messageController.add(message);
-          return;
-        }
-
-        final request = _requests.remove(message.id!);
-        if (request == null) {
-          print('Received message with untracked id ${message.id}');
-          return;
-        }
-
-        request.setAsCompleted(message);
-      },
-      onError: (error) {
-        print('WebSocket error: $error');
-      },
-      onDone: () {
-        _messageController.close();
-      },
-    );
+    final messageBytes = message.toStreamBytes();
+    bytesWritten += messageBytes.length;
+    connection.sink.add(messageBytes.byteList);
+    lastMessage = DateTime.now();
   }
 
   Future<void> close() async {
-    await _ws.sink.close();
-    await _messageController.close();
+    isConnected = false;
+    await connection.sink.close();
+  }
+
+  void updateLastMessage() {
+    lastMessage = DateTime.now();
+  }
+
+  bool isStale({Duration timeout = const Duration(minutes: 5)}) {
+    return DateTime.now().difference(lastMessage) > timeout;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'address': address.address,
+      'port': port,
+      'peerServerPort': peerServerPort,
+      'nodeType': nodeType,
+      'protocolVersion': protocolVersion,
+      'softwareVersion': softwareVersion,
+      'networkId': networkId,
+      'capabilities': capabilities.map((c) => [c.item1, c.item2]).toList(),
+      'lastMessage': lastMessage.toIso8601String(),
+      'bytesRead': bytesRead,
+      'bytesWritten': bytesWritten,
+      'isConnected': isConnected,
+    };
   }
 }
