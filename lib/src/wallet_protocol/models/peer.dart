@@ -8,7 +8,6 @@ import 'package:chia_crypto_utils/src/wallet_protocol/models/rate_limit.dart';
 import 'package:tuple/tuple.dart';
 import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:synchronized/synchronized.dart';
 
 class PeerOptions {
   final double rateLimitFactor;
