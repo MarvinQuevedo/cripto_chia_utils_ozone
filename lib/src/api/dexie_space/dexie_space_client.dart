@@ -206,6 +206,100 @@ class DexieSpaceClient {
       totalVolume30d: totalVolume30d,
     );
   }
+
+  /// Gets historical trades for a specific ticker
+  ///
+  /// [tickerId] - The unique identifier of the ticker (e.g., 'db1a9020d48d9d4ad22631b66ab4b9ebd3637ef7758ad38881348c5d24c38f20_xch')
+  /// Returns historical trade data including prices, volumes, and timestamps
+  Future<DexieHistoricalTradesResponse> getHistoricalTrades(String tickerId) async {
+    try {
+      final response = await _client.get(
+        Uri.parse('$_apiVersion/prices/historical_trades?ticker_id=$tickerId'),
+      );
+
+      if (response.statusCode != 200) {
+        throw DexieSpaceException(
+          'Failed to fetch historical trades. Status code: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+      return DexieHistoricalTradesResponse.fromJson(jsonData);
+    } catch (e) {
+      if (e is DexieSpaceException) {
+        rethrow;
+      }
+      throw DexieSpaceException(
+        'Error fetching historical trades: $e',
+        0,
+      );
+    }
+  }
+
+  /// Gets historical trades for a specific ticker with optional filtering
+  ///
+  /// [tickerId] - The unique identifier of the ticker
+  /// [tradeType] - Optional filter for trade type ('buy', 'sell', or null for all)
+  /// [hoursBack] - Optional filter for trades from the last N hours
+  /// Returns filtered historical trade data
+  Future<DexieHistoricalTradesResponse> getHistoricalTradesFiltered(
+    String tickerId, {
+    String? tradeType,
+    int? hoursBack,
+  }) async {
+    final response = await getHistoricalTrades(tickerId);
+
+    List<DexieHistoricalTrade> filteredTrades = response.trades;
+
+    // Filter by trade type if specified
+    if (tradeType != null) {
+      final lowerType = tradeType.toLowerCase();
+      if (lowerType == 'buy' || lowerType == 'sell') {
+        filteredTrades =
+            filteredTrades.where((trade) => trade.type.toLowerCase() == lowerType).toList();
+      }
+    }
+
+    // Filter by time if specified
+    if (hoursBack != null && hoursBack > 0) {
+      final cutoffTime = DateTime.now().subtract(Duration(hours: hoursBack));
+      filteredTrades =
+          filteredTrades.where((trade) => trade.tradeDateTime.isAfter(cutoffTime)).toList();
+    }
+
+    return DexieHistoricalTradesResponse(
+      success: response.success,
+      tickerId: response.tickerId,
+      poolId: response.poolId,
+      timestamp: response.timestamp,
+      trades: filteredTrades,
+    );
+  }
+
+  /// Gets recent trades for a specific ticker (last 24 hours)
+  ///
+  /// [tickerId] - The unique identifier of the ticker
+  /// Returns historical trades from the last 24 hours
+  Future<DexieHistoricalTradesResponse> getRecentTrades(String tickerId) async {
+    return getHistoricalTradesFiltered(tickerId, hoursBack: 24);
+  }
+
+  /// Gets buy trades for a specific ticker
+  ///
+  /// [tickerId] - The unique identifier of the ticker
+  /// Returns only buy trades from historical data
+  Future<DexieHistoricalTradesResponse> getBuyTrades(String tickerId) async {
+    return getHistoricalTradesFiltered(tickerId, tradeType: 'buy');
+  }
+
+  /// Gets sell trades for a specific ticker
+  ///
+  /// [tickerId] - The unique identifier of the ticker
+  /// Returns only sell trades from historical data
+  Future<DexieHistoricalTradesResponse> getSellTrades(String tickerId) async {
+    return getHistoricalTradesFiltered(tickerId, tradeType: 'sell');
+  }
 }
 
 /// Market statistics for Dexie Space
