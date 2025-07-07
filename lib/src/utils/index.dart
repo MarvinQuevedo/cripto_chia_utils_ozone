@@ -8,3 +8,4 @@ export './serialization.dart';
 export 'exceptions/insufficient_balance_exception.dart';
 export 'extensions/index.dart';
 export 'streameable.dart';
+export './stakingList.dart';
