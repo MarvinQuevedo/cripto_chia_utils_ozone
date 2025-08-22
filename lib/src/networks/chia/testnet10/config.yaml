@@ -285,7 +285,7 @@ wallet:
   full_node_peer:
     host: localhost
     port: 58444
-  initial_num_public_keys: 100
+  initial_num_public_keys: 25
   initial_num_public_keys_new_wallet: 5
   introducer_peer:
     host: introducer-testnet10.chia.net

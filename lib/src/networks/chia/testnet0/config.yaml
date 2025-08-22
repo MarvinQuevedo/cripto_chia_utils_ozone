@@ -322,7 +322,7 @@ wallet:
     host: localhost
     port: 8444
   inbound_rate_limit_percent: 100
-  initial_num_public_keys: 100
+  initial_num_public_keys: 25
   introducer_peer:
     host: introducer.chia.net
     port: 8444
