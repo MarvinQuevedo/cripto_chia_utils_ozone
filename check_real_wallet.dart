@@ -44,7 +44,7 @@ Future<void> checkRealWallet() async {
   );
 
   final fullNode = ChiaFullNodeInterface(fullNodeRpc);
-  final nftService = NftNodeWalletService(fullNode: fullNode, keychain: keychain);
+  //final nftService = NftNodeWalletService(fullNode: fullNode, keychain: keychain);
 
   // Buscar NFTs en todas las direcciones
   print("\n🖼️ Buscando NFTs en todas las direcciones...");
