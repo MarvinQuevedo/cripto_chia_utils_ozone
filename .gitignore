@@ -38,3 +38,62 @@ coverage/
 # Ignore chialisp 
 main.sym
 spend_bundle_hex.txt
+# Additional protections against permission/temp file issues
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+*.tmp
+*.temp
+*~
+
+# Linux
+*~
+
+# IDE/Editor files that might cause permission issues
+.vscode/settings.json
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries
+.idea/shelf
+
+# Flutter/Dart build artifacts that can cause permission issues
+.dart_tool/package_config.json
+.packages
+build/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+
+# Platform specific build files
+ios/Pods/
+ios/.symlinks/
+android/.gradle/
+android/app/build/
+linux/build/
+macos/build/
+windows/build/
+web/build/
+
+# Temporary files that might get wrong permissions
+*.log
+*.pid
+*.seed
+*.pid.lock
+.nyc_output
+coverage/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
