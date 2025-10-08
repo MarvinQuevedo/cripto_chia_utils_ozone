@@ -1,6 +1,5 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/api/full_node/full_node_utils.dart';
-import 'package:chia_crypto_utils/src/api/nft1/nft_service.dart';
 
 Future<void> checkRealWallet() async {
   print("🔍 Verificando wallet real...");

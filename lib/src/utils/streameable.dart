@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:tuple/tuple.dart';
 
 import '../../chia_crypto_utils.dart';
-import '../wallet_protocol/models/index.dart';
 
 Bytes streamClass(List<dynamic> fields) {
   StreamWriter writer = StreamWriter();

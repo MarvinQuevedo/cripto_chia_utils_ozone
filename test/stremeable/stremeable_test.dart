@@ -1,6 +1,4 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/handshack.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/index.dart';
 import 'package:test/expect.dart';
 import 'package:test/scaffolding.dart';
 import 'package:tuple/tuple.dart';

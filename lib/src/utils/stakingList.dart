@@ -1,7 +1,5 @@
 // ignore_for_file: lines_longer_than_80_chars
 
-import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-
 /// Default staking list configuration
 ///
 /// This file contains the default staking configurations and parameters

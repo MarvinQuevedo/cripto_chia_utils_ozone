@@ -1,7 +1,6 @@
 // ignore_for_file: lines_longer_than_80_chars
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/index.dart';
 import '../../did/puzzles/did_puzzles.dart' as didPuzzles;
 import '../../offers_ozone/models/full_coin.dart' as fullCoin;
 

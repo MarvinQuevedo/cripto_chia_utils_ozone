@@ -1,6 +1,5 @@
 // client_error.dart
 
-import 'package:chia_crypto_utils/src/wallet_protocol/models/connect.dart';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/message.dart';
 import 'package:chia_crypto_utils/src/wallet_protocol/models/protocol_message_type.dart';
 

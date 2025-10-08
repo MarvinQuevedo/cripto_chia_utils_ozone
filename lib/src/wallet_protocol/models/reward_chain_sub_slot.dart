@@ -1,5 +1,4 @@
 import '../../../chia_crypto_utils.dart';
-import 'index.dart';
 
 class RewardChainSubSlot with Streamable {
   final VDFInfo endOfSlotVdf;

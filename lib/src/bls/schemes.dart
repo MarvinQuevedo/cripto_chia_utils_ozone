@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:chia_crypto_utils/src/bls/op_swu_g2.dart';
 import 'package:chia_crypto_utils/src/bls/pairing.dart';
-import 'package:chia_crypto_utils/src/bls/provider/bls_provider.dart';
 import 'package:quiver/collection.dart';
 
 final basicSchemeDst = utf8.encode('BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_');

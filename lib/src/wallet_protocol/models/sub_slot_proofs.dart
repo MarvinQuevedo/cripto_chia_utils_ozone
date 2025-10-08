@@ -1,5 +1,4 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/header_block.dart';
 
 class SubSlotProofs with Streamable {
   final VDFProof challengeChainSlotProof;

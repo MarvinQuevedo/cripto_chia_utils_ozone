@@ -1,16 +1,9 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:convert';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 import 'package:tuple/tuple.dart';
 import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-
-import 'models/peer.dart';
-import 'models/network.dart';
-import 'models/message.dart';
-import 'models/handshack.dart';
 
 class WalletProtocolClient {
   final PeerNetwork network;

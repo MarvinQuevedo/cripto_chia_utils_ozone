@@ -1,7 +1,4 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/coin_state.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/message.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/protocol_message_type.dart';
 import 'package:tuple/tuple.dart';
 
 import 'fee_estimate_group.dart';

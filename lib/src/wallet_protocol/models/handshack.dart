@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/message.dart';
 import 'package:tuple/tuple.dart';
 
 class Handshake with Streamable {

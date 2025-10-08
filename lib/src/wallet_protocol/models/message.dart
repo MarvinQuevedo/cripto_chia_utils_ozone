@@ -1,7 +1,5 @@
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
 
-import 'protocol_message_type.dart';
-
 class ChiaProtocolMessage with Streamable {
   final ProtocolMessageTypes msgType;
   final int? id;

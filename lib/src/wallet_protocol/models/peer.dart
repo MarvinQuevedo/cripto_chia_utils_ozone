@@ -1,12 +1,7 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
-import 'dart:convert';
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/client_error.dart';
-import 'package:chia_crypto_utils/src/wallet_protocol/models/rate_limit.dart';
 import 'package:tuple/tuple.dart';
-import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class PeerOptions {
