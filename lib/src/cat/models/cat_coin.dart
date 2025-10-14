@@ -161,6 +161,10 @@ class CatCoin extends CoinPrototype with ToBytesMixin {
     }
     return null;
   }
+
+  static CatCoin fromFullCoin(FullCoin fullCoin) {
+    return CatCoin(parentCoinSpend: fullCoin.parentCoinSpend!, coin: fullCoin.coin);
+  }
 }
 
 class _CalculateCatP2PuzzleHashArgument {

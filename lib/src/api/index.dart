@@ -2,7 +2,7 @@ export './chia_price/chia_price_provider.dart';
 export './chia_price/xch_scan/index.dart';
 export './client.dart';
 export './coin_splitting/service/coin_splitting_service.dart';
-export './coinset/index.dart';
+export './coinset/index.dart' hide GetBlockRecordByHeightResponse, GetBlockRecordsResponse;
 export './dexie_space/index.dart';
 export './full_node/index.dart';
 export './pool/index.dart';

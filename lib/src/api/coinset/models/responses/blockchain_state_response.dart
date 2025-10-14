@@ -40,7 +40,7 @@ class CoinsetBlockchainState {
     required this.mempoolMinFees,
     required this.mempoolSize,
     required this.nodeId,
-    required this.peak,
+    this.peak,
     required this.space,
     required this.subSlotIters,
     required this.sync,
@@ -58,8 +58,10 @@ class CoinsetBlockchainState {
       mempoolMinFees: MempoolMinFees.fromJson(json['mempool_min_fees'] as Map<String, dynamic>),
       mempoolSize: json['mempool_size'] as int,
       nodeId: json['node_id'] as String,
-      peak: json['peak'], // This would need proper BlockRecord parsing
-      space: json['space'] is int ? json['space'] as int : int.parse(json['space'].toString()),
+      peak: json['peak'] != null
+          ? CoinsetPeakBlockRecord.fromJson(json['peak'] as Map<String, dynamic>)
+          : null,
+      space: json['space'] is int ? json['space'] as int : (json['space'] as num).toInt(),
       subSlotIters: json['sub_slot_iters'] as int,
       sync: SyncState.fromJson(json['sync'] as Map<String, dynamic>),
     );
@@ -75,7 +77,7 @@ class CoinsetBlockchainState {
   final MempoolMinFees mempoolMinFees;
   final int mempoolSize;
   final String nodeId;
-  final dynamic peak; // BlockRecord type
+  final CoinsetPeakBlockRecord? peak;
   final int space;
   final int subSlotIters;
   final SyncState sync;
@@ -91,7 +93,7 @@ class CoinsetBlockchainState {
         'mempool_min_fees': mempoolMinFees.toJson(),
         'mempool_size': mempoolSize,
         'node_id': nodeId,
-        'peak': peak,
+        if (peak != null) 'peak': peak!.toJson(),
         'space': space,
         'sub_slot_iters': subSlotIters,
         'sync': sync.toJson(),
@@ -145,5 +147,40 @@ class SyncState {
         'sync_progress_height': syncProgressHeight,
         'sync_tip_height': syncTipHeight,
         'synced': synced,
+      };
+}
+
+/// Peak block record (simplified - only essential fields)
+class CoinsetPeakBlockRecord {
+  const CoinsetPeakBlockRecord({
+    required this.height,
+    required this.headerHash,
+    this.timestamp,
+    this.weight,
+  });
+
+  factory CoinsetPeakBlockRecord.fromJson(Map<String, dynamic> json) {
+    return CoinsetPeakBlockRecord(
+      height: json['height'] as int,
+      headerHash: json['header_hash'] as String,
+      timestamp: json['timestamp'] as int?,
+      weight: json['weight'] is int
+          ? json['weight'] as int
+          : json['weight'] != null
+              ? (json['weight'] as num).toInt()
+              : null,
+    );
+  }
+
+  final int height;
+  final String headerHash;
+  final int? timestamp;
+  final int? weight;
+
+  Map<String, dynamic> toJson() => {
+        'height': height,
+        'header_hash': headerHash,
+        if (timestamp != null) 'timestamp': timestamp,
+        if (weight != null) 'weight': weight,
       };
 }
