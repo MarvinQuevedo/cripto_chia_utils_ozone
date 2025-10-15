@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:chia_crypto_utils/chia_crypto_utils.dart';
+import 'package:chia_crypto_utils/src/bls/hd_keys.dart' as hd_keys;
 import 'package:chia_crypto_utils/src/bls/op_swu_g2.dart';
 import 'package:chia_crypto_utils/src/bls/pairing.dart';
+import 'package:deep_pick/deep_pick.dart';
 import 'package:quiver/collection.dart';
 
 final basicSchemeDst = utf8.encode('BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_');
@@ -62,23 +64,20 @@ bool coreAggregateVerify(
 }
 
 class BasicSchemeMPL {
-  /// Obtiene el provider BLS a usar (puede ser Dart o externo)
-  static BlsProvider get _provider => BlsProvider.instance;
-
   static PrivateKey keyGen(List<int> seed) {
-    return _provider.keyGen(seed);
+    return hd_keys.keyGen(seed);
   }
 
   static JacobianPoint sign(PrivateKey sk, List<int> message) {
-    return _provider.sign(sk, message, basicSchemeDst);
+    return coreSignMpl(sk, message, basicSchemeDst);
   }
 
   static bool verify(JacobianPoint pk, List<int> message, JacobianPoint signature) {
-    return _provider.verify(pk, message, signature, basicSchemeDst);
+    return coreVerifyMpl(pk, message, signature, basicSchemeDst);
   }
 
   static JacobianPoint aggregate(List<JacobianPoint> signatures) {
-    return _provider.aggregate(signatures);
+    return coreAggregateMpl(signatures);
   }
 
   static bool aggregateVerify(
@@ -96,49 +95,81 @@ class BasicSchemeMPL {
         }
       }
     }
-    return _provider.aggregateVerify(pks, ms, signature, basicSchemeDst);
+    return coreAggregateVerify(pks, ms, signature, basicSchemeDst);
   }
 
   static PrivateKey deriveChildSk(PrivateKey sk, int index) {
-    return _provider.deriveChildSk(sk, index);
+    return hd_keys.deriveChildSk(sk, index);
   }
 
   static PrivateKey deriveChildSkUnhardened(PrivateKey sk, int index) {
-    return _provider.deriveChildSkUnhardened(sk, index);
+    return hd_keys.deriveChildSkUnhardened(sk, index);
   }
 
   static JacobianPoint deriveChildPkUnhardened(JacobianPoint pk, int index) {
-    return _provider.deriveChildPkUnhardened(pk, index);
+    return hd_keys.deriveChildG1Unhardened(pk, index);
   }
 }
 
 class AugSchemeMPL {
-  /// Obtiene el provider BLS a usar (puede ser Dart o externo)
-  static BlsProvider get _provider => BlsProvider.instance;
-
   static PrivateKey keyGen(List<int> seed) {
-    return _provider.keyGen(seed);
+    return hd_keys.keyGen(seed);
   }
 
   static JacobianPoint sign(PrivateKey sk, List<int> message) {
     final pk = sk.getG1();
-    return _provider.sign(sk, pk.toBytes() + message, augSchemeDst);
+    return coreSignMpl(sk, pk.toBytes() + message, augSchemeDst);
+  }
+
+  static Map<String, dynamic> _signTask(SignArguments args) {
+    final signature = sign(args.sk, args.message);
+    return <String, dynamic>{
+      'signature': signature.toHex(),
+    };
+  }
+
+  static Future<JacobianPoint> signAsync(PrivateKey sk, List<int> message) {
+    return spawnAndWaitForIsolate(
+      taskArgument: SignArguments(sk, message),
+      isolateTask: _signTask,
+      handleTaskCompletion: (taskResultJson) {
+        return JacobianPoint.fromHexG2(taskResultJson['signature'] as String);
+      },
+    );
+  }
+
+  static bool verify(JacobianPoint pk, List<int> message, JacobianPoint signature) {
+    return coreVerifyMpl(pk, pk.toBytes() + message, signature, augSchemeDst);
+  }
+
+  static Future<bool> verifyAsync(
+    JacobianPoint pk,
+    List<int> message,
+    JacobianPoint signature,
+  ) async {
+    return spawnAndWaitForIsolate(
+      taskArgument: VerifyArguments(pk, message, signature),
+      isolateTask: _verifyTask,
+      handleTaskCompletion: (taskResultJson) => pick(taskResultJson, 'valid').asBoolOrThrow(),
+    );
   }
 
   static JacobianPoint hashAugScheme(JacobianPoint pk, List<int> message) {
     return g2Map(pk.toBytes() + message, augSchemeDst);
   }
 
-  static Future<JacobianPoint> signAsync(PrivateKey sk, List<int> message) {
-    return _provider.signAsync(sk, sk.getG1().toBytes() + message, augSchemeDst);
-  }
-
-  static bool verify(JacobianPoint pk, List<int> message, JacobianPoint signature) {
-    return _provider.verify(pk, pk.toBytes() + message, signature, augSchemeDst);
+  static Map<String, dynamic> _verifyTask(
+    VerifyArguments args,
+  ) {
+    final valid =
+        coreVerifyMpl(args.pk, args.pk.toBytes() + args.message, args.signature, augSchemeDst);
+    return <String, dynamic>{
+      'valid': valid,
+    };
   }
 
   static JacobianPoint aggregate(List<JacobianPoint> signatures) {
-    return _provider.aggregate(signatures);
+    return coreAggregateMpl(signatures);
   }
 
   static bool aggregateVerify(
@@ -153,40 +184,37 @@ class AugSchemeMPL {
     for (var i = 0; i < pks.length; i++) {
       mPrimes.add(pks[i].toBytes() + ms[i]);
     }
-    return _provider.aggregateVerify(pks, mPrimes, signature, augSchemeDst);
+    return coreAggregateVerify(pks, mPrimes, signature, augSchemeDst);
   }
 
   static PrivateKey deriveChildSk(PrivateKey sk, int index) {
-    return _provider.deriveChildSk(sk, index);
+    return hd_keys.deriveChildSk(sk, index);
   }
 
   static PrivateKey deriveChildSkUnhardened(PrivateKey sk, int index) {
-    return _provider.deriveChildSkUnhardened(sk, index);
+    return hd_keys.deriveChildSkUnhardened(sk, index);
   }
 
   static JacobianPoint deriveChildPkUnhardened(JacobianPoint pk, int index) {
-    return _provider.deriveChildPkUnhardened(pk, index);
+    return hd_keys.deriveChildG1Unhardened(pk, index);
   }
 }
 
 class PopSchemeMPL {
-  /// Obtiene el provider BLS a usar (puede ser Dart o externo)
-  static BlsProvider get _provider => BlsProvider.instance;
-
   static PrivateKey keyGen(List<int> seed) {
-    return _provider.keyGen(seed);
+    return hd_keys.keyGen(seed);
   }
 
   static JacobianPoint sign(PrivateKey sk, List<int> message) {
-    return _provider.sign(sk, message, popSchemeDst);
+    return coreSignMpl(sk, message, popSchemeDst);
   }
 
   static bool verify(JacobianPoint pk, List<int> message, JacobianPoint signature) {
-    return _provider.verify(pk, message, signature, popSchemeDst);
+    return coreVerifyMpl(pk, message, signature, popSchemeDst);
   }
 
   static JacobianPoint aggregate(List<JacobianPoint> signatures) {
-    return _provider.aggregate(signatures);
+    return coreAggregateMpl(signatures);
   }
 
   static bool aggregateVerify(
@@ -204,21 +232,15 @@ class PopSchemeMPL {
         }
       }
     }
-    return _provider.aggregateVerify(pks, ms, signature, popSchemeDst);
+    return coreAggregateVerify(pks, ms, signature, popSchemeDst);
   }
 
   static JacobianPoint popProve(PrivateKey sk) {
-    final result = _provider.popProve(sk);
-    if (result != null) return result;
-    // Fallback a implementación Dart si el provider no soporta POP
     final pk = sk.getG1();
     return g2Map(pk.toBytes(), popSchemePopDst) * sk.value;
   }
 
   static bool popVerify(JacobianPoint pk, JacobianPoint proof) {
-    final result = _provider.popVerify(pk, proof);
-    if (result != null) return result;
-    // Fallback a implementación Dart si el provider no soporta POP
     try {
       assert(proof.isValid);
       assert(pk.isValid);
@@ -236,18 +258,42 @@ class PopSchemeMPL {
     List<int> message,
     JacobianPoint signature,
   ) {
-    return _provider.fastAggregateVerify(pks, message, signature, popSchemeDst);
+    if (pks.isEmpty) {
+      return false;
+    }
+    var aggregate = pks[0];
+    for (final pk in pks.sublist(1)) {
+      aggregate += pk;
+    }
+    return coreVerifyMpl(aggregate, message, signature, popSchemeDst);
   }
 
   static PrivateKey deriveChildSk(PrivateKey sk, int index) {
-    return _provider.deriveChildSk(sk, index);
+    return hd_keys.deriveChildSk(sk, index);
   }
 
   static PrivateKey deriveChildSkUnhardened(PrivateKey sk, int index) {
-    return _provider.deriveChildSkUnhardened(sk, index);
+    return hd_keys.deriveChildSkUnhardened(sk, index);
   }
 
   static JacobianPoint deriveChildPkUnhardened(JacobianPoint pk, int index) {
-    return _provider.deriveChildPkUnhardened(pk, index);
+    return hd_keys.deriveChildG1Unhardened(pk, index);
   }
+}
+
+class SignArguments {
+  SignArguments(this.sk, this.message);
+
+  final PrivateKey sk;
+  final List<int> message;
+}
+
+class VerifyArguments {
+  VerifyArguments(this.pk, this.message, this.signature);
+
+  final JacobianPoint pk;
+
+  final List<int> message;
+
+  final JacobianPoint signature;
 }

@@ -10,5 +10,4 @@ export './bls/field/field.dart';
 export './bls/field/field_base.dart';
 export './bls/field/field_ext.dart';
 export './bls/private_key.dart';
-export './bls/provider/bls_provider.dart';
 export './bls/schemes.dart' show BasicSchemeMPL, AugSchemeMPL, PopSchemeMPL;
