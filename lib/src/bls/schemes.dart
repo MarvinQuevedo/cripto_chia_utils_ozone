@@ -31,9 +31,9 @@ JacobianPoint coreAggregateMpl(List<JacobianPoint> signatures) {
     throw ArgumentError('Must aggregate at least 1 signature.');
   }
   var aggregate = signatures[0];
-  assert(aggregate.isValid);
+  assert(aggregate.isOnCurve);
   for (final signature in signatures.sublist(1)) {
-    assert(signature.isValid);
+    assert(signature.isOnCurve);
     aggregate += signature;
   }
   return aggregate;

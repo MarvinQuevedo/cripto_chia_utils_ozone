@@ -4,12 +4,19 @@ version: 1.0.16
 repository: https://github.com/irulast/chia-crypto-utils
 
 environment:
-  sdk: '>=2.18.0 <3.0.0'
+  sdk: '>=2.19.3 <4.0.0'
+  flutter: ">=1.17.0"
 
 scripts:
-  integration_tests: 'dart test integration_test/ --concurrency=1'
+  integration_tests: 'flutter test integration_test/ --concurrency=1'
 
 dependencies:
+  flutter:
+    sdk: flutter
+  flutter_chia_rust_utils:
+    git:
+      url: https://github.com/MarvinQuevedo/flutter_chia_rust_utils.git
+      ref: fix_android_package
   args: ^2.3.1
   bech32: ^0.2.2
   bech32m: 
@@ -43,8 +50,10 @@ dev_dependencies:
   http: ^1.1.0
   lints: ^2.1.0
   #rps: ^0.6.3
+  flutter_test:
+    sdk: flutter
   test: ^1.19.3
-   
+
 
 false_secrets:
   - /lib/src/networks/chia/mainnet/ssl/private_full_node.key

@@ -51,6 +51,52 @@ class StandardWalletService extends BaseWalletService {
         unsigned: unsigned);
   }
 
+  /// Async variant that delegates BLS work to a [BlsSigner]. With the default
+  /// [NativeBlsSigner] (Rust + blst) this is roughly 250× faster per sign than
+  /// [createSpendBundle]. Pass [signer] to override; otherwise it resolves via
+  /// [BlsSigner.resolve] (GetIt registration or [NativeBlsSigner] fallback).
+  Future<Tuple2<SpendBundle, SignatureHashes?>> createSpendBundleAsync({
+    required List<Payment> payments,
+    required List<CoinPrototype> coinsInput,
+    required WalletKeychain keychain,
+    Puzzlehash? changePuzzlehash,
+    int fee = 0,
+    Bytes? originId,
+    List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
+    List<AssertPuzzleCondition> puzzleAnnouncementsToAssert = const [],
+    bool unsigned = false,
+    MakePuzzleRevealFromPuzzleHash? makePuzzleRevealFromPuzzlehash,
+    BlsSigner? signer,
+  }) {
+    return createSpendBundleBaseAsync(
+      payments: payments,
+      coinsInput: coinsInput,
+      changePuzzlehash: changePuzzlehash,
+      fee: fee,
+      originId: originId,
+      coinAnnouncementsToAssert: coinAnnouncementsToAssert,
+      puzzleAnnouncementsToAssert: puzzleAnnouncementsToAssert,
+      useP2Delegate: keychain.isTangem,
+      makePuzzleRevealFromPuzzlehash: makePuzzleRevealFromPuzzlehash ??
+          (puzzlehash) {
+            final walletVector = keychain.getWalletVector(puzzlehash);
+            final publicKey = walletVector!.childPublicKey;
+            return getPuzzleFromPk(publicKey);
+          },
+      makeSignTaskForCoinSpend: (coinSpend) {
+        final walletVector = keychain.getWalletVector(coinSpend.coin.puzzlehash);
+        return buildSignTask(walletVector!.childPrivateKey, coinSpend);
+      },
+      makeSignatureMessages: (coinSpend) => getSignatureMessages(
+        keychain.getWalletVector(coinSpend.coin.puzzlehash)!.childPublicKey,
+        coinSpend,
+        puzzleHash: coinSpend.coin.puzzlehash,
+      ),
+      unsigned: unsigned,
+      signer: signer,
+    );
+  }
+
   void validateSpendBundle(SpendBundle spendBundle) {
     validateSpendBundleSignature(spendBundle);
 

@@ -12,6 +12,7 @@ import '../models/contidions_args.dart';
 
 typedef MakeSignatureMessages = MessageSignTuple Function(CoinSpend coinSpend);
 typedef MakeSolutionFromConditions = Program Function(List<Condition> conditions);
+typedef MakeSignTaskForCoinSpend = SignTask Function(CoinSpend coinSpend);
 
 class BaseWalletService {
   BlockchainNetwork get blockchainNetwork => GetIt.I.get<BlockchainNetwork>();
@@ -75,6 +76,7 @@ class BaseWalletService {
     }
 
     AssertCoinAnnouncementCondition? primaryAssertCoinAnnouncement;
+    final puzzleCache = <Puzzlehash, Program>{};
 
     var first = true;
     for (var i = 0; i < coins.length; i++) {
@@ -134,15 +136,16 @@ class BaseWalletService {
         primaryAssertCoinAnnouncement = AssertCoinAnnouncementCondition(coin.id, message);
 
         solution = makeSolutionFromConditions(conditions);
-        print(solution.toSource());
       } else {
         solution = makeSolutionFromConditions(
           [primaryAssertCoinAnnouncement!],
         );
-        print(solution.toSource());
       }
 
-      final puzzle = makePuzzleRevealFromPuzzlehash(coin.puzzlehash);
+      final puzzle = puzzleCache.putIfAbsent(
+        coin.puzzlehash,
+        () => makePuzzleRevealFromPuzzlehash(coin.puzzlehash),
+      );
       final coinSpend = CoinSpend(coin: coin, puzzleReveal: puzzle, solution: solution);
       spends.add(coinSpend);
       if (!unsigned) {
@@ -166,6 +169,168 @@ class BaseWalletService {
       SpendBundle(coinSpends: spends, aggregatedSignature: aggregate),
       null,
     );
+  }
+
+  /// Async variant of [createSpendBundleBase] that delegates BLS signing and
+  /// aggregation to a [BlsSigner]. With the default [NativeBlsSigner] (Rust +
+  /// blst) this is ~250× faster per sign and ~1000× faster for aggregation
+  /// than the pure-Dart path.
+  ///
+  /// [makeSignTaskForCoinSpend] replaces [makeSignatureForCoinSpend] from the
+  /// sync API: it must return the `(sk, message)` pair to sign instead of the
+  /// signature itself, so the signer can batch / parallelise.
+  Future<Tuple2<SpendBundle, SignatureHashes?>> createSpendBundleBaseAsync({
+    required List<Payment> payments,
+    required List<CoinPrototype> coinsInput,
+    Puzzlehash? changePuzzlehash,
+    int fee = 0,
+    Bytes? originId,
+    List<AssertCoinAnnouncementCondition> coinAnnouncementsToAssert = const [],
+    List<AssertPuzzleAnnouncementCondition> puzzleAnnouncementsToAssert = const [],
+    required Program Function(Puzzlehash puzzlehash) makePuzzleRevealFromPuzzlehash,
+    Program Function(Program standardSolution)? transformStandardSolution,
+    required MakeSignTaskForCoinSpend makeSignTaskForCoinSpend,
+    MakeSignatureMessages? makeSignatureMessages,
+    bool unsigned = false,
+    bool useP2Delegate = false,
+    BlsSigner? signer,
+  }) async {
+    Program makeSolutionFromConditions(List<Condition> conditions) {
+      if (useP2Delegate) {
+        return makeSolutionFromConditionsP2Delegate(conditions);
+      }
+      final standardSolution = BaseWalletService.makeSolutionFromConditions(conditions);
+      if (transformStandardSolution == null) {
+        return standardSolution;
+      }
+      return transformStandardSolution(standardSolution);
+    }
+
+    final SignatureHashes signatureHashes = SignatureHashes();
+
+    final coins = List<CoinPrototype>.from(coinsInput);
+    final totalCoinValue = coins.fold(0, (int previousValue, coin) => previousValue + coin.amount);
+
+    final totalPaymentAmount = payments.fold(
+      0,
+      (int previousValue, payment) => previousValue + payment.amount,
+    );
+    final change = totalCoinValue - totalPaymentAmount - fee;
+
+    if (changePuzzlehash == null && change > 0) {
+      throw ChangePuzzlehashNeededException();
+    }
+
+    final signTasks = <SignTask>[];
+    final spends = <CoinSpend>[];
+
+    final originIndex = originId == null ? 0 : coins.indexWhere((coin) => coin.id == originId);
+    if (originIndex == -1) {
+      throw OriginIdNotInCoinsException();
+    }
+    if (originIndex != 0) {
+      final originCoin = coins.removeAt(originIndex);
+      coins.insert(0, originCoin);
+    }
+
+    AssertCoinAnnouncementCondition? primaryAssertCoinAnnouncement;
+    final puzzleCache = <Puzzlehash, Program>{};
+
+    var first = true;
+    for (var i = 0; i < coins.length; i++) {
+      final coin = coins[i];
+
+      Program? solution;
+      if (first) {
+        first = false;
+        final conditions = <Condition>[];
+        final createdCoins = <CoinPrototype>[];
+        for (final payment in payments) {
+          conditions.add(payment.toCreateCoinCondition());
+          createdCoins.add(
+            CoinPrototype(
+              parentCoinInfo: coin.id,
+              puzzlehash: payment.puzzlehash,
+              amount: payment.amount,
+            ),
+          );
+        }
+        if (change > 0) {
+          conditions.add(CreateCoinCondition(changePuzzlehash!, change));
+          createdCoins.add(
+            CoinPrototype(
+              parentCoinInfo: coin.id,
+              puzzlehash: changePuzzlehash,
+              amount: change,
+            ),
+          );
+        }
+        if (fee > 0) {
+          conditions.add(ReserveFeeCondition(fee));
+        }
+        conditions
+          ..addAll(coinAnnouncementsToAssert)
+          ..addAll(puzzleAnnouncementsToAssert);
+
+        final existingCoinsMessage = coins.fold(
+          Bytes.empty,
+          (Bytes previousValue, coin) => previousValue + coin.id,
+        );
+        final createdCoinsMessage = createdCoins.fold(
+          Bytes.empty,
+          (Bytes previousValue, coin) => previousValue + coin.id,
+        );
+        final message = (existingCoinsMessage + createdCoinsMessage).sha256Hash();
+        conditions.add(CreateCoinAnnouncementCondition(message));
+        primaryAssertCoinAnnouncement = AssertCoinAnnouncementCondition(coin.id, message);
+
+        solution = makeSolutionFromConditions(conditions);
+      } else {
+        solution = makeSolutionFromConditions([primaryAssertCoinAnnouncement!]);
+      }
+
+      final puzzle = puzzleCache.putIfAbsent(
+        coin.puzzlehash,
+        () => makePuzzleRevealFromPuzzlehash(coin.puzzlehash),
+      );
+      final coinSpend = CoinSpend(coin: coin, puzzleReveal: puzzle, solution: solution);
+      spends.add(coinSpend);
+
+      if (!unsigned) {
+        signTasks.add(makeSignTaskForCoinSpend(coinSpend));
+      } else {
+        final messageData = makeSignatureMessages!(coinSpend);
+        signatureHashes.addSignatureHashTuple(messageData);
+      }
+    }
+
+    if (unsigned) {
+      return Tuple2(SpendBundle(coinSpends: spends), signatureHashes);
+    }
+
+    final bls = signer ?? BlsSigner.resolve();
+    final signatures = await bls.signBatch(signTasks);
+    final aggregate = await bls.aggregate(signatures);
+
+    return Tuple2(
+      SpendBundle(coinSpends: spends, aggregatedSignature: aggregate),
+      null,
+    );
+  }
+
+  /// Sync helper that derives the `(syntheticSk, addSigMeMessage)` pair from
+  /// a [CoinSpend] — what [createSpendBundleBaseAsync] needs to hand off to
+  /// the [BlsSigner]. CLVM execution here is cheap (~100 µs for standard
+  /// puzzles); the expensive BLS sign is deferred to the signer.
+  SignTask buildSignTask(
+    PrivateKey privateKey,
+    CoinSpend coinSpend, {
+    bool useSyntheticOffset = true,
+  }) {
+    final result = coinSpend.puzzleReveal.run(coinSpend.solution);
+    final addsigmessage = getAddSigMeMessageFromResult(result.program, coinSpend.coin);
+    final sk = useSyntheticOffset ? calculateSyntheticPrivateKey(privateKey) : privateKey;
+    return SignTask(sk, addsigmessage);
   }
 
   JacobianPoint makeSignature(
@@ -246,7 +411,6 @@ class BaseWalletService {
       {required Program puzzleReveal, required Program solution, int maxCost = Program.cost}) {
     try {
       final result = puzzleReveal.run(solution);
-      print(result.program.hash().toHex());
       final parsed = parseSexpToConditions(result.program);
       return Tuple3(parsed.item1, parsed.item2, result.cost);
     } on Exception catch (e, stackTrace) {
