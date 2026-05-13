@@ -141,7 +141,8 @@ class CoinSpend with ToBytesMixin {
     try {
       final uncurried = puzzleReveal.uncurry();
       final uncurriedPuzzleSource = uncurried.program.toSource();
-      if (uncurriedPuzzleSource == p2DelegatedPuzzleOrHiddenPuzzleProgram.toSource()) {
+      if (uncurriedPuzzleSource == p2DelegatedPuzzleOrHiddenPuzzleProgram.toSource() ||
+          uncurriedPuzzleSource == p2DelegatedConditionsPuzzleProgram.toSource()) {
         return SpendType.standard;
       }
       if (uncurriedPuzzleSource == CAT_MOD.toSource()) {
