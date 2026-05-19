@@ -51,10 +51,11 @@ class StandardWalletService extends BaseWalletService {
         unsigned: unsigned);
   }
 
-  /// Async variant that delegates BLS work to a [BlsSigner]. With the default
-  /// [NativeBlsSigner] (Rust + blst) this is roughly 250× faster per sign than
-  /// [createSpendBundle]. Pass [signer] to override; otherwise it resolves via
-  /// [BlsSigner.resolve] (GetIt registration or [NativeBlsSigner] fallback).
+  /// Async variant that delegates BLS work to a [BlsSigner]. With a
+  /// Sage-backed [BlsSigner] (Rust + blst) this is roughly 250× faster per
+  /// sign than [createSpendBundle]. Pass [signer] to override; otherwise it
+  /// resolves via [BlsSigner.resolve] (GetIt registration or the pure-Dart
+  /// [DartBlsSigner] fallback).
   Future<Tuple2<SpendBundle, SignatureHashes?>> createSpendBundleAsync({
     required List<Payment> payments,
     required List<CoinPrototype> coinsInput,

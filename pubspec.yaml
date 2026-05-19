@@ -13,8 +13,10 @@ scripts:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_chia_rust_utils:
-    path: ../flutter_chia_rust_utils
+  # flutter_chia_rust_utils (Rust BLS, flutter_rust_bridge v1) removed in the
+  # Sage-engine migration — it conflicts with sage_flutter_binding (frb v2).
+  # BLS now defaults to the pure-Dart DartBlsSigner; register a Sage-backed
+  # BlsSigner in GetIt for the fast native path. See SAGE_MIGRATION_PLAN.md.
   args: ^2.3.1
   bech32: ^0.2.2
   bech32m: 

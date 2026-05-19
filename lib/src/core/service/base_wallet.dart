@@ -172,9 +172,9 @@ class BaseWalletService {
   }
 
   /// Async variant of [createSpendBundleBase] that delegates BLS signing and
-  /// aggregation to a [BlsSigner]. With the default [NativeBlsSigner] (Rust +
-  /// blst) this is ~250× faster per sign and ~1000× faster for aggregation
-  /// than the pure-Dart path.
+  /// aggregation to a [BlsSigner]. The default is the pure-Dart
+  /// [DartBlsSigner]; register a Sage-backed [BlsSigner] in GetIt for the
+  /// fast native path (~250× faster per sign, ~1000× for aggregation).
   ///
   /// [makeSignTaskForCoinSpend] replaces [makeSignatureForCoinSpend] from the
   /// sync API: it must return the `(sk, message)` pair to sign instead of the
